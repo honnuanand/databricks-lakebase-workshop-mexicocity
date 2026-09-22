@@ -23,10 +23,10 @@ The capabilities a plain Postgres cannot do. Run these first; they are why Lakeb
 | # | Journey | What you'll do | Build | Runs |
 | - | ------- | -------------- | ----- | ---- |
 | 1 | [Branch the brain](branch-the-brain/) | Fork your whole factory database in seconds (zero-copy), diverge it, throw it away with production untouched. | 🟢 | live |
-| 2 | [Break it, then rewind](break-and-rewind/) | Delete live machine data on purpose, then point-in-time-restore the database to seconds ago. No backup job. | ⬜ | live |
-| 3 | [Scale to zero](scale-to-zero/) | Stop the compute for an idle line, watch the cost meter hit $0, start it back in seconds. | ⬜ | live |
-| 4 | [One copy, both directions](write-to-analytics/) | Write sensor telemetry through Lakebase, query it in the lakehouse the same moment, push a failure-risk score back. No pipeline. | ⬜ | live |
-| 5 | [Fits your landscape](pg-integration/) | Point any Postgres driver, ORM, or BI tool at Lakebase and watch it map the schema. Governed by Unity Catalog. | ⬜ | live |
+| 2 | [Break it, then rewind](break-and-rewind/) | Delete live machine data on purpose, then point-in-time-restore the database to seconds ago. No backup job. | 🟢 | live |
+| 3 | [Scale to zero](scale-to-zero/) | Stop the compute for an idle line, watch the cost meter hit $0, start it back in seconds. | 🟢 | live |
+| 4 | [One copy, both directions](write-to-analytics/) | Write sensor telemetry through Lakebase, query it in the lakehouse the same moment, push a failure-risk score back. No pipeline. | 🟢 | live |
+| 5 | [Fits your landscape](pg-integration/) | Point any Postgres driver, ORM, or BI tool at Lakebase and watch it map the schema. Governed by Unity Catalog. | 🟢 | live |
 
 ## AI on one database
 
@@ -34,10 +34,10 @@ Agents, memory, and vectors on the same governed database that serves your trans
 
 | # | Journey | What you'll do | Build | Runs |
 | - | ------- | -------------- | ----- | ---- |
-| 6 | [Agent memory](agent-memory/) | Give two agents one shared Lakebase memory table; one writes, the other recalls and acts on it. | ⬜ | live |
-| 7 | [The agent does the work](agentic-work/) | An agent reads live machine data with a tool, writes a work order back, and remembers what it did. | ⬜ | live |
-| 8 | [Human-in-the-loop](learning-loop/) | AI reads maintenance write-ups with a confidence score; low-confidence ones route to a human; the system learns. | ⬜ | live |
-| 9 | [Operational vectors](pg-vector/) | Rank the best-fit replacement part by spec-embedding similarity, in the same transaction as your data. | ⬜ | live |
+| 6 | [Agent memory](agent-memory/) | Give two agents one shared Lakebase memory table; one writes, the other recalls and acts on it. | 🟢 | live |
+| 7 | [The agent does the work](agentic-work/) | An agent reads live machine data with a tool, writes a work order back, and remembers what it did. | 🟢 | live |
+| 8 | [Human-in-the-loop](learning-loop/) | AI reads maintenance write-ups with a confidence score; low-confidence ones route to a human; the system learns. | 🟢 | live |
+| 9 | [Operational vectors](pg-vector/) | Rank the best-fit replacement part by spec-embedding similarity, in the same transaction as your data. | 🟢 | live |
 
 ## Postgres power, in Lakebase
 
@@ -88,7 +88,7 @@ Model factory knowledge as a graph and reason over it, all on Lakebase.
 
 ---
 
-**Progress:** 1 of 31 done · 0 drafting · 30 not started. This table is the source of truth for
+**Progress:** 9 of 31 done · 0 drafting · 22 not started. This table is the source of truth for
 both order and build status; update the Build column as journeys complete.
 
 *The journey slugs mirror the pitch app's journey ids in

@@ -1,0 +1,158 @@
+# Human-in-the-loop, instructions
+
+Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that
+first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
+loaded.
+
+Everything here is a single script you can read: [`../../common/scripts/learning_loop.py`](../../common/scripts/learning_loop.py).
+You can run it end to end, or follow the steps by hand to see each piece.
+
+## Run it end to end
+
+```bash
+cd common/scripts
+python learning_loop.py
+```
+
+This walks the whole learning loop: extract, route, correct, analyze. Read on for what each step
+does; the exact output to expect is in [`expected.md`](expected.md).
+
+## Or step through it by hand
+
+### Step 1, check the maintenance_log table
+
+The factory schema includes the `maintenance_log` table (see `common/scripts/factory_schema.sql`).
+This is where free-text maintenance write-ups live, and where the AI extraction lands. Check the
+structure:
+
+```bash
+python lakebase.py --sql \
+  "SELECT column_name, data_type FROM information_schema.columns \
+   WHERE table_name='maintenance_log' ORDER BY ordinal_position"
+```
+
+You should see columns: `log_id`, `machine_id`, `ts`, `writeup`, `system`, `defect`, `action`,
+`confidence`. The first three are the raw input; the last four are where the AI extraction
+lands.
+
+### Step 2, seed with free-text maintenance write-ups
+
+These are real-world messy write-ups. Some are clear and unambiguous; others are vague. The AI
+should score its confidence accordingly:
+
+```bash
+python learning_loop.py --step seed
+```
+
+The script inserts 5 write-ups:
+1. "Hydraulic line on leg B leaking...", clear.
+2. "L MLG tire worn to indicator...", clear, standard pattern.
+3. "Cabin ka-band intermittent...", somewhat unclear ("swap modem?").
+4. "APU slow to start...", clear problem, unclear cause.
+5. "Something off with the thing on the right side...", very vague.
+
+Read them back:
+
+```bash
+python lakebase.py --sql \
+  "SELECT log_id, machine_id, writeup FROM factory.maintenance_log ORDER BY log_id"
+```
+
+### Step 3, run AI extraction
+
+Claude reads each write-up and extracts system/defect/action + a confidence score:
+
+```bash
+python learning_loop.py --step extract
+```
+
+The script:
+1. For each write-up, calls Claude with a prompt: "Extract system, defect, action from this
+   maintenance note. Respond with JSON."
+2. Claude returns the extraction + a confidence score (0-1).
+3. The script updates each maintenance_log row with the AI extraction.
+4. Extractions with confidence > 0.75 get `status = 'auto_accepted'`; others get
+   `status = 'needs_review'`.
+
+You should see output like:
+
+```text
+Extracted 5 maintenance write-ups:
+  1. system=hydraulic, defect=line_leak, confidence=0.95, status=auto_accepted
+  2. system=landing_gear, defect=tire_worn, confidence=0.92, status=auto_accepted
+  3. system=communications, defect=intermittent, confidence=0.65, status=needs_review
+  4. system=apu, defect=slow_start, confidence=0.72, status=needs_review
+  5. system=?, defect=?, confidence=0.35, status=needs_review
+```
+
+### Step 4, see the auto-accept/review split
+
+Query the maintenance_log to see which extracted cleanly and which need human review:
+
+```bash
+python lakebase.py --sql \
+  "SELECT log_id, writeup, system, defect, ROUND(confidence::numeric, 2), status \
+   FROM factory.maintenance_log ORDER BY log_id"
+```
+
+The first two should show `status = 'auto_accepted'` with high confidence (> 0.75). The last
+three should show `status = 'needs_review'` with lower confidence.
+
+### Step 5, simulate a human correction
+
+An engineer reviews the uncertain entries and corrects one. Run:
+
+```bash
+python learning_loop.py --step correct
+```
+
+The script simulates an engineer correcting entry #3 ("Cabin ka-band intermittent"):
+- AI said: system=communications, defect=intermittent
+- Human changes to: system=communications, defect=modem_failure (more specific)
+- Updates the row with `status = 'corrected'` and a timestamp.
+
+Check the update:
+
+```bash
+python lakebase.py --sql \
+  "SELECT log_id, system, defect, status FROM factory.maintenance_log WHERE log_id=3"
+```
+
+### Step 6, run analytics
+
+Query the table as analytics would, measuring accuracy and drift:
+
+```bash
+python learning_loop.py --step analytics
+```
+
+The script:
+1. Counts extractions by status.
+2. Computes accuracy: how many auto-accepted entries were *also* correct (vs. which ones got
+   corrected)?
+3. Shows confidence distribution.
+
+You should see a summary like:
+
+```text
+Analytics:
+  Total: 5 extractions
+  Auto-accepted: 2 (confidence >= 0.75)
+  Needs review: 3
+  Corrected by human: 1
+  Accuracy of auto-accepted: 100% (2 out of 2 were correct)
+  Confidence >= 0.75: avg 0.93
+  Confidence < 0.75: avg 0.57
+```
+
+## What you just did
+
+You ran the full human-in-the-loop learning loop:
+1. Extracted insights from free text with confidence scores.
+2. Routed by threshold: high-confidence auto-accept, uncertain to human review.
+3. Recorded corrections atomically in the same table.
+4. Analyzed accuracy and drift from SQL.
+
+The entire flow lives on one governed table, no separate ML pipeline, no sync between systems.
+Compare the output you saw against [`expected.md`](expected.md), and if anything went sideways,
+[`faq.md`](faq.md) has the common causes.
