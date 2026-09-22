@@ -22,9 +22,9 @@ source workshop.env
 
 The factory schema was not loaded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-factory step.
 
-## RLS is enabled but queries still return all rows
+## Row-level security is enabled but queries still return all rows
 
-Check that the session variable is set. If the script doesn't set `app.current_operator_plant`, the RLS policy reads NULL (or a default), and rows aren't filtered. The script must set the variable before running the query:
+Check that the session variable is set. If the script doesn't set `app.current_operator_plant`, the [row-level security](../../docs/glossary.md) policy reads NULL (or a default), and rows aren't filtered. The script must set the variable before running the query:
 
 ```sql
 SET app.current_operator_plant = 'PL-DETROIT';
@@ -57,11 +57,11 @@ SELECT machine_id, plant_id, status,
 
 Then grant SELECT on the view to operators, and revoke SELECT on the underlying table. This works but is less flexible than RLS. For stronger masking, use a view + RLS together.
 
-## RLS bypassed, superuser sees all rows. Is this a security hole?
+## Row-level security bypassed, superuser sees all rows. Is this a security hole?
 
-No, it's by design. Superusers (and Postgres roles with BYPASSRLS) can see all rows and bypass RLS. In Lakebase, the branch owner is a superuser-equivalent. For application users, grant normal privileges (no BYPASSRLS) and assign them a role with an RLS policy. Those users cannot bypass RLS.
+No, it's by design. Superusers (and Postgres roles with BYPASSRLS) can see all rows and bypass row-level security. In Lakebase, the branch owner is a superuser-equivalent. For application users, grant normal privileges (no BYPASSRLS) and assign them a role with an RLS policy. Those users cannot bypass row-level security.
 
-## Can I test RLS without creating multiple roles?
+## Can I test row-level security without creating multiple roles?
 
 Yes, use `SET ROLE` to switch identities within the same connection (if you're a superuser):
 
@@ -75,9 +75,9 @@ SELECT * FROM factory.machine;  -- sees only Chicago rows
 RESET ROLE;
 ```
 
-This is how the script tests RLS without creating separate connections. (With separate connections, you'd need to authenticate as each role, which is more complex.)
+This is how the script tests row-level security without creating separate connections. (With separate connections, you'd need to authenticate as each role, which is more complex.)
 
-## How do I update the RLS policy?
+## How do I update the row-level security policy?
 
 Drop and recreate:
 
@@ -88,7 +88,7 @@ CREATE POLICY machine_operator_isolation ON factory.machine
   USING (plant_id = current_setting('app.current_operator_plant'));
 ```
 
-Or modify the policy directly (PG 13+):
+Or modify the policy directly (Postgres 13+):
 
 ```sql
 ALTER POLICY machine_operator_isolation ON factory.machine

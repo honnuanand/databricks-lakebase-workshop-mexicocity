@@ -27,13 +27,13 @@ Everything in Lakebase Autoscaling nests like this:
 Project  ⊃  Branch  ⊃  Endpoint  ⊃  Database  ⊃  Schema  ⊃  Tables
 ```
 
-- **Project** — the provisioning container. Create one and it comes with a `production` branch
+- **Project**, the provisioning container. Create one and it comes with a `production` branch
   and a primary endpoint.
-- **Branch** — a zero-copy, copy-on-write copy of the data. `production` is the default; your
+- **Branch**, a zero-copy, copy-on-write copy of the data. `production` is the default; your
   workshop branch is `u-<name>`. Creating a branch copies no data; it diverges only as you write.
-- **Endpoint** — the connectable compute for a branch, reachable on `host:5432` over the
+- **Endpoint**, the connectable compute for a branch, reachable on `host:5432` over the
   standard Postgres wire.
-- **Database / Schema / Tables** — a normal Postgres database (`databricks_postgres` by default)
+- **Database / Schema / Tables**, a normal Postgres database (`databricks_postgres` by default)
   with your schema and tables inside it.
 
 In the SDK, resources are addressed by a path name built from those parts:
@@ -110,7 +110,7 @@ token = cred.token
 
 **Other calls used in the workshop:** `get_project`, `list_projects`, `delete_project`,
 `get_branch`, `list_branches`, `delete_branch`, `update_branch` (to unprotect before delete),
-`create_role` (registers a Postgres role on a branch — used in grants).
+`create_role` (registers a Postgres role on a branch, used in grants).
 
 ## Gotcha: readiness is `status.current_state`, not `status.state`
 

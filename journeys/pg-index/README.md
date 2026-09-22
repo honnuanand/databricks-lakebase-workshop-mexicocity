@@ -5,7 +5,7 @@
 > **Key takeaways**
 >
 > - One Postgres table can carry every data type: relational columns, JSON, time-series, geography, and vectors, each serving a different query pattern.
-> - Six index types (btree, hash, gin, brin, gist, hnsw) each optimize a different query shape, and the cost-based planner chooses the right one on every query.
+> - Six index types ([btree](../../docs/glossary.md), [hash](../../docs/glossary.md), [GIN](../../docs/glossary.md), [BRIN](../../docs/glossary.md), [GiST](../../docs/glossary.md), [HNSW](../../docs/glossary.md)) each optimize a different query shape, and the cost-based planner chooses the right one on every query.
 > - The proof: create each index and watch EXPLAIN show the planner picks it.
 >
 > **You'll be able to:** build a self-contained demo table with six data types and six index access methods, and prove via EXPLAIN that the planner uses each.
@@ -16,12 +16,12 @@
 
 You're designing the machine telemetry schema. Every machine generates data: ID, status code, configuration specs (JSON), timestamps, location coordinates, and feature embeddings for predictive maintenance. That's six completely different data types, each with its own query pattern:
 
-- Lookup a machine by ID (relational equality) → **btree**.
-- Filter by status code (integer equality) → **hash**.
-- Search JSON specs for a specific model → **gin** (JSON containment).
-- Range queries on time (which machines ran in March?) → **brin** (time-series).
-- Find machines near a plant location → **gist** (geospatial distance).
-- Find similar machines by embedding → **hnsw** (vector similarity).
+- Lookup a machine by ID (relational equality) → [**btree**](../../docs/glossary.md).
+- Filter by status code (integer equality) → [**hash**](../../docs/glossary.md).
+- Search JSON specs for a specific model → [**GIN**](../../docs/glossary.md) (JSON containment).
+- Range queries on time (which machines ran in March?) → [**BRIN**](../../docs/glossary.md) (time-series).
+- Find machines near a plant location → [**GiST**](../../docs/glossary.md) (geospatial distance).
+- Find similar machines by embedding → [**HNSW**](../../docs/glossary.md) (vector similarity).
 
 A naive design creates separate systems: a relational database, a JSON store, a time-series database, a geospatial service, and a vector store. Postgres is one database holding all six, each with its native index, one query planner arbitrating them all.
 
@@ -32,7 +32,7 @@ You create a 60k-row table with all six types. For each type, you create the mat
 ## What you'll do
 
 1. Create a demo table with machine data: relational (machine_id, status), JSON (specs), timestamps, geography (location), and vectors (embedding).
-2. Create six indexes: btree, hash, gin, brin, gist, hnsw.
+2. Create six indexes: [btree](../../docs/glossary.md), [hash](../../docs/glossary.md), [GIN](../../docs/glossary.md), [BRIN](../../docs/glossary.md), [GiST](../../docs/glossary.md), [HNSW](../../docs/glossary.md).
 3. Run EXPLAIN on six different query shapes and show each uses its index.
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output to check against is in [`expected.md`](expected.md).

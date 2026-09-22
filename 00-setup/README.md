@@ -1,4 +1,4 @@
-# 00 · Setup — get connected
+# 00 · Setup, get connected
 
 This is the on-ramp. About 20 minutes, done once, and it unblocks every journey. By the end you
 have a live Lakebase project, the access it needs, and **your own zero-copy branch** to work on.
@@ -75,7 +75,7 @@ few rows it touches. `M-204` is just the character worth remembering.
 ## When you're done
 
 You'll have connected to your own branch and seen `SELECT 1` return. Then head to
-[`../journeys/`](../journeys/) and start with **Branch the brain** — the same branching you just
+[`../journeys/`](../journeys/) and start with **Branch the brain**, the same branching you just
 used, turned into a hands-on journey.
 
 > **Note**

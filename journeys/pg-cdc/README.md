@@ -5,8 +5,8 @@
 > **Key takeaways**
 >
 > - **PREVIEW: Logical replication is on the Lakebase roadmap (not GA yet).** This journey shows the Postgres capability on a standard instance, and will be first-class on Lakebase.
-> - Tap the commit log directly: every INSERT, UPDATE, DELETE becomes an ordered, LSN-stamped record via logical decoding.
-> - No external Debezium/Kafka pipeline; the change feed is native to the database engine.
+> - Tap the commit log directly: every INSERT, UPDATE, DELETE becomes an ordered, [LSN](../../docs/glossary.md)-stamped record via logical decoding (a [change data capture](../../docs/glossary.md) or CDC capability).
+> - No external Debezium/Kafka pipeline; the change feed is native to the database engine, readable as an ordered stream off the [write-ahead log](../../docs/glossary.md).
 >
 > **You'll be able to:** create a logical replication slot, make writes, and decode them as an ordered stream of changes.
 >
@@ -18,13 +18,13 @@ You're running a digital-twin system. Machines go down, get repaired, come back 
 
 The naive approach: poll the database every second or two and ask "what changed since last check?" At scale, polling breaks: you miss changes if you're slow, or you query too often and overload the database.
 
-The Postgres answer: logical decoding. Tap the commit log itself, the durable, ordered write-ahead log (WAL). Every change emerges as a record you can read, ordered by LSN (log sequence number), with the exact BEGIN/DML/COMMIT structure.
+The Postgres answer: logical decoding (a [change data capture](../../docs/glossary.md) capability). Tap the commit log itself, the durable, ordered [write-ahead log](../../docs/glossary.md). Every change emerges as a record you can read, ordered by [LSN](../../docs/glossary.md) (log sequence number), with the exact BEGIN/DML/COMMIT structure.
 
 This is roadmap on Lakebase. This journey previews the capability against a Postgres instance, and will migrate to first-class on Lakebase.
 
 ## The wow moment
 
-You create a logical replication slot. You make three committed writes (INSERT, UPDATE, DELETE). You decode the slot and see the exact stream: `BEGIN → INSERT(M-100, operational) → COMMIT`, then `BEGIN → UPDATE(M-100, maintenance) → COMMIT`, then `BEGIN → DELETE(M-100) → COMMIT`. Each record LSN-stamped, orderable, durable.
+You create a logical replication slot. You make three committed writes (INSERT, UPDATE, DELETE). You decode the slot and see the exact stream: `BEGIN → INSERT(M-100, operational) → COMMIT`, then `BEGIN → UPDATE(M-100, maintenance) → COMMIT`, then `BEGIN → DELETE(M-100) → COMMIT`. Each record [LSN](../../docs/glossary.md)-stamped, orderable, durable.
 
 ## What you'll do
 
@@ -38,11 +38,11 @@ Full copy-paste steps are in [`instructions.md`](instructions.md); the exact out
 
 ## Prerequisites
 
-Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect. Logical decoding requires special permissions; see the FAQ if you hit permission errors.
+Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect. Logical decoding (a [change data capture](../../docs/glossary.md) feature) requires special permissions; see the FAQ if you hit permission errors.
 
 ## Wrapping up
 
-Logical decoding is the roadmap foundation for outbox patterns, cache invalidation, and downstream sync on Lakebase.
+Logical decoding (the [change data capture](../../docs/glossary.md) foundation) is the roadmap for outbox patterns, cache invalidation, and downstream sync on Lakebase.
 You've now seen the full Postgres track: performance tuning (pg-perf), indexes (pg-index), isolation (pg-iso),
-partitioning (pg-partition), online serving (pg-features), unified queries (pg-one-database), and change-feeds (here).
+partitioning (pg-partition), online serving (pg-features), unified queries (pg-one-database), and change data feeds (here).
 This is the end of the Postgres-power journeys (part B).

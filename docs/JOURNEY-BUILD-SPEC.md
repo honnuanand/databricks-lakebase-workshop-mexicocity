@@ -9,20 +9,20 @@ its shape exactly.
 Each `journeys/<slug>/` folder needs four files, plus at least one runnable artifact in
 `common/scripts/` (a `<slug_with_underscores>.py`) or `common/notebooks/`:
 
-1. **README.md** — book-style. Structure:
+1. **README.md**, book-style. Structure:
    - `# <Title>`
    - A hero block (see below).
-   - `## The scenario` — open with a concrete manufacturing situation, NOT a definition.
+   - `## The scenario`, open with a concrete manufacturing situation, NOT a definition.
    - Build the concept with prose; explain the mechanism.
-   - `## The wow moment` — the single beat worth watching.
-   - `## What you'll do` — a short numbered preview (steps live in instructions.md).
-   - `## Prerequisites` — usually just 00-setup; note any journey that must run first.
-   - `## Wrapping up` — connect forward to the next journey. Do not restate.
-2. **instructions.md** — numbered, copy-paste steps. Each step: what to run + what you should
+   - `## The wow moment`, the single beat worth watching.
+   - `## What you'll do`, a short numbered preview (steps live in instructions.md).
+   - `## Prerequisites`, usually just 00-setup; note any journey that must run first.
+   - `## Wrapping up`, connect forward to the next journey. Do not restate.
+2. **instructions.md**, numbered, copy-paste steps. Each step: what to run + what you should
    see. Reference the runnable artifact; also show the raw SQL so a reader learns it.
-3. **expected.md** — the real output/shape per step, plus a "numbers that matter" table. Honest
+3. **expected.md**, the real output/shape per step, plus a "numbers that matter" table. Honest
    timings (see facts below). Use ```text fenced output blocks.
-4. **faq.md** — the real errors (auth/refresh-token, missing env var, permission, table not
+4. **faq.md**, the real errors (auth/refresh-token, missing env var, permission, table not
    found), why they happen, fixes, and a couple of "why did X happen" concept clarifications.
 
 ## The hero block (top of every README, right after the H1)
@@ -50,7 +50,7 @@ Prefer plain words where an acronym is not the actual feature name. Keep names t
 (JSONB, pgvector, PostGIS) but still glossary-link them once. The glossary is
 [`docs/glossary.md`](glossary.md); add any missing term there.
 
-## Voice (from the book's STYLE.md — enforce it)
+## Voice (from the book's STYLE.md, enforce it)
 
 - Open with a scenario or field anecdote, not a definition.
 - Show code, then show what it prints. Never leave output to imagination.

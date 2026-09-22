@@ -1,4 +1,4 @@
-# MVCC and the WAL, FAQ
+# Multi-version concurrency control and the write-ahead log, FAQ
 
 ## It failed with a "refresh token" or authentication error
 
@@ -87,11 +87,11 @@ SELECT pid, usename, application_name, state, query_start
 
 This shows queries running longer than 10 minutes. If one is reading a table that has high bloat, that might be your culprit.
 
-## What's the WAL? Do I need to understand it for MVCC?
+## What's the write-ahead log? Do I need to understand it for MVCC?
 
-The Write-Ahead Log (WAL) is Postgres's transaction log. Every transaction is recorded in the WAL before being applied to the table. This ensures durability: even if the server crashes, the WAL can replay committed transactions and recover the database.
+The [write-ahead log](../../docs/glossary.md) (WAL) is Postgres's transaction log. Every transaction is recorded in the WAL before being applied to the table. This ensures durability: even if the server crashes, the WAL can replay committed transactions and recover the database.
 
-For MVCC, the WAL is important because it records the LSN (log sequence number) of every transaction. This is the foundation of PITR: Postgres can recover to any point in time by replaying the WAL up to that LSN. But you don't need to understand WAL details to understand MVCC, just know that MVCC uses transaction IDs (xmin/xmax) to manage versions, and PITR uses LSNs to record transaction order.
+For MVCC, the WAL is important because it records the [log sequence number](../../docs/glossary.md) (LSN) of every transaction. This is the foundation of [point-in-time recovery](../../docs/glossary.md) (PITR): Postgres can recover to any point in time by replaying the WAL up to that LSN. But you don't need to understand WAL details to understand MVCC, just know that multi-version concurrency control uses transaction IDs (xmin/xmax) to manage versions, and PITR uses LSNs to record transaction order.
 
 ## Can I query the WAL directly?
 

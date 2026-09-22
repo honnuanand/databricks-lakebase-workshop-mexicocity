@@ -47,4 +47,4 @@ Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect
 
 ## Wrapping up
 
-This is the foundation of why operational systems trust Postgres: ACID guarantees, row-level locking, snapshot isolation. No lost updates, no dirty reads. The next journey [`../pg-partition/`](../pg-partition/) scales the data: how does a single Postgres table stay fast as it grows to billions of rows?
+This is the foundation of why operational systems trust Postgres: ACID guarantees, row-level locking, snapshot isolation. No lost updates, no dirty reads. The next journey [`../pg-partition/`](../pg-partition/) scales the data: how does a single Postgres table stay fast as it grows to billions of rows? The journey after that explores [Multi-version concurrency control](../pg-mvcc/), the mechanism that makes all of this possible.

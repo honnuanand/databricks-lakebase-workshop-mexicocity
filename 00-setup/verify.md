@@ -51,5 +51,5 @@ branching, breaking, querying, and reasoning over.
 ## You're ready
 
 Head to [`../journeys/`](../journeys/) and start with
-[**Branch the brain**](../journeys/branch-the-brain/) — the same branching you just did, turned
+[**Branch the brain**](../journeys/branch-the-brain/), the same branching you just did, turned
 into your first hands-on journey.

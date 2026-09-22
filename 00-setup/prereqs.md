@@ -34,7 +34,7 @@ Other platforms: see the install guide at <https://docs.databricks.com/en/dev-to
 python3 --version
 ```
 
-**Two Python libraries** — the Databricks SDK (to drive projects and branches) and the Postgres
+**Two Python libraries**, the Databricks SDK (to drive projects and branches) and the Postgres
 driver (to run SQL). Install them into a virtual environment so you don't disturb your system
 Python:
 
@@ -80,4 +80,4 @@ pip install --index-url <your-org-package-index-url> "databricks-sdk==0.120.0" "
 
 ---
 
-Next: [`auth.md`](auth.md) — log in to your workspace.
+Next: [`auth.md`](auth.md), log in to your workspace.

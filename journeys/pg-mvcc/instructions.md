@@ -1,4 +1,4 @@
-# MVCC and the WAL, instructions
+# Multi-version concurrency control and the write-ahead log, instructions
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
 
@@ -81,16 +81,16 @@ The script:
 
 The space is reclaimed and the free space map is updated so future INSERTs can reuse the space.
 
-### Step 5, (optional) check the WAL
+### Step 5, (optional) check the write-ahead log
 
-The Write-Ahead Log (WAL) records every transaction. Check the current WAL position:
+The [write-ahead log](../../docs/glossary.md) (WAL) records every transaction. Check the current WAL position:
 
 ```bash
 python lakebase.py --sql "SELECT pg_current_wal_lsn();"
 ```
 
-This shows the byte position in the WAL. Each transaction (UPDATE, DELETE, etc.) advances it. This is the machinery behind PITR (point-in-time recovery): Postgres can recover any state by replaying the WAL up to a specific LSN.
+This shows the byte position in the WAL. Each transaction (UPDATE, DELETE, etc.) advances it. This is the machinery behind [point-in-time recovery](../../docs/glossary.md) (PITR): Postgres can recover any state by replaying the WAL up to a specific [log sequence number](../../docs/glossary.md) (LSN).
 
 ## What you just did
 
-You watched a single row's xmin and ctid change as you UPDATEd it. You saw dead tuples accumulate as you ran multiple UPDATEs. You ran VACUUM and watched dead tuples disappear. This is MVCC in action: Postgres never overwrites rows in place; it creates new versions and reclaims old ones. The result: readers never block writers, and writers never block readers. That's the essence of Postgres's concurrency model.
+You watched a single row's xmin and ctid change as you UPDATEd it. You saw dead tuples accumulate as you ran multiple UPDATEs. You ran VACUUM and watched dead tuples disappear. This is multi-version concurrency control in action: Postgres never overwrites rows in place; it creates new versions and reclaims old ones. The result: readers never block writers, and writers never block readers. That's the essence of Postgres's concurrency model.

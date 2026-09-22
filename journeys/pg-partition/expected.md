@@ -53,7 +53,7 @@ Full-range query (all 6 months):
 EXPLAIN output:
   (All 6 partitions scanned; no pruning possible)
 
-✓ OLTP scale in Postgres, OLAP scale-out to the lakehouse.
+✓ [OLTP](../../docs/glossary.md) scale in Postgres, [OLAP](../../docs/glossary.md) scale-out to the lakehouse.
 ```
 
 ## The numbers that matter
@@ -70,4 +70,4 @@ EXPLAIN output:
 > automatically based on the WHERE clause, no manual optimization needed. Full-history
 > analytical queries (across all partitions) run slowly on a single Postgres server, which is
 > why they belong in the lakehouse (Delta), where they scale out to a warehouse. Lakebase
-> streams the same data; you use Postgres for OLTP, the lakehouse for OLAP.
+> streams the same data; you use Postgres for [OLTP](../../docs/glossary.md), the lakehouse for [OLAP](../../docs/glossary.md).

@@ -18,11 +18,11 @@ step does; the exact output is in [`expected.md`](expected.md).
 
 ## What logical decoding is
 
-Postgres maintains a write-ahead log (WAL): a durable, ordered, byte-exact record of every change committed
-to the database. An LSN (log sequence number) marks every record. Normally, the WAL is internal (for crash recovery).
+Postgres maintains a [write-ahead log](../../docs/glossary.md) (WAL): a durable, ordered, byte-exact record of every change committed
+to the database. An [LSN](../../docs/glossary.md) (log sequence number) marks every record. Normally, the WAL is internal (for crash recovery).
 
 Logical decoding exposes the WAL as a stream of *logical* changes (not raw bytes): every committed transaction
-becomes a readable record with its INSERTs/UPDATEs/DELETEs decoded.
+becomes a readable record with its INSERTs/UPDATEs/DELETEs decoded. This is the [change data capture](../../docs/glossary.md) (CDC) capability.
 
 ## Or step through it by hand
 
@@ -56,7 +56,7 @@ Creates a logical replication slot:
 CREATE_REPLICATION_SLOT workshop_slot LOGICAL test_decoding
 ```
 
-From this LSN forward, the slot captures all committed changes on the table. (Requires REPLICATION role; see FAQ.)
+From this [LSN](../../docs/glossary.md) forward, the slot captures all committed changes on the table. (Requires REPLICATION role; see FAQ.)
 
 ### Step 3, make writes and decode
 

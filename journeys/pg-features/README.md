@@ -40,5 +40,5 @@ Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect
 ## Wrapping up
 
 This is the online half of the feature-store pattern. The offline half (training on historical data) lives in the
-lakehouse (Databricks + Delta). Lakebase bridges both: it's the OLTP transactional store that also serves features
+lakehouse (Databricks + Delta). Lakebase bridges both: it's the [OLTP](../../docs/glossary.md) transactional store that also serves features
 at inference time. The next journey [`../pg-one-database/`](../pg-one-database/) is the finale: one table, every data type, all in one query.

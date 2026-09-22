@@ -6,7 +6,7 @@
 >
 > - EXPLAIN ANALYZE shows the real query plan and actual execution time. BUFFERS shows which indexes and tables the planner accessed (sequential scan vs index scan).
 > - A sequential scan over an unindexed column reads all 50,000 rows to find 56. An index scan reads only the matching rows. The cost-based planner flips between these based on row counts and selectivity.
-> - The numbers that matter: adding a single btree index can reduce query time from 50 milliseconds (seq scan over 50k rows) to 1 millisecond (index scan finding 56 rows). The speedup is 50x.
+> - The numbers that matter: adding a single [btree](../../docs/glossary.md) index can reduce query time from 50 milliseconds (seq scan over 50k rows) to 1 millisecond (index scan finding 56 rows). The speedup is 50x.
 >
 > **You'll be able to:** use EXPLAIN to see why a query is slow, create the right index, and watch the planner flip from sequential scan to index scan with real timing and buffer statistics.
 >
@@ -28,7 +28,7 @@ You run a query and it takes 50 milliseconds. You look at EXPLAIN and see "Seq S
 
 1. Create a table with 50,000 synthetic sensor readings.
 2. Query an unindexed column: count rows matching a condition. Run EXPLAIN ANALYZE to see the cost and time.
-3. Add a btree index on that column.
+3. Add a [btree](../../docs/glossary.md) index on that column.
 4. Re-run the query and EXPLAIN. Watch the planner flip to an index scan.
 5. Compare the before/after numbers: cost, time, rows scanned, buffers hit.
 
@@ -40,4 +40,4 @@ Finish [`../../00-setup/`](../../00-setup/) so you have a branch. This journey c
 
 ## Wrapping up
 
-EXPLAIN is the flashlight you shine into a slow query. It reveals why the planner chose what it chose, and it lets you prove that your index actually helped. The next journey dives deep into the machinery underneath: [MVCC and the WAL](../pg-mvcc/), how Postgres writes data without ever blocking readers.
+EXPLAIN is the flashlight you shine into a slow query. It reveals why the planner chose what it chose, and it lets you prove that your index actually helped. The next journey dives deep into the machinery underneath: [Multi-version concurrency control](../pg-mvcc/), how Postgres writes data without ever blocking readers, and how [VACUUM](../../docs/glossary.md) reclaims space from old versions.

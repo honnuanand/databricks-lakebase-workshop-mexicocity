@@ -70,7 +70,7 @@ workload).
 ## How does this compare to adding an index?
 
 Different tools, same goal (speed the query):
-- **Index**: tells the planner a faster *path* exists (e.g., "use btree on this column").
+- **Index**: tells the planner a faster *path* exists (e.g., "use [btree](../../docs/glossary.md) on this column").
 - **Statistics**: tells the planner the *cost model* is wrong, so it makes better decisions
   on joins and memory.
 

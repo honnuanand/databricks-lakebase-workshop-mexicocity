@@ -96,7 +96,7 @@ The `||` operator is simpler for top-level updates. Use `jsonb_set()` for nested
 
 ## Why doesn't JSONB work like a document store (e.g., MongoDB)?
 
-It does, mostly. But Postgres is optimized for relational queries, not document queries. If you need heavy document operations (frequent schema changes, ad-hoc queries on nested structures), a document store might be a better fit. But for OLTP systems where you need a mix of relational and flexible data, JSONB is a great middle ground: you get relational performance, ACID guarantees, and schema flexibility in one system.
+It does, mostly. But Postgres is optimized for relational queries, not document queries. If you need heavy document operations (frequent schema changes, ad-hoc queries on nested structures), a document store might be a better fit. But for [OLTP](../../docs/glossary.md) (online transaction processing) systems where you need a mix of relational and flexible data, JSONB is a great middle ground: you get relational performance, ACID guarantees, and schema flexibility in one system.
 
 ## Do I need to manually vacuum JSONB columns?
 

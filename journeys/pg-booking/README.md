@@ -4,11 +4,11 @@
 >
 > **Key takeaways**
 >
-> - A GiST exclusion constraint prevents overlapping bookings (operations on the same machine or resource) from ever existing. If two bookings' time ranges overlap for the same machine, the database rejects the second one, atomically.
+> - A [GiST](../../docs/glossary.md) exclusion constraint prevents overlapping bookings (operations on the same machine or resource) from ever existing. If two bookings' time ranges overlap for the same machine, the database rejects the second one, atomically.
 > - This is stronger than app-layer checks ("read calendar, check for clash, then insert"). Race conditions can't happen because the constraint is enforced in the database engine, not in app code.
 > - The numbers that matter: an exclusion constraint adds negligible overhead (< 1 millisecond per INSERT). The guarantee is a database-enforced contract.
 >
-> **You'll be able to:** use a GiST exclusion constraint on tstzrange (time ranges) to guarantee no two operations ever overlap on the same machine, no matter how many requests race.
+> **You'll be able to:** use a [GiST](../../docs/glossary.md) exclusion constraint on tstzrange (time ranges) to guarantee no two operations ever overlap on the same machine, no matter how many requests race.
 >
 > **Time:** about 20 minutes  ·  **Status:** live
 
@@ -20,7 +20,7 @@ Now you have two overlapping operations on the same machine. The normal answer i
 
 ## Why GiST exclusion matters
 
-GiST exclusion constraints are one of Postgres' hidden superpowers. They're not well-known, but they solve a huge class of problems: no double-booking, no overlapping shifts, no competing reservations. The constraint runs in the database and cannot be bypassed, the only way to insert an overlapping row is to successfully delete the conflicting row first, which requires a transaction that sees both rows (impossible for concurrent requests).
+[GiST](../../docs/glossary.md) exclusion constraints are one of Postgres' hidden superpowers. They're not well-known, but they solve a huge class of problems: no double-booking, no overlapping shifts, no competing reservations. The constraint runs in the database and cannot be bypassed, the only way to insert an overlapping row is to successfully delete the conflicting row first, which requires a transaction that sees both rows (impossible for concurrent requests).
 
 ## The wow moment
 
@@ -29,7 +29,7 @@ You insert an operation into a busy machine's schedule. You then try to insert a
 ## What you'll do
 
 1. Inspect the operation table and its time ranges (starts_at, ends_at).
-2. Create a GiST exclusion constraint on the operation table: `EXCLUDE USING gist (machine_id WITH =, tstzrange(starts_at, ends_at) WITH &&)`.
+2. Create a [GiST](../../docs/glossary.md) exclusion constraint on the operation table: `EXCLUDE USING gist (machine_id WITH =, tstzrange(starts_at, ends_at) WITH &&)`.
 3. Try to insert an overlapping operation and see the constraint violation.
 4. Verify the constraint is being used with EXPLAIN.
 

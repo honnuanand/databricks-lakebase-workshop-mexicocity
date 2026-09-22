@@ -55,4 +55,4 @@ export LB_SCHEMA=factory
 
 ---
 
-Next: [`provision.md`](provision.md) — get a Lakebase project to work in.
+Next: [`provision.md`](provision.md), get a Lakebase project to work in.

@@ -4,8 +4,8 @@
 >
 > **Key takeaways**
 >
-> - JSONB stores flexible, schema-free documents natively in Postgres. No schema migration; no separate document store.
-> - Queries use simple operators: `@>` (contains), `#>>` (extract path), `?` (key exists). They run at database speed, indexed by GIN.
+> - [JSONB](../../docs/glossary.md) stores flexible, schema-free documents natively in Postgres. No schema migration; no separate document store.
+> - Queries use simple operators: `@>` (contains), `#>>` (extract path), `?` (key exists). They run at database speed, indexed by [GIN](../../docs/glossary.md) (Generalized Inverted Index).
 > - The numbers that matter: a compliance query over 500 parts with varying capability specs (some have SATVOICE, others don't; some specify an altitude limit, others don't) runs in under 50 milliseconds with a GIN index.
 >
 > **You'll be able to:** store flexible product and part specification sheets as JSONB, query them to find compatible parts and products without schema changes, and index them for fast searches.
@@ -18,18 +18,18 @@ At the stamping plant, every part has a capability sheet, dimensions, materials,
 
 ## Why JSONB matters
 
-Traditional relational schemas are rigid. JSONB is flexible. The real power is not just storage, it's that Postgres treats JSON as a first-class citizen. You can index it with GIN (Generalized Inverted Index), extract nested fields with SQL operators, and query it as fast as you'd query a normalized table. No separate document store, no sync layer, no extra system to operate.
+Traditional relational schemas are rigid. JSONB is flexible. The real power is not just storage, it's that Postgres treats JSON as a first-class citizen. You can index it with GIN, extract nested fields with SQL operators, and query it as fast as you'd query a normalized table. No separate document store, no sync layer, no extra system to operate.
 
 ## The wow moment
 
-You load a batch of 500 parts, each with a different spec sheet in JSONB. You write a query to find all parts that meet a certain spec (e.g., "temperature range includes -20°C AND coating includes 'zinc'"). The query runs in under 50 milliseconds with an index. Then you add an index and re-run, the time barely changes, because GIN is already doing the work. The whole thing lives in one Postgres table, queried in SQL, backed up with the database.
+You load a batch of 500 parts, each with a different spec sheet in JSONB. You write a query to find all parts that meet a certain spec (e.g., "temperature range includes -20°C AND coating includes 'zinc'"). The query runs in under 50 milliseconds with an index. Then you add a GIN index and re-run, the time barely changes, because the index is already doing the work. The whole thing lives in one Postgres table, queried in SQL, backed up with the database.
 
 ## What you'll do
 
 1. Inspect the JSONB spec sheets on parts and products (unstructured, varying fields).
 2. Use the `@>` containment operator to find parts that match a specification.
 3. Use the `#>>` path operator to extract nested fields and filter on them.
-4. Create a GIN index on JSONB and measure the difference (usually negligible, but you'll see it).
+4. Create a [GIN](../../docs/glossary.md) index on JSONB and measure the difference (usually negligible, but you'll see it).
 5. Write a compliance query: "which parts meet our harsh-environment spec?" in one line.
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output and reference numbers are in [`expected.md`](expected.md).

@@ -66,7 +66,7 @@ The `#>> '{material}'` extracts the value of the `material` key as text. The `?`
 
 ### Step 4, create a GIN index
 
-JSONB queries are fast even without an index. With a GIN (Generalized Inverted Index) on the JSONB column, they're faster. Create an index:
+JSONB queries are fast even without an index. With a [GIN](../../docs/glossary.md) (Generalized Inverted Index) on the JSONB column, they're faster. Create an index:
 
 ```bash
 python pg_json.py --step index

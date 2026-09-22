@@ -17,7 +17,7 @@ This walks through the entire journey and prints results. Read on for what each 
 
 ### Step 1, enable PostGIS and create geography columns
 
-PostGIS is a Postgres extension. Enable it:
+[PostGIS](../../docs/glossary.md) is a Postgres extension. Enable it:
 
 ```bash
 python lakebase.py --sql "CREATE EXTENSION IF NOT EXISTS postgis CASCADE"
@@ -79,7 +79,7 @@ The `<->` operator calculates distance between two geography points and sorts by
 
 ### Step 4, create a GiST index
 
-Spatial queries are fast even without an index. With a GiST (Generalized Search Tree) index, they're faster:
+Spatial queries are fast even without an index. With a [GiST](../../docs/glossary.md) index, they're faster:
 
 ```bash
 python pg_geo.py --step index

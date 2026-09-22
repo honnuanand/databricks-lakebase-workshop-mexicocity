@@ -35,7 +35,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA factory TO operator_detroit, operator_chica
 
 These roles are internal to Postgres; they're not Databricks users, just database identities.
 
-### Step 2, create and enable the RLS policy
+### Step 2, create and enable the row-level security policy
 
 Define a policy: "a machine row is visible to a user only if the machine's plant matches the user's operator plant":
 
@@ -56,7 +56,7 @@ The `USING` clause is the filter applied to every query. `current_setting('app.c
 
 ### Step 3, set session variables and query
 
-Connect as different operators and query the same table. The RLS policy filters rows based on the session variable:
+Connect as different operators and query the same table. The [row-level security](../../docs/glossary.md) (RLS) policy filters rows based on the session variable:
 
 ```bash
 python pg_rls.py --step query
@@ -76,4 +76,4 @@ The plan includes `Filter: (plant_id = <value>)`, showing the policy is being en
 
 ## What you just did
 
-You created roles for each plant operator, defined an RLS policy on the machine table, enabled RLS, and verified that the same query returns different rows depending on the operator's identity. The boundary is enforced at the database layer, no app code can bypass it.
+You created roles for each plant operator, defined a row-level security policy on the machine table, enabled RLS, and verified that the same query returns different rows depending on the operator's identity. The boundary is enforced at the database layer, no app code can bypass it.

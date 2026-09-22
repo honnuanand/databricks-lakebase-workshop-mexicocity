@@ -14,7 +14,7 @@
 
 ## The scenario
 
-It's 17:00 on Friday. The stamping plant shifts end. Production stopped for the day, the MES system is idle, and the factory runs on skeleton crew until Monday morning. But the database still runs. The database compute, the memory, the reserved capacity, all humming along at full price for two days of nobody querying it.
+It's 17:00 on Friday. The stamping plant shifts end. Production stopped for the day, the [manufacturing execution system](../../docs/glossary.md) (MES) is idle, and the factory runs on skeleton crew until Monday morning. But the database still runs. The database compute, the memory, the reserved capacity, all humming along at full price for two days of nobody querying it.
 
 On most databases, you pay for always-on. Maybe you've got reserved instances for the peak hours, but the idle hours bleed money. On Lakebase, you stop the compute.
 

@@ -14,7 +14,7 @@ single way** (the last section), so success looks identical no matter which door
 > branches off it. If you were given a project id, you can skip provisioning: set
 > `export LB_PROJECT=<id-you-were-given>` and go straight to **Verify** below.
 
-## Option 1 — the UI
+## Option 1, the UI
 
 1. In your Databricks workspace, open **Compute** and find the **Lakebase / Postgres** section
    (labeled Lakebase Postgres, Beta).
@@ -28,7 +28,7 @@ Good when you want to *see* the object model on screen. When it's running, set t
 export LB_PROJECT=factory
 ```
 
-## Option 2 — the Databricks CLI
+## Option 2, the Databricks CLI
 
 The CLI's `postgres` command group manages Autoscaling projects, branches, and endpoints
 directly:
@@ -50,7 +50,7 @@ export LB_PROJECT=factory
 > (`create-project`, `create-branch`, `list-endpoints`, `generate-database-credential`) are all
 > here, which is a nice way to see that the SDK and CLI are the same API.
 
-## Option 3 — the workshop script
+## Option 3, the workshop script
 
 The script calls the SDK and polls until the project is ACTIVE, printing honest timings:
 
@@ -101,4 +101,4 @@ error, the project isn't ready yet, wait a few seconds and re-run, or see the no
 
 ---
 
-Next: [`grants.md`](grants.md) — grant the access the workshop needs.
+Next: [`grants.md`](grants.md), grant the access the workshop needs.

@@ -2,7 +2,7 @@
 
 ## I got an error about PostGIS not being available
 
-PostGIS (the geospatial extension) may not be installed on your instance. The script handles this gracefully
+[PostGIS](../../docs/glossary.md) (the geospatial extension) may not be installed on your instance. The script handles this gracefully
 by showing a note if geometry functions fail. If you want to test geospatial anyway, you can install PostGIS:
 
 ```bash
@@ -13,7 +13,7 @@ Then re-run the script.
 
 ## The embedding column is failing
 
-pgvector may not be available on your instance. The script handles missing pgvector gracefully. If you want vectors,
+[pgvector](../../docs/glossary.md) may not be available on your instance. The script handles missing pgvector gracefully. If you want vectors,
 install the extension:
 
 ```bash
@@ -41,10 +41,10 @@ smart manufacturing (machines + specs + locations), and healthcare (patients + a
 ## What about performance? Won't a four-type query be slow?
 
 Not if indexed correctly. The script creates a table; in production you'd add indexes:
-- BTREE on relational columns (plant_id, line).
-- GIN on JSONB (spec).
-- HNSW on vectors (embedding).
-- GIST on geospatial (location).
+- [BTREE](../../docs/glossary.md) on relational columns (plant_id, line).
+- [GIN](../../docs/glossary.md) on [JSONB](../../docs/glossary.md) (spec).
+- [HNSW](../../docs/glossary.md) on vectors (embedding).
+- [GiST](../../docs/glossary.md) on geospatial (location).
 
 With proper indexes, the planner chooses the best path. The unified query is as fast as a single-type query
 would be on a single-purpose system.

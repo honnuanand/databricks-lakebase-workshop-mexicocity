@@ -88,7 +88,8 @@ For production operational data, use Lakebase (the server).
 ## How is this different from SQLite?
 
 Both run locally; both are single-process. Differences:
-- **Postgres (PGlite)**: full SQL, JSON, window functions, CTEs, better concurrency model (though single-threaded in WASM).
+
+- **Postgres (PGlite)**: full SQL, JSON, window functions, [common table expressions](../../docs/glossary.md) (CTEs), better concurrency model (though single-threaded in WASM).
 - **SQLite**: simpler, more compact, less SQL surface (no window functions natively, no JSON aggregation, fewer types).
 
 If you know Postgres SQL, PGlite feels like home. If you want minimal footprint, SQLite is smaller.

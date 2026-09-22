@@ -1,4 +1,4 @@
-# MVCC and the WAL, expected results
+# Multi-version concurrency control and the write-ahead log, expected results
 
 Use this to check your run. The numbers here are from our measurements; yours will be close but not identical. The *shape* of the results and the general magnitudes are what matter.
 
@@ -64,14 +64,14 @@ n_live_tup  n_dead_tup
 - `n_live_tup` stays the same (no rows were deleted, only old versions removed)
 - Table size shrinks (the 9 dead versions occupied space; now reclaimed)
 
-## Step 5, WAL position
+## Step 5, write-ahead log position
 
 ```text
 pg_current_wal_lsn
 0/3F45AB20
 ```
 
-The WAL log position advances with each transaction. Postgres uses this position to implement PITR (point-in-time restore): by replaying the WAL up to a specific LSN, you can recover the database to any point in time.
+The [write-ahead log](../../docs/glossary.md) (WAL) position advances with each transaction. Postgres uses this position to implement [point-in-time recovery](../../docs/glossary.md) (PITR): by replaying the WAL up to a specific [log sequence number](../../docs/glossary.md) (LSN), you can recover the database to any point in time.
 
 ## The numbers that matter
 
@@ -84,4 +84,4 @@ The WAL log position advances with each transaction. Postgres uses this position
 | Table size shrink (post-VACUUM) | ~10-20% (varies) | old versions occupied space; now reclaimed |
 
 > **From the field**
-> MVCC is the reason Postgres scales well under mixed read-write workloads. Because readers never block writers (they see snapshots), a table with a thousand concurrent readers and a hundred concurrent writers stays responsive. Every major database uses some form of versioning now (Oracle has UNDO, SQL Server has tempdb snapshots), but Postgres did it first and did it best. VACUUM is the price: if you run a billion transactions on the same row without ever vacuuming, the table will eventually bloat and need cleanup. But autovacuum (enabled by default) handles this automatically.
+> [Multi-version concurrency control](../../docs/glossary.md) is the reason Postgres scales well under mixed read-write workloads. Because readers never block writers (they see snapshots), a table with a thousand concurrent readers and a hundred concurrent writers stays responsive. Every major database uses some form of versioning now (Oracle has UNDO, SQL Server has tempdb snapshots), but Postgres did it first and did it best. [VACUUM](../../docs/glossary.md) is the price: if you run a billion transactions on the same row without ever vacuuming, the table will eventually bloat and need cleanup. But autovacuum (enabled by default) handles this automatically.

@@ -89,4 +89,4 @@ python ../common/scripts/branch.py --reset
 
 ---
 
-Next: [`verify.md`](verify.md) — confirm it's all working.
+Next: [`verify.md`](verify.md), confirm it's all working.

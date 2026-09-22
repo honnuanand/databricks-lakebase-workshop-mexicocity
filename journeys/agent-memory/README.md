@@ -23,7 +23,7 @@ You run a smart factory with two AI agents deployed on Model Serving:
 
 - **Maintenance Advisor**: reasons about machine health, forecasts wear, recommends maintenance
   windows.
-- **MES Assistant**: manages production orders, allocates machines, answers operator questions
+- **MES Assistant** (for the [manufacturing execution system](../../docs/glossary.md), the software that runs the shop floor): manages production orders, allocates machines, answers operator questions
   like "is M-204 ready to run the next work order?"
 
 They never talk to each other directly. But the maintenance advisor needs to tell the MES

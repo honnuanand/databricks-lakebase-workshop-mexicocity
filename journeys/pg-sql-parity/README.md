@@ -5,7 +5,7 @@
 > **Key takeaways**
 >
 > - Window functions (`ROW_NUMBER()`, `LAG()`, `RANK()`) run natively in Postgres, with the same syntax as Oracle or SQL Server. No separate language, no compromise.
-> - Recursive CTEs (WITH RECURSIVE) replace Oracle's CONNECT BY for tree queries, exact same problem, different syntax. A BOM parts-explosion that traverses a tree of parent and child parts is one line per query level, not a procedural loop.
+> - Recursive CTEs (WITH RECURSIVE) replace Oracle's CONNECT BY for tree queries, exact same problem, different syntax. A [bill of materials](../../docs/glossary.md) (BOM) parts-explosion that traverses a tree of parent and child parts is one line per query level, not a procedural loop.
 > - The numbers that matter: a 100-part BOM explodes to 1,200 leaf parts; the recursive CTE does it in under 50 milliseconds, part of a single query.
 >
 > **You'll be able to:** write window functions, recursive CTEs, and MERGE statements to migrate your analytical SQL from Oracle to Postgres, and run them live against a manufacturing bill of materials.
@@ -24,13 +24,13 @@ This journey isn't just a syntax cheat sheet. It's a chance to see that Postgres
 
 ## The wow moment
 
-You load the factory bill of materials, a multi-level tree of parts that make subassemblies that make products. You write a recursive CTE that "explodes" the tree in one query: "give me every part that goes into PRD-GEARBOX-X1, with quantities multiplied down the chain." The query runs and you see not just the direct children, but the full tree: the leaf parts and how many times each one has to be bought to fulfill the product. That explosion is the hardest tree problem; everything else is easier.
+You load the factory [bill of materials](../../docs/glossary.md), a multi-level tree of parts that make subassemblies that make products. You write a recursive CTE that "explodes" the tree in one query: "give me every part that goes into PRD-GEARBOX-X1, with quantities multiplied down the chain." The query runs and you see not just the direct children, but the full tree: the leaf parts and how many times each one has to be bought to fulfill the product. That explosion is the hardest tree problem; everything else is easier.
 
 ## What you'll do
 
 1. Load the factory bill of materials and inspect the data model (parents, children, quantities).
 2. Write a simple window function to rank machines by health, showing the machines above and below in the ranking.
-3. Write a recursive CTE to explode the BOM: start with a product, recursively traverse to children, multiply quantities down the chain.
+3. Write a recursive CTE to explode the [BOM](../../docs/glossary.md): start with a product, recursively traverse to children, multiply quantities down the chain.
 4. Compare the real performance (milliseconds), then see the Oracle idiom map: ROWNUM → LIMIT, NVL → COALESCE, SYSDATE → now().
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output and reference numbers are in [`expected.md`](expected.md).

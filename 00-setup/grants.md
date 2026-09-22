@@ -46,4 +46,4 @@ databricks permissions update database-projects "$LB_PROJECT" \
 
 ---
 
-Next: [`your-branch.md`](your-branch.md) — create your personal branch.
+Next: [`your-branch.md`](your-branch.md), create your personal branch.

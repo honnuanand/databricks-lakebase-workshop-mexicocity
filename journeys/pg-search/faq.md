@@ -24,7 +24,7 @@ Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 
 The factory schema was not loaded, or the maintenance logs were not seeded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-factory step.
 
-## FTS query returns no results
+## Full-text search query returns no results
 
 Check that the table has data with actual text:
 
@@ -36,7 +36,7 @@ If it's zero, the logs weren't seeded. Also check the language parameter in `to_
 
 ## pg_trgm is not available
 
-This is rare. `pg_trgm` is a standard Postgres extension. If it's not available:
+This is rare. [pg_trgm](../../docs/glossary.md) is a standard Postgres extension. If it's not available:
 
 ```bash
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -44,7 +44,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 If this fails, contact your Databricks team. It's built into Postgres and should be available.
 
-## My FTS query is slow even with a GIN index
+## My full-text search query is slow even with a GIN index
 
 Large FTS queries can be slow if the query term matches many documents. Check the query plan:
 
@@ -60,14 +60,14 @@ Look for "Index Scan" in the plan. If you see "Seq Scan", either:
 2. The index doesn't exist. Create it: `CREATE INDEX idx_maintenance_log_fts ON factory.maintenance_log USING gin(to_tsvector('english', writeup));`
 3. The query is so selective that a sequential scan is faster.
 
-## What's the difference between to_tsquery and plainto_tsquery?
+## What's the difference between `to_tsquery` and `plainto_tsquery`?
 
 - **`plainto_tsquery`**: simpler; treats input as plain text and adds AND operators. `plainto_tsquery('english', 'hydraulic bearing')` becomes `'hydraulic' & 'bearing'`.
 - **`to_tsquery`**: more powerful; lets you write operators directly. `to_tsquery('english', 'hydraulic | bearing')` searches for either word (OR logic).
 
 Use `plainto_tsquery` for simple queries (just words), `to_tsquery` when you need boolean logic.
 
-## How do I combine FTS with other filters?
+## How do I combine full-text search with other filters?
 
 Use AND in the WHERE clause:
 

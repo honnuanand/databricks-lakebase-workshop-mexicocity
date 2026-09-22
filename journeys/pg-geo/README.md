@@ -4,8 +4,8 @@
 >
 > **Key takeaways**
 >
-> - PostGIS turns Postgres into a full GIS database. `geography(POINT)` types store lat/lon as real geographic coordinates, not just numbers.
-> - Spatial operators like `ST_DWithin` ("within N kilometers") and `<->` (nearest neighbor) run natively in SQL, indexed by GiST.
+> - [PostGIS](../../docs/glossary.md) turns Postgres into a full GIS database. `geography(POINT)` types store lat/lon as real geographic coordinates, not just numbers.
+> - Spatial operators like `ST_DWithin` ("within N kilometers") and `<->` (nearest neighbor) run natively in SQL, indexed by [GiST](../../docs/glossary.md).
 > - The numbers that matter: finding all warehouses within 100 km of a plant or the nearest supplier among 50 candidates takes under 10 milliseconds with a GiST index.
 >
 > **You'll be able to:** plot plants, machines, warehouses, and suppliers on a map; answer "which warehouses are within N km of plant P?" and "what's the nearest supplier?" in a single SQL query.
@@ -22,14 +22,14 @@ Geography is real in supply chain, field service, logistics, and any operation s
 
 ## The wow moment
 
-You create a geography column on your warehouse table, store the coordinates, and index it with GiST. Then you write "find the 3 nearest warehouses to plant P", and the query takes the same time whether there are 10 warehouses or 10,000. The operator `<->` finds the nearest neighbor in a single pass. Compare that to the app that fetches all rows, calculates distances in a loop, and sorts, PostGIS wins every time.
+You create a geography column on your warehouse table, store the coordinates, and index it with [GiST](../../docs/glossary.md). Then you write "find the 3 nearest warehouses to plant P", and the query takes the same time whether there are 10 warehouses or 10,000. The operator `<->` finds the nearest neighbor in a single pass. Compare that to the app that fetches all rows, calculates distances in a loop, and sorts, PostGIS wins every time.
 
 ## What you'll do
 
 1. Enable PostGIS and inspect the geography columns (plant, warehouse, supplier locations).
 2. Query "warehouses within 100 km of plant P" using `ST_DWithin`.
 3. Query "nearest 3 suppliers to plant P" using the `<->` distance operator.
-4. Create a GiST index on geography columns and measure the performance difference.
+4. Create a [GiST](../../docs/glossary.md) index on geography columns and measure the performance difference.
 5. Verify the index is being used with EXPLAIN.
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output and reference numbers are in [`expected.md`](expected.md).
