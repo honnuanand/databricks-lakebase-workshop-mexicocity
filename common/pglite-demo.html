@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PGlite — Postgres in WASM</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            color: #333;
+            background: #fafafa;
+        }
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .status {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .status.loading {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .status.ready {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .panel {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .panel h2 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #1a1a1a;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #output {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .examples {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .examples h3 {
+            font-size: 14px;
+            margin-top: 0;
+        }
+        .example-button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        .example-button:hover {
+            background: #f0f0f0;
+        }
+        .info {
+            background: #f0f7ff;
+            border-left: 4px solid #007bff;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>PGlite — Postgres in Your Browser</h1>
+    <p class="subtitle">Full PostgreSQL (18.3) compiled to WebAssembly. Run real SQL, no server.</p>
+
+    <div class="info">
+        <strong>What you're seeing:</strong> A full Postgres engine (PGlite from the ElectricSQL team,
+        now at Databricks) running entirely in your browser via WebAssembly. Every SQL statement executes
+        client-side in milliseconds. Same SQL as Lakebase — CREATE, INSERT, SELECT, JSON, window functions.
+        This is the same engine, at the edge.
+    </div>
+
+    <div class="status" id="status">Loading PGlite (WASM Postgres)...</div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>SQL Editor</h2>
+            <textarea id="sqlInput" placeholder="Type or paste SQL here...
+
+Example:
+CREATE TABLE machines (
+  id TEXT PRIMARY KEY,
+  status TEXT,
+  health NUMERIC
+);
+
+INSERT INTO machines VALUES
+  ('M-204', 'healthy', 91.5),
+  ('M-205', 'derated', 72.0);
+
+SELECT * FROM machines;" spellcheck="false"></textarea>
+            <div class="controls">
+                <button id="runBtn" onclick="runSQL()" disabled>Run SQL</button>
+                <button id="clearBtn" onclick="clearOutput()">Clear Output</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Output</h2>
+            <div id="output">Waiting for PGlite to load...</div>
+        </div>
+    </div>
+
+    <div class="examples">
+        <h3>Quick Examples — Click to load:</h3>
+        <button class="example-button" onclick="loadExample('create')">
+            CREATE TABLE + INSERT
+        </button>
+        <button class="example-button" onclick="loadExample('json')">
+            JSON aggregation (JSONB_AGG)
+        </button>
+        <button class="example-button" onclick="loadExample('window')">
+            Window functions (ROW_NUMBER)
+        </button>
+        <button class="example-button" onclick="loadExample('onconflict')">
+            ON CONFLICT (upsert)
+        </button>
+        <button class="example-button" onclick="loadExample('version')">
+            SELECT version()
+        </button>
+    </div>
+
+    <script type="module">
+        import { PGlite } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.6/dist/index.js';
+
+        let db = null;
+
+        // Initialize PGlite
+        async function initPGlite() {
+            try {
+                db = new PGlite();
+                await db.waitReady;
+                setStatus('ready', '✓ PGlite ready. Type SQL and run.');
+                document.getElementById('runBtn').disabled = false;
+
+                // Show version
+                const result = await db.query("SELECT version()");
+                const version = result.rows[0]?.[0] || 'unknown';
+                addOutput(`PostgreSQL: ${version.split(',')[0]}\n`);
+            } catch (err) {
+                setStatus('error', `Failed to load PGlite: ${err.message}`);
+            }
+        }
+
+        window.runSQL = async function() {
+            const sql = document.getElementById('sqlInput').value.trim();
+            if (!sql) return;
+
+            if (!db) {
+                addOutput('Error: PGlite not ready\n');
+                return;
+            }
+
+            addOutput(`> ${sql.split('\n')[0]}...\n`);
+            try {
+                const result = await db.query(sql);
+
+                if (result.rows && result.rows.length > 0) {
+                    // Format as table
+                    const cols = result.fields?.map(f => f.name) || [];
+                    if (cols.length > 0) {
+                        addOutput(cols.join(' | ') + '\n');
+                        addOutput('-'.repeat(cols.length * 15) + '\n');
+                    }
+                    for (const row of result.rows) {
+                        addOutput(row.join(' | ') + '\n');
+                    }
+                } else {
+                    addOutput(`(${result.affectedRows || 0} rows affected)\n`);
+                }
+            } catch (err) {
+                addOutput(`Error: ${err.message}\n`);
+            }
+            addOutput('\n');
+        };
+
+        window.clearOutput = function() {
+            document.getElementById('output').textContent = '';
+        };
+
+        window.loadExample = function(example) {
+            const examples = {
+                create: `CREATE TABLE machines (
+  id TEXT PRIMARY KEY,
+  status TEXT,
+  health_pct NUMERIC(5,2)
+);
+
+INSERT INTO machines VALUES
+  ('M-204', 'healthy', 91.5),
+  ('M-205', 'derated', 72.0),
+  ('M-206', 'operational', 88.2);
+
+SELECT * FROM machines;`,
+                json: `CREATE TABLE specs (
+  machine_id TEXT PRIMARY KEY,
+  config JSONB
+);
+
+INSERT INTO specs VALUES
+  ('M-100', '{"type": "CNC", "model": "X5"}'),
+  ('M-101', '{"type": "Press", "model": "P2"}');
+
+SELECT
+  machine_id,
+  config->>'type' as type,
+  config->>'model' as model
+FROM specs;`,
+                window: `CREATE TABLE events (
+  id SERIAL PRIMARY KEY,
+  machine_id TEXT,
+  value INT
+);
+
+INSERT INTO events(machine_id, value) VALUES
+  ('M-1', 100), ('M-1', 95), ('M-2', 80), ('M-2', 85);
+
+SELECT
+  machine_id,
+  value,
+  ROW_NUMBER() OVER (PARTITION BY machine_id ORDER BY value DESC) as rank
+FROM events
+ORDER BY machine_id, rank;`,
+                onconflict: `CREATE TABLE config (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
+INSERT INTO config VALUES ('timezone', 'UTC')
+ON CONFLICT (key) DO UPDATE SET value = 'PST';
+
+SELECT * FROM config;`,
+                version: `SELECT version() as pg_version;`
+            };
+
+            document.getElementById('sqlInput').value = examples[example] || '';
+        };
+
+        function setStatus(type, message) {
+            const el = document.getElementById('status');
+            el.className = 'status ' + type;
+            el.textContent = message;
+        }
+
+        function addOutput(text) {
+            const el = document.getElementById('output');
+            el.textContent += text;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        // Start initialization
+        initPGlite();
+    </script>
+</body>
+</html>

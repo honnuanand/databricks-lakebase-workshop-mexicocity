@@ -1,4 +1,4 @@
-# Branch the brain — instructions
+# Branch the brain, instructions
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
@@ -19,7 +19,7 @@ to expect is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
-### Step 1 — look at M-204 on your branch
+### Step 1, look at M-204 on your branch
 
 ```bash
 python lakebase.py --sql \
@@ -28,7 +28,7 @@ python lakebase.py --sql \
 
 M-204 is `healthy`. This is the state you're about to fork.
 
-### Step 2 — fork your branch into an experiment branch
+### Step 2, fork your branch into an experiment branch
 
 The experiment branch is a zero-copy fork of *your* branch. This uses the same
 `w.postgres.create_branch` call you met in setup, with a source of your branch instead of
@@ -41,7 +41,7 @@ python branch_the_brain.py --step fork
 Watch the timing: the API returns in under a second, the endpoint is `ACTIVE` in about two
 seconds. A full, independent copy of your factory, ready to query, in seconds.
 
-### Step 3 — diverge on the fork
+### Step 3, diverge on the fork
 
 Set M-204 to `derated` on the experiment branch only:
 
@@ -57,7 +57,7 @@ UPDATE factory.machine SET status='derated', health_pct=70.0 WHERE machine_id='M
 
 Then reads M-204 back from the fork: it's now `derated`.
 
-### Step 4 — prove production (your branch) is untouched
+### Step 4, prove production (your branch) is untouched
 
 ```bash
 python lakebase.py --sql \
@@ -67,7 +67,7 @@ python lakebase.py --sql \
 Still `healthy`, `91.0`. Your branch never changed. The divergence lives only on the fork. Two
 live databases, forked moments ago, holding different facts about the same machine.
 
-### Step 5 — discard the fork
+### Step 5, discard the fork
 
 ```bash
 python branch_the_brain.py --step discard

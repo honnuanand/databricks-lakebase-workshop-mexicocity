@@ -1,4 +1,4 @@
-# Branch the brain — FAQ
+# Branch the brain, FAQ
 
 ## It failed with a "refresh token" or authentication error
 
