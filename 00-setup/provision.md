@@ -4,35 +4,55 @@ You need a Lakebase **project** to work in. A project is the container that hold
 (including `production`) and their compute endpoints. See
 [`docs/lakebase-sdk.md`](../docs/lakebase-sdk.md) for the object model.
 
-There are two ways to do this step. Your instructor will tell you which applies.
+Lakebase provisioning is just an API, so you can reach it three ways: the **UI**, the
+**Databricks CLI**, or the **workshop script** (which calls the SDK). Pick whichever fits how
+you work. They all create the same thing. **However you provision, you verify the result in one
+single way** (the last section), so success looks identical no matter which door you came in.
 
-## Path A: use a project your instructor already made
+> **Note**
+> In a group workshop the instructor usually provisions **one shared project** and everyone
+> branches off it. If you were given a project id, you can skip provisioning: set
+> `export LB_PROJECT=<id-you-were-given>` and go straight to **Verify** below.
 
-In a group workshop, the instructor usually provisions **one shared project** and everyone
-branches off it (that's the whole point of per-user branches). If so, they'll give you a project
-id. Just set it:
+## Option 1 — the UI
+
+1. In your Databricks workspace, open **Compute** and find the **Lakebase / Postgres** section
+   (labeled Lakebase Postgres, Beta).
+2. Click **Create**, choose a **project** (Autoscaling), name it `factory`, and pick Postgres 17.
+3. Create it. The project appears with a `production` branch and a primary compute endpoint, and
+   moves to a running state in a few seconds.
+
+Good when you want to *see* the object model on screen. When it's running, set the id:
 
 ```bash
-export LB_PROJECT=<project-id-you-were-given>
+export LB_PROJECT=factory
 ```
 
-Confirm it's reachable:
+## Option 2 — the Databricks CLI
+
+The CLI's `postgres` command group manages Autoscaling projects, branches, and endpoints
+directly:
 
 ```bash
-python ../common/scripts/provision.py --project "$LB_PROJECT" --profile "$LB_PROFILE" --status
+databricks postgres create-project \
+  --profile "$LB_PROFILE" \
+  --json '{"project_id": "factory", "spec": {"display_name": "factory", "pg_version": 17}}'
 ```
 
-```text
-project factory production endpoint ACTIVE in ~0.0s
-  host: <something>.database.cloud.databricks.com
+Then set the id:
+
+```bash
+export LB_PROJECT=factory
 ```
 
-Then skip to [`grants.md`](grants.md).
+> **Tip**
+> Explore the surface with `databricks postgres --help`. The same verbs the workshop scripts call
+> (`create-project`, `create-branch`, `list-endpoints`, `generate-database-credential`) are all
+> here, which is a nice way to see that the SDK and CLI are the same API.
 
-## Path B: provision your own project
+## Option 3 — the workshop script
 
-Running solo, or want your own? Create one. The project comes with a `production` branch and a
-primary endpoint automatically.
+The script calls the SDK and polls until the project is ACTIVE, printing honest timings:
 
 ```bash
 python ../common/scripts/provision.py --project factory --profile "$LB_PROFILE"
@@ -46,23 +66,38 @@ project factory production endpoint ACTIVE in ~3.7s
 Now run:  export LB_PROJECT=factory
 ```
 
-Then set it and add it to your env file:
-
 ```bash
 export LB_PROJECT=factory
 ```
 
 > **From the field**
-> The `create_project` API call returns in well under a second. The project then reaches a
-> queryable ACTIVE state in about 3 to 4 seconds in our measurements. That is the honest
-> "provision in seconds" number: fast, real, and not instantaneous. Branch creation (next steps)
-> is faster still, because a branch adds no new storage.
+> The `create_project` API call returns in well under a second. The project reaches a queryable
+> ACTIVE state in about 3 to 4 seconds in our measurements. That is the honest "provision in
+> seconds" number: fast, real, and not instantaneous. Branch creation (next step) is faster
+> still, because a branch adds no new storage.
+
+## Verify (one way, whichever option you used)
+
+No matter how you provisioned, confirm the project the same way. This is the single source of
+truth that the project exists and its production endpoint is ACTIVE and queryable:
+
+```bash
+python ../common/scripts/provision.py --project "$LB_PROJECT" --profile "$LB_PROFILE" --status
+```
+
+```text
+project factory production endpoint ACTIVE in ~0.0s
+  host: <something>.database.cloud.databricks.com
+```
+
+An `ACTIVE` state with a host means the project is ready, regardless of whether you clicked, ran
+the CLI, or ran the script. If instead you see `PROVISIONING`, `NO_ENDPOINT`, or a permission
+error, the project isn't ready yet, wait a few seconds and re-run, or see the note below.
 
 > **Note**
-> Creating a project may require permission on the Lakebase instance. If `create_project` fails
-> with a permission error, use Path A with a project your instructor provisioned, or ask an admin
-> to grant you access. The [`faq`](../journeys/branch-the-brain/faq.md) files cover permission
-> errors per journey.
+> Creating a project may require permission on the Lakebase instance. If provisioning fails with
+> a permission error, use a project your instructor provisioned (set `LB_PROJECT` and verify
+> above), or ask an admin for access.
 
 ---
 
