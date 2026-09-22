@@ -2,12 +2,12 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first.
 
-Everything here is a single script: [`../../common/scripts/pg_index.py`](../../common/scripts/pg_index.py).
+Everything here is a single script: [`./pg_index.py`](./pg_index.py).
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-index
 python pg_index.py
 ```
 

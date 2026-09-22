@@ -2,12 +2,12 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/pg_sql_parity.py`](../../common/scripts/pg_sql_parity.py). You can run it end to end, or follow the steps by hand to see each piece.
+Everything here is a single script you can read: [`./pg_sql_parity.py`](./pg_sql_parity.py). You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-sql-parity
 python pg_sql_parity.py
 ```
 
@@ -20,7 +20,7 @@ This walks through the entire journey and prints results. Read on for what each 
 First, look at the schema and a sample of the bill of materials:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT parent_id, child_part, qty FROM factory.bom_edge LIMIT 5"
 ```
 

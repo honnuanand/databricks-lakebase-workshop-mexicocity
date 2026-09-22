@@ -4,13 +4,13 @@ Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-s
 
 This journey combines Postgres operations with Databricks workspace integration. You'll need a Unity Catalog and a SQL warehouse to run the full end-to-end. If you don't, the script will walk you through the forward path (write → read via foreign table) and show you where the reverse path (analytics → write back) happens.
 
-Everything here is a single script you can read: [`../../common/scripts/write_to_analytics.py`](../../common/scripts/write_to_analytics.py).
+Everything here is a single script you can read: [`./write_to_analytics.py`](./write_to_analytics.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/write-to-analytics
 python write_to_analytics.py
 ```
 
@@ -23,7 +23,7 @@ The script checks your workspace setup, walks the forward path (write through Po
 Confirm sensor_reading has a few baseline readings on Postgres:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT machine_id, ts, temp_c, vibration_mm_s FROM factory.sensor_reading WHERE machine_id='M-204' ORDER BY ts DESC LIMIT 3"
 ```
 
@@ -93,7 +93,7 @@ The script updates the sensor_reading row with a computed failure_risk field (or
 Query Postgres to confirm the risk score is now there:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT machine_id, ts, temp_c, vibration_mm_s FROM factory.sensor_reading WHERE machine_id='M-204' ORDER BY ts DESC LIMIT 1"
 ```
 

@@ -16,6 +16,10 @@ import argparse
 import json
 import os
 import subprocess
+import os, sys
+# The shared Lakebase helper lives in common/scripts/. Make it importable
+# from this journey folder no matter where you run the script from.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import client, branch_endpoint, connect, _env
 
 try:

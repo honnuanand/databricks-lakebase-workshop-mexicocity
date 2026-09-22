@@ -2,12 +2,12 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/pg_mvcc.py`](../../common/scripts/pg_mvcc.py). You can run it end to end, or follow the steps by hand to see each piece.
+Everything here is a single script you can read: [`./pg_mvcc.py`](./pg_mvcc.py). You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-mvcc
 python pg_mvcc.py
 ```
 
@@ -20,7 +20,7 @@ This walks through the entire journey and prints results. Read on for what each 
 Query a machine row and see its internal system columns:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT machine_id, health_pct, xmin, xmax, ctid FROM factory.machine WHERE machine_id='M-204'"
 ```
 
@@ -86,7 +86,7 @@ The space is reclaimed and the free space map is updated so future INSERTs can r
 The [write-ahead log](../../docs/glossary.md) (WAL) records every transaction. Check the current WAL position:
 
 ```bash
-python lakebase.py --sql "SELECT pg_current_wal_lsn();"
+python ../../common/scripts/lakebase.py --sql "SELECT pg_current_wal_lsn();"
 ```
 
 This shows the byte position in the WAL. Each transaction (UPDATE, DELETE, etc.) advances it. This is the machinery behind [point-in-time recovery](../../docs/glossary.md) (PITR): Postgres can recover any state by replaying the WAL up to a specific [log sequence number](../../docs/glossary.md) (LSN).

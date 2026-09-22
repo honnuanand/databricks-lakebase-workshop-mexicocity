@@ -4,13 +4,13 @@ Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-s
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
 loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/learning_loop.py`](../../common/scripts/learning_loop.py).
+Everything here is a single script you can read: [`./learning_loop.py`](./learning_loop.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/learning-loop
 python learning_loop.py
 ```
 
@@ -26,7 +26,7 @@ This is where free-text maintenance write-ups live, and where the AI extraction 
 structure:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT column_name, data_type FROM information_schema.columns \
    WHERE table_name='maintenance_log' ORDER BY ordinal_position"
 ```
@@ -54,7 +54,7 @@ The script inserts 5 write-ups:
 Read them back:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT log_id, machine_id, writeup FROM factory.maintenance_log ORDER BY log_id"
 ```
 
@@ -90,7 +90,7 @@ Extracted 5 maintenance write-ups:
 Query the maintenance_log to see which extracted cleanly and which need human review:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT log_id, writeup, system, defect, ROUND(confidence::numeric, 2), status \
    FROM factory.maintenance_log ORDER BY log_id"
 ```
@@ -114,7 +114,7 @@ The script simulates an engineer correcting entry #3 ("Cabin ka-band intermitten
 Check the update:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT log_id, system, defect, status FROM factory.maintenance_log WHERE log_id=3"
 ```
 

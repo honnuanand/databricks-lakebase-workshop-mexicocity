@@ -3,14 +3,14 @@
 If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE` and
 `LB_PROJECT` set to get OAuth tokens.
 
-Everything here is in a single script: [`../../common/scripts/data_api.py`](../../common/scripts/data_api.py).
+Everything here is in a single script: [`./data_api.py`](./data_api.py).
 This script checks if the Data API is enabled on your instance and either runs full tests or
 shows you how to enable it.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/data-api
 python data_api.py
 ```
 

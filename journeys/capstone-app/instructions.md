@@ -21,7 +21,7 @@ Your app (once deployed) runs as a Service Principal on Databricks Apps. That SP
 to Lakebase. Run the grant script:
 
 ```bash
-cd common/scripts
+cd journeys/capstone-app
 python capstone_grant_sp.py --app-name capstone-dashboard \
   --lakebase-profile <LB_PROFILE> \
   --lakebase-project <LB_PROJECT> \
@@ -46,7 +46,7 @@ automatically when you deploy. Re-run this script after deploying, with the app'
 Navigate to the app:
 
 ```bash
-cd common/capstone-app
+cd journeys/capstone-app
 ```
 
 Install dependencies:

@@ -4,10 +4,40 @@ How to build a journey folder so it matches the rest of the workshop. Read this,
 finished exemplar at [`../journeys/branch-the-brain/`](../journeys/branch-the-brain/) and copy
 its shape exactly.
 
+## Where things live (colocation by ownership)
+
+Everything specific to a journey lives IN that journey's folder: its four docs, its notebooks,
+and its script. `common/` holds ONLY what is shared across journeys (`lakebase.py`, `provision.py`,
+`branch.py`, `load_factory.py`, `factory_schema.sql`, `factory_seed.sql`). A journey never reaches
+into `common/` for its own artifact; it reaches in only for the shared helper.
+
+A journey script imports the shared helper with a path bootstrap at the top:
+
+```python
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
+from lakebase import connect, run_sql
+```
+
+## The primary artifact is a STEP-BY-STEP NOTEBOOK, not a run-it-all script
+
+A workshop is for learning, so the learner runs ONE step at a time and sees each result before
+moving on. The main artifact per journey is a teaching notebook, in BOTH formats, in the journey
+folder:
+
+- `<slug>.ipynb` — a Jupyter notebook. Pattern per step: a markdown cell ("Step N: what we do and
+  why"), then a code cell doing JUST that one operation, then the learner runs it and reads the
+  output before the next step. Narrate; don't dump.
+- `<slug>_databricks.py` — the same flow as a Databricks notebook (`# Databricks notebook source`,
+  cells separated by `# COMMAND ----------`, markdown via `# MAGIC %md`), importable into a
+  workspace.
+
+The all-in-one `<slug>.py` script stays as an OPTION ("just run the whole thing"), not the norm.
+Its `--step` flags back the notebook's individual steps.
+
 ## Deliverables per journey
 
-Each `journeys/<slug>/` folder needs four files, plus at least one runnable artifact in
-`common/scripts/` (a `<slug_with_underscores>.py`) or `common/notebooks/`:
+Each `journeys/<slug>/` folder needs four docs + the step-by-step notebooks + the optional script:
 
 1. **README.md**, book-style. Structure:
    - `# <Title>`

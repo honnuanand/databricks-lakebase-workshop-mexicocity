@@ -31,6 +31,10 @@ from typing import Optional
 import psycopg
 from databricks.sdk import WorkspaceClient
 
+import os, sys
+# The shared Lakebase helper lives in common/scripts/. Make it importable
+# from this journey folder no matter where you run the script from.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import client as make_ws_client, _env, branch_endpoint
 
 

@@ -4,6 +4,10 @@
 Query xmin/xmax/ctid, watch versioning, observe dead tuples, run VACUUM.
 """
 import argparse
+import os, sys
+# The shared Lakebase helper lives in common/scripts/. Make it importable
+# from this journey folder no matter where you run the script from.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
 def run_update():

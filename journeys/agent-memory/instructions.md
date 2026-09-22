@@ -4,13 +4,13 @@ Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-s
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
 loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/agent_memory.py`](../../common/scripts/agent_memory.py).
+Everything here is a single script you can read: [`./agent_memory.py`](./agent_memory.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/agent-memory
 python agent_memory.py
 ```
 
@@ -25,7 +25,7 @@ The factory schema includes the `agent_memory` table (see `common/scripts/factor
 Check it exists and is empty to start:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT count(*) FROM factory.agent_memory"
 ```
 
@@ -52,7 +52,7 @@ VALUES ('default', 'shift-001', 'maintenance_advisor', 'assistant',
 Read it back:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT agent_id, role, content FROM factory.agent_memory ORDER BY created_at"
 ```
 
@@ -82,7 +82,7 @@ Maintenance Advisor response:
 Check the memory table:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT agent_id, role, content FROM factory.agent_memory ORDER BY created_at"
 ```
 
@@ -117,7 +117,7 @@ MES Assistant response:
 Now read the whole memory table as SQL:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT agent_id, role, content FROM factory.agent_memory ORDER BY created_at"
 ```
 

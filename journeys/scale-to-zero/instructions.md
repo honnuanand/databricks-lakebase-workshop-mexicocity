@@ -2,7 +2,7 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
-Everything here is a single script you can read: [`../../common/scripts/scale_to_zero.py`](../../common/scripts/scale_to_zero.py).
+Everything here is a single script you can read: [`./scale_to_zero.py`](./scale_to_zero.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 > **Warning**
@@ -11,7 +11,7 @@ You can run it end to end, or follow the steps by hand to see each piece.
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/scale-to-zero
 python scale_to_zero.py
 ```
 
@@ -96,7 +96,7 @@ The script waits for the state to transition to `ACTIVE` and prints:
 ### Step 5, verify data is untouched
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT count(*) FROM factory.machine"
 ```
 

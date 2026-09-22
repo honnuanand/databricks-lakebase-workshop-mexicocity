@@ -2,12 +2,12 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/pg_geo.py`](../../common/scripts/pg_geo.py). You can run it end to end, or follow the steps by hand to see each piece.
+Everything here is a single script you can read: [`./pg_geo.py`](./pg_geo.py). You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-geo
 python pg_geo.py
 ```
 
@@ -20,13 +20,13 @@ This walks through the entire journey and prints results. Read on for what each 
 [PostGIS](../../docs/glossary.md) is a Postgres extension. Enable it:
 
 ```bash
-python lakebase.py --sql "CREATE EXTENSION IF NOT EXISTS postgis CASCADE"
+python ../../common/scripts/lakebase.py --sql "CREATE EXTENSION IF NOT EXISTS postgis CASCADE"
 ```
 
 This installs the PostGIS types and functions. Then add geography columns to plants, warehouses, and suppliers (if not already present):
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "ALTER TABLE factory.plant ADD COLUMN geo GEOGRAPHY(POINT) DEFAULT NULL"
 ```
 

@@ -4,13 +4,13 @@ Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-s
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
 loaded.
 
-Most of this journey is SQL. The script [`../../common/scripts/pg_vector.py`](../../common/scripts/pg_vector.py)
+Most of this journey is SQL. The script [`./pg_vector.py`](./pg_vector.py)
 orchestrates the steps; you can also run them by hand in a SQL client.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-vector
 python pg_vector.py
 ```
 
@@ -24,7 +24,7 @@ Read on for what each step does; the exact output to expect is in [`expected.md`
 The factory schema has a `part` table with specs in a JSONB column. Check it:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT part_id, name, part_type FROM factory.part LIMIT 5"
 ```
 
@@ -35,13 +35,13 @@ You should see parts like `PT-BEARING-6204`, `PT-GEAR-220T`, etc.
 pgvector is a Postgres extension. Enable it in your branch:
 
 ```bash
-python lakebase.py --sql "CREATE EXTENSION IF NOT EXISTS vector"
+python ../../common/scripts/lakebase.py --sql "CREATE EXTENSION IF NOT EXISTS vector"
 ```
 
 This is a one-time setup per branch. Verify it's installed:
 
 ```bash
-python lakebase.py --sql "SELECT extname FROM pg_extension WHERE extname='vector'"
+python ../../common/scripts/lakebase.py --sql "SELECT extname FROM pg_extension WHERE extname='vector'"
 ```
 
 You should see one row: `vector`.
@@ -51,14 +51,14 @@ You should see one row: `vector`.
 Add a vector column to store 768-dimensional embeddings (matching typical embedding models):
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "ALTER TABLE factory.part ADD COLUMN IF NOT EXISTS embedding vector(768)"
 ```
 
 Check the column was added:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT column_name FROM information_schema.columns \
    WHERE table_name='part' AND column_name='embedding'"
 ```
@@ -91,7 +91,7 @@ Embedding 12 parts:
 Query to confirm:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT part_id, name, (embedding IS NOT NULL) as has_embedding FROM factory.part"
 ```
 
@@ -151,7 +151,7 @@ The `vector_cosine_ops` index family uses cosine similarity (the `<=>` operator)
 Check the index exists:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT indexname FROM pg_indexes WHERE tablename='part' AND indexname LIKE '%embedding%'"
 ```
 

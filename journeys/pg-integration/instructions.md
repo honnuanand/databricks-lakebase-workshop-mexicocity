@@ -2,14 +2,14 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
-This journey is all about showing that Postgres clients work unmodified. You'll run standard information_schema queries that any BI tool, ORM, or driver would run. Everything here is a single script you can read: [`../../common/scripts/pg_integration.py`](../../common/scripts/pg_integration.py).
+This journey is all about showing that Postgres clients work unmodified. You'll run standard information_schema queries that any BI tool, ORM, or driver would run. Everything here is a single script you can read: [`./pg_integration.py`](./pg_integration.py).
 
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-integration
 python pg_integration.py
 ```
 
@@ -22,7 +22,7 @@ The script discovers your factory schema using information_schema, builds a sche
 This is the query every BI tool and ORM runs to discover what's in your database:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT table_name FROM information_schema.tables WHERE table_schema='factory' ORDER BY table_name"
 ```
 
@@ -33,7 +33,7 @@ You'll see all the factory tables: bom_edge, inventory, machine, maintenance_log
 For each table, discover the columns and types:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema='factory' ORDER BY table_name, ordinal_position"
 ```
 

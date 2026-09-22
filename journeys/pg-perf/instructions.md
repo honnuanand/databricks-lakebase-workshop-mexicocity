@@ -3,13 +3,13 @@
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
-Everything here is a single script you can read: [`../../common/scripts/pg_perf.py`](../../common/scripts/pg_perf.py).
+Everything here is a single script you can read: [`./pg_perf.py`](./pg_perf.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-perf
 python pg_perf.py
 ```
 

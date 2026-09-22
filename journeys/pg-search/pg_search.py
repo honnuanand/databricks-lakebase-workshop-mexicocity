@@ -5,6 +5,10 @@ FTS (full-text search) with ts_rank, fuzzy matching with pg_trgm trigrams,
 and hybrid blending of keyword + semantic signals (with pgvector).
 """
 import argparse
+import os, sys
+# The shared Lakebase helper lives in common/scripts/. Make it importable
+# from this journey folder no matter where you run the script from.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
 def run_fts():

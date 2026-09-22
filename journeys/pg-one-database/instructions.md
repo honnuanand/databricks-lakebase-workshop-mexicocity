@@ -2,12 +2,12 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first.
 
-Everything here is a single script: [`../../common/scripts/pg_one_database.py`](../../common/scripts/pg_one_database.py).
+Everything here is a single script: [`./pg_one_database.py`](./pg_one_database.py).
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-one-database
 python pg_one_database.py
 ```
 

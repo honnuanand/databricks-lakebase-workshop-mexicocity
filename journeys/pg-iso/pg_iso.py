@@ -16,6 +16,10 @@ true row-level locking and blocking.
 from __future__ import annotations
 
 import time
+import os, sys
+# The shared Lakebase helper lives in common/scripts/. Make it importable
+# from this journey folder no matter where you run the script from.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, _env
 
 DEMO_TABLE = "machine_isolation_demo"

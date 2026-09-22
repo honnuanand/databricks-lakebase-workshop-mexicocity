@@ -3,12 +3,12 @@
 Run this on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first.
 
 This script opens **two real connections** to your branch to demonstrate row-level locking:
-[`../../common/scripts/pg_iso.py`](../../common/scripts/pg_iso.py).
+[`./pg_iso.py`](./pg_iso.py).
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-iso
 python pg_iso.py
 ```
 
@@ -64,7 +64,7 @@ Both updates landed; neither was lost.
 If you want to see the lock visually, in a third terminal query `pg_stat_activity`:
 
 ```bash
-python lakebase.py --sql "SELECT pid, usename, state, wait_event_type, wait_event FROM pg_stat_activity WHERE wait_event_type = 'Lock'"
+python ../../common/scripts/lakebase.py --sql "SELECT pid, usename, state, wait_event_type, wait_event FROM pg_stat_activity WHERE wait_event_type = 'Lock'"
 ```
 
 You'll see Session B's PID waiting on a `Lock` event while Session A holds its transaction.

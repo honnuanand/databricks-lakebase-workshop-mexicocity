@@ -4,13 +4,13 @@ Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-s
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
 loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/agentic_work.py`](../../common/scripts/agentic_work.py).
+Everything here is a single script you can read: [`./agentic_work.py`](./agentic_work.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/agentic-work
 python agentic_work.py
 ```
 
@@ -24,10 +24,10 @@ the exact output to expect is in [`expected.md`](expected.md).
 Before the agent acts, see what machines are available and what work orders are pending:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id='M-204'"
 
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT wo_id, product_id, qty, status FROM factory.work_order WHERE wo_id='WO-1001'"
 ```
 
@@ -67,7 +67,7 @@ Memory after: assigned WO-1001 to M-204
 Query the operation table to see the assignment:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT op_id, wo_id, machine_id, status FROM factory.operation WHERE wo_id='WO-1001'"
 ```
 
@@ -101,7 +101,7 @@ The agent's tools read and write the same tables the warehouse operation does. Q
 operation table one more time to confirm:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT wo_id, machine_id, status FROM factory.operation WHERE wo_id='WO-1001'"
 ```
 

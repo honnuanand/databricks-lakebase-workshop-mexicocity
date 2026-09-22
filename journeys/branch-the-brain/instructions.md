@@ -4,13 +4,13 @@ Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-s
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
 loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/branch_the_brain.py`](../../common/scripts/branch_the_brain.py).
+Everything here is a single script you can read: [`./branch_the_brain.py`](./branch_the_brain.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/branch-the-brain
 python branch_the_brain.py
 ```
 
@@ -22,7 +22,7 @@ to expect is in [`expected.md`](expected.md).
 ### Step 1, look at M-204 on your branch
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id='M-204'"
 ```
 
@@ -60,7 +60,7 @@ Then reads M-204 back from the fork: it's now `derated`.
 ### Step 4, prove production (your branch) is untouched
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id='M-204'"
 ```
 

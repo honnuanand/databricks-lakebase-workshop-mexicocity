@@ -4,13 +4,13 @@ Build on the graph from the previous journey, or run this script to rebuild it. 
 done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`,
 `LB_BRANCH`, and `LB_SCHEMA` set.
 
-Everything here is in a single script: [`../../common/scripts/kg_sparql.py`](../../common/scripts/kg_sparql.py).
+Everything here is in a single script: [`./kg_sparql.py`](./kg_sparql.py).
 You can run it end to end, or follow the steps by hand.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/kg-sparql
 python kg_sparql.py
 ```
 

@@ -2,13 +2,13 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/break_and_rewind.py`](../../common/scripts/break_and_rewind.py).
+Everything here is a single script you can read: [`./break_and_rewind.py`](./break_and_rewind.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/break-and-rewind
 python break_and_rewind.py
 ```
 
@@ -21,7 +21,7 @@ This walks the whole story, captures the LSN before the delete, runs the delete,
 First, confirm a few work orders exist on your branch:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT wo_id, product_id, qty, status FROM factory.work_order"
 ```
 

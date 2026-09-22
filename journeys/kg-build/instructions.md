@@ -4,7 +4,7 @@ Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-s
 first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
 loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/kg_build.py`](../../common/scripts/kg_build.py).
+Everything here is a single script you can read: [`./kg_build.py`](./kg_build.py).
 You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
@@ -18,7 +18,7 @@ pip install rdflib
 Then run the full script:
 
 ```bash
-cd common/scripts
+cd journeys/kg-build
 python kg_build.py
 ```
 

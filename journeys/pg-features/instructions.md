@@ -2,12 +2,12 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first.
 
-Everything here is a single script: [`../../common/scripts/pg_features.py`](../../common/scripts/pg_features.py).
+Everything here is a single script: [`./pg_features.py`](./pg_features.py).
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-features
 python pg_features.py
 ```
 

@@ -31,6 +31,10 @@ import os
 import time
 from datetime import datetime, timezone
 
+import os, sys
+# The shared Lakebase helper lives in common/scripts/. Make it importable
+# from this journey folder no matter where you run the script from.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql, _env
 
 

@@ -4,12 +4,12 @@ PREVIEW: Logical replication is on the Lakebase roadmap (not GA yet). This journ
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first.
 
-Everything here is a single script: [`../../common/scripts/pg_cdc.py`](../../common/scripts/pg_cdc.py).
+Everything here is a single script: [`./pg_cdc.py`](./pg_cdc.py).
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-cdc
 python pg_cdc.py
 ```
 

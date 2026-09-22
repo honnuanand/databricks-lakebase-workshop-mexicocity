@@ -4,6 +4,10 @@
 Create a 50k-row table, query unindexed, then indexed, and measure the difference.
 """
 import argparse
+import os, sys
+# The shared Lakebase helper lives in common/scripts/. Make it importable
+# from this journey folder no matter where you run the script from.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
 def run_seed():

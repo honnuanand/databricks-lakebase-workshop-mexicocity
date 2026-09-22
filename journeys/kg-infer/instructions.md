@@ -4,13 +4,13 @@ Build on the graph from the previous journeys, or run this script to rebuild it.
 done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`,
 `LB_BRANCH`, and `LB_SCHEMA` set.
 
-Everything here is in a single script: [`../../common/scripts/kg_infer.py`](../../common/scripts/kg_infer.py).
+Everything here is in a single script: [`./kg_infer.py`](./kg_infer.py).
 You can run it end to end, or follow the steps by hand.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/kg-infer
 python kg_infer.py
 ```
 

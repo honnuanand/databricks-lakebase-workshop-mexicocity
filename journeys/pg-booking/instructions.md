@@ -2,12 +2,12 @@
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
 
-Everything here is a single script you can read: [`../../common/scripts/pg_booking.py`](../../common/scripts/pg_booking.py). You can run it end to end, or follow the steps by hand to see each piece.
+Everything here is a single script you can read: [`./pg_booking.py`](./pg_booking.py). You can run it end to end, or follow the steps by hand to see each piece.
 
 ## Run it end to end
 
 ```bash
-cd common/scripts
+cd journeys/pg-booking
 python pg_booking.py
 ```
 
@@ -20,7 +20,7 @@ This walks through the entire journey and prints results. Read on for what each 
 Examine the operation table: wo_id (work order), machine_id, starts_at, ends_at:
 
 ```bash
-python lakebase.py --sql \
+python ../../common/scripts/lakebase.py --sql \
   "SELECT op_id, machine_id, starts_at, ends_at FROM factory.operation LIMIT 5"
 ```
 

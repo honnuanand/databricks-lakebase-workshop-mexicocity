@@ -111,7 +111,7 @@ Once your workspace admin has configured CMK, you can test it without revoking k
 a Lakebase instance using the CMK-enabled workspace:
 
 ```bash
-python lakebase.py --sql "SELECT 1"
+python ../../common/scripts/lakebase.py --sql "SELECT 1"
 ```
 
 Queries run normally. The decryption happens in the background, calling your KMS. You won't see
