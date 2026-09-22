@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factory dashboard, on Lakebase</title>
+<style>
+  :root { --red:#FF3621; --navy:#0B1B2B; --bg:#F7F9FB; --card:#FFFFFF; --line:#D3DCE5; --dim:#4A5B6B; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "DM Sans", "Public Sans", system-ui, sans-serif; background:var(--bg); color:var(--navy); }
+  header { background:var(--navy); color:#fff; padding:16px 24px; }
+  header h1 { margin:0; font-size:18px; font-weight:600; }
+  header .sub { color:#9DB0C2; font-size:13px; margin-top:2px; }
+  .tabs { display:flex; gap:4px; padding:0 24px; background:var(--navy); }
+  .tabs button { background:transparent; color:#9DB0C2; border:0; border-bottom:2px solid transparent;
+                 padding:10px 14px; font-size:14px; cursor:pointer; }
+  .tabs button.active { color:#fff; border-bottom-color:var(--red); }
+  main { padding:24px; max-width:1000px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:600; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; }
+  .healthy { background:#e6f7f4; color:#0A8F86; } .derated { background:#fff4e0; color:#B77A00; }
+  .down, .maintenance { background:#fde8e5; color:#E5321F; }
+  input[type=text] { padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; width:280px; }
+  .muted { color:var(--dim); font-size:13px; }
+  .err { color:var(--red); }
+  code { background:#eef2f6; padding:1px 5px; border-radius:4px; font-family:"DM Mono",monospace; font-size:13px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Factory dashboard</h1>
+    <div class="sub" id="ident">connecting to Lakebase...</div>
+  </header>
+  <div class="tabs">
+    <button data-tab="machines" class="active">Machines</button>
+    <button data-tab="bom">Bill of materials</button>
+    <button data-tab="maint">Maintenance</button>
+  </div>
+  <main id="view"><p class="muted">Loading...</p></main>
+
+<script>
+const view = document.getElementById("view");
+const api = (p) => fetch(p).then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)));
+
+async function showIdent() {
+  try { const h = await api("/api/health");
+    document.getElementById("ident").textContent =
+      `serving ${h.schema} on branch ${h.branch} · as ${h.identity}`;
+  } catch { document.getElementById("ident").textContent = "not connected"; }
+}
+
+const pill = (s) => `<span class="pill ${s}">${s}</span>`;
+
+async function machines() {
+  view.innerHTML = `<p class="muted">Loading machines...</p>`;
+  try {
+    const rows = await api("/api/machines");
+    view.innerHTML = `<div class="card"><table>
+      <tr><th>Machine</th><th>Plant</th><th>Line</th><th>Type</th><th>Status</th><th>Health</th></tr>
+      ${rows.map(m => `<tr><td><code>${m.machine_id}</code></td><td>${m.plant_id}</td>
+        <td>${m.line}</td><td>${m.type}</td><td>${pill(m.status)}</td>
+        <td>${m.health_pct}%</td></tr>`).join("")}
+    </table></div>
+    <p class="muted">Fetched with a direct SQL query on Lakebase (<code>SELECT ... FROM machine</code>).</p>`;
+  } catch (e) { view.innerHTML = `<p class="err">${e.detail || e}</p>`; }
+}
+
+async function bom() {
+  view.innerHTML = `<div class="card"><label class="muted">Product id </label>
+    <input type="text" id="pid" value="PRD-GEARBOX-X1"> <button id="go">Explode</button></div>
+    <div id="bomout"></div>`;
+  const run = async () => {
+    const pid = document.getElementById("pid").value.trim();
+    const out = document.getElementById("bomout");
+    out.innerHTML = `<p class="muted">Exploding ${pid}...</p>`;
+    try {
+      const rows = await api("/api/bom/" + encodeURIComponent(pid));
+      out.innerHTML = rows.length ? `<div class="card"><table>
+        <tr><th>Depth</th><th>Part</th><th>Name</th><th>Qty</th></tr>
+        ${rows.map(r => `<tr><td>${r.depth}</td>
+          <td style="padding-left:${8 + r.depth*16}px"><code>${r.child_part}</code></td>
+          <td>${r.name || ""}</td><td>${r.qty}</td></tr>`).join("")}
+      </table></div><p class="muted">A recursive CTE walked the bill-of-materials tree.</p>`
+      : `<p class="muted">No parts for <code>${pid}</code>.</p>`;
+    } catch (e) { out.innerHTML = `<p class="err">${e.detail || e}</p>`; }
+  };
+  document.getElementById("go").onclick = run; run();
+}
+
+async function maint() {
+  view.innerHTML = `<div class="card"><label class="muted">Search write-ups </label>
+    <input type="text" id="q" placeholder="e.g. hydraulic bearing"> <button id="go">Search</button></div>
+    <div id="mout"></div>`;
+  const run = async () => {
+    const q = document.getElementById("q").value.trim();
+    const out = document.getElementById("mout");
+    out.innerHTML = `<p class="muted">Searching...</p>`;
+    try {
+      const rows = await api("/api/maintenance?q=" + encodeURIComponent(q));
+      out.innerHTML = `<div class="card"><table>
+        <tr><th>Log</th><th>Machine</th><th>Write-up</th></tr>
+        ${rows.map(r => `<tr><td>${r.log_id}</td><td><code>${r.machine_id}</code></td>
+          <td>${r.writeup}</td></tr>`).join("")}
+      </table></div><p class="muted">${q ? "Full-text search" : "Most recent"} over <code>maintenance_log</code>.</p>`;
+    } catch (e) { out.innerHTML = `<p class="err">${e.detail || e}</p>`; }
+  };
+  document.getElementById("go").onclick = run; run();
+}
+
+const tabs = { machines, bom, maint };
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
+  b.classList.add("active"); tabs[b.dataset.tab]();
+});
+showIdent(); machines();
+</script>
+</body>
+</html>

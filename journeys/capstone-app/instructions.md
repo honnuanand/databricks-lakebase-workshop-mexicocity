@@ -1,219 +1,103 @@
-# Capstone: build a manufacturing dashboard, instructions
+# Capstone: run a manufacturing dashboard on Lakebase, instructions
 
 ## How to run this journey
 
-There are a few ways to work through the steps. Pick one:
-
-- **Notebook, step by step (recommended for learning):** open [`capstone_app.ipynb`](capstone_app.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
-- **In a Databricks workspace:** import [`capstone_app_databricks.py`](capstone_app_databricks.py) and run it cell by cell there.
-- **By hand:** follow the numbered steps below, copying each command yourself.
-- **Just see it work:** run `python capstone_grant_sp.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
-
-This journey has several parts. Start at the beginning and work through each step.
+You do not write any application code here. The dashboard app is provided, complete, in the
+[`app/`](app/) folder. Your job is to point it at your Lakebase branch, run it, and deploy it,
+so you see an application read the factory you built. The Lakebase wiring is the lesson, not the
+web framework.
 
 If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`,
 `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
-## Overview
+## What the app is
 
-This is a guided build: you create the app yourself in a working folder (this journey suggests
-`app/` inside this journey folder). By the end you will have:
+A small dashboard with three views, each backed by a query you already met in earlier journeys:
 
-- `frontend/`, React dashboard (machine list, bill-of-materials search, maintenance logs)
-- `backend/`, FastAPI service (queries Lakebase directly and via the Data API)
-- `app.yaml`, Databricks Apps configuration
-- `deploy.sh`, one-command deploy script
+- **Machines**, a direct `SELECT` on the `machine` table.
+- **Bill of materials**, the recursive-CTE parts explosion from [SQL you already know](../pg-sql-parity/).
+- **Maintenance**, full-text search over `maintenance_log`, from [Search, three ways](../pg-search/).
 
-The steps below walk you through scaffolding each piece.
+It is a FastAPI backend ([`app/backend/main.py`](app/backend/main.py)) that serves a single-page
+UI ([`app/backend/static/index.html`](app/backend/static/index.html)). No Node, no build step. The
+only interesting part is how it connects to Lakebase, and that is the same helper pattern every
+journey uses: locally it authenticates with your profile; on Databricks Apps it authenticates as
+the app's Service Principal. The same code, two identities.
 
-## Step 1, set up the app's Service Principal permissions
+## Step 1, run it locally against your branch
 
-Your app (once deployed) runs as a Service Principal on Databricks Apps. That SP needs to connect
-to Lakebase. Run the grant script:
-
-```bash
-cd journeys/capstone-app
-python capstone_grant_sp.py --app-name capstone-dashboard \
-  --lakebase-profile <LB_PROFILE> \
-  --lakebase-project <LB_PROJECT> \
-  --lakebase-schema factory
-```
-
-Replace `<LB_PROFILE>`, `<LB_PROJECT>` with your values from 00-setup. This script:
-
-1. Looks up the app's Service Principal (by app name).
-2. Creates a PostgreSQL role for the SP.
-3. Sets the databricks_auth security label (the key part: it tells Lakebase to auth as the SP).
-4. Grants the SP project CAN_MANAGE permission (so it can list branches).
-5. Creates a role on the production branch.
-
-This is the same pattern as the pitch app's `grant_app_sp.py`, but parameterized.
-
-If the app doesn't exist yet (first time), the script prints a note: the app will be created
-automatically when you deploy. Re-run this script after deploying, with the app's new SP ID.
-
-## Step 2, develop and test locally
-
-Navigate to the app:
+From this journey folder:
 
 ```bash
-cd journeys/capstone-app
+bash app/run_local.sh
 ```
 
-Install dependencies:
+That installs the backend's dependencies (first run only), then starts the app on
+`http://localhost:8000`, serving your branch. Open that URL. You should see the Machines list,
+switch tabs to explode `PRD-GEARBOX-X1`'s bill of materials, and search the maintenance write-ups.
 
-```bash
-cd backend && pip install -r requirements.txt
-cd ../frontend && npm install
-```
+The header shows which branch and identity it is serving, proof it is reading your live Lakebase
+branch, not a mock. Stop it with Ctrl-C when you are done.
 
-Set environment variables for the backend:
+> **Tip**
+> If the page loads but a tab shows an error, check that your branch endpoint is serving:
+> `python ../../common/scripts/lakebase.py --check`. The app reads `LB_PROJECT` / `LB_BRANCH` /
+> `LB_SCHEMA` from your environment via `run_local.sh`.
 
-```bash
-export LB_PROFILE=<your-profile>
-export LB_PROJECT=<project-id>
-export LB_BRANCH=<branch-id>
-export LB_SCHEMA=factory
-```
+## Step 2, grant the app's Service Principal (before deploying)
 
-Start the backend (from `backend/`):
-
-```bash
-python -m uvicorn main:app --reload --port 8000
-```
-
-In another terminal, start the frontend (from `frontend/`):
-
-```bash
-npm start
-```
-
-Open http://localhost:3000 in your browser. You should see the dashboard with:
-
-- **Machines tab:** a list of all machines, fetched via direct SQL
-- **BOM tab:** search for products and see their part trees
-- **Maintenance tab:** view maintenance logs with full-text search
-
-Test each feature locally before deploying.
-
-## Step 3, verify the app connects to Lakebase
-
-In the browser, click a machine to see its details. The backend makes a SQL query to Lakebase and
-returns the data. If the query fails, check:
-
-- Are your environment variables set correctly?
-- Does your branch endpoint respond? Run `python ../../lakebase.py --check`
-- Did the grant script succeed?
-
-## Step 4, prepare for deployment
-
-Update `app.yaml` with your app settings:
-
-```yaml
-name: capstone-dashboard
-host: <workspace-host>  # e.g., my-workspace.cloud.databricks.com
-```
-
-Check that the `LAKEBASE_*` environment variables in `app.yaml` match your setup:
-
-```yaml
-env:
-  LAKEBASE_PROFILE: <your-profile>
-  LAKEBASE_PROJECT: <project-id>
-  LAKEBASE_SCHEMA: factory
-```
-
-## Step 5, deploy to Databricks Apps
-
-From the `capstone-app/` directory:
-
-```bash
-bash deploy.sh
-```
-
-Or manually:
-
-```bash
-cd backend && python deploy_to_databricks.py --app-name capstone-dashboard --skip-secrets
-```
-
-(Use `deploy_to_databricks.py` from the backend; it's the authoritative deploy script per
-`CLAUDE.md`.)
-
-The deploy script:
-
-1. Builds the React frontend (npm run build).
-2. Packages the FastAPI backend with the built frontend as static files.
-3. Pushes to Databricks Apps.
-
-Deployment takes 1-2 minutes. Watch the output for errors.
-
-## Step 6, re-grant the app's SP (if needed)
-
-If this is the first deploy, the app was just created and has a new Service Principal ID. Re-run
-the grant script to update the grants:
+When you deploy, the app runs as a Service Principal, not as you. That Service Principal needs its
+own permission to reach Lakebase. Grant it:
 
 ```bash
 python capstone_grant_sp.py --app-name capstone-dashboard \
-  --lakebase-profile <LB_PROFILE> \
-  --lakebase-project <LB_PROJECT> \
+  --lakebase-profile "$LB_PROFILE" \
+  --lakebase-project "$LB_PROJECT" \
   --lakebase-schema factory
 ```
 
-The script is idempotent; re-running is safe.
+This looks up the app's Service Principal, creates a PostgreSQL role for it, stamps the
+`databricks_auth` security label (the part that makes Lakebase authenticate it as that Service
+Principal), grants project access, and adds a role on the production branch. It is the same
+grant chain you would run for any app on Lakebase, parameterized. It is idempotent, so re-running
+is safe.
 
-## Step 7, test the deployed app
+> **Note**
+> On a brand-new app the Service Principal does not exist until the first deploy. If the script
+> says the app is not found, deploy first (Step 3), then run this grant, then redeploy. The
+> troubleshooting section covers the "permission denied" case that means this step is needed.
 
-Log into your Databricks workspace. Go to **Apps** and find `capstone-dashboard`. Click it to
-open.
+## Step 3, point the app at your setup
 
-You should see the same dashboard as your local version. The backend is now running on Databricks
-Apps, querying Lakebase directly.
+Open [`app/app.yaml`](app/app.yaml) and set the `LAKEBASE_*` values to match your project and the
+branch you want the deployed app to serve (usually `production` or a shared read-friendly branch,
+not your personal `u-<name>`). There is no profile here on purpose: the deployed app uses its
+Service Principal, not your login.
 
-Test each tab:
-
-- Machines: fetch a list.
-- BOM: search for a product and view its part tree.
-- Maintenance: search for maintenance logs.
-
-## Step 8, make a change and redeploy
-
-Change something small in the React frontend or backend (e.g., add a new column, change a color).
-Re-run the deploy script:
-
-```bash
-bash deploy.sh
-```
-
-The app updates live. Refresh the browser and see your change.
-
-## Troubleshooting
-
-### App won't start: `LB_PROFILE not set`
-
-The backend environment variables aren't being passed to the app. Check `app.yaml` and ensure
-the env block has `LAKEBASE_PROFILE`, `LAKEBASE_PROJECT`, and `LAKEBASE_SCHEMA`.
-
-### Database connection fails: `permission denied`
-
-The app's SP doesn't have the right grants. Re-run:
+## Step 4, deploy to Databricks Apps
 
 ```bash
-python capstone_grant_sp.py --app-name capstone-dashboard ...
+bash app/deploy.sh capstone-dashboard
 ```
 
-Then redeploy:
+This packages the provided app and pushes it to Databricks Apps. Deployment takes a minute or
+two. When it finishes, open **Apps** in your workspace and click `capstone-dashboard`.
 
-```bash
-bash deploy.sh
-```
+## Step 5, see it live, then change one value and redeploy
 
-### Frontend renders but queries return empty
+The deployed dashboard looks the same as your local run, but now the backend runs on Databricks
+Apps and queries Lakebase as its Service Principal. Confirm each tab works.
 
-The backend is running but not connecting to Lakebase. Check:
+Then make a small change you do not need code for: edit `LAKEBASE_BRANCH` in `app/app.yaml` to a
+different branch, and redeploy with `bash app/deploy.sh`. The app now serves that branch. You just
+repointed a live application at a different copy of the database by changing one line, which is the
+branching story from the very first journey, seen from the application's side.
 
-- Are environment variables set in `app.yaml`?
-- Does the app's SP have the right grants?
-- Is your branch endpoint active? Check in the console.
+## What you did
 
-For more troubleshooting, see [`faq.md`](faq.md).
+You ran a real application against your Lakebase branch, granted an application identity access to
+the database, and deployed it, without writing application code. The database you built across the
+workshop is now backing an app, governed by Unity Catalog, reachable by its Service Principal. That
+is Lakebase as the operational store and the app backend at once.
+
+For errors and the OBO-versus-Service-Principal auth detail, see [`faq.md`](faq.md).

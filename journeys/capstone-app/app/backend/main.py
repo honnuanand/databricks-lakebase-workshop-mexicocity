@@ -1,0 +1,166 @@
+"""Capstone dashboard, FastAPI backend.
+
+A minimal, real service that shows how an application connects to and reads from
+the factory on Lakebase. The teaching point is the WIRING, not the app framework:
+
+  - Local dev authenticates with your Databricks profile (LAKEBASE_PROFILE).
+  - On Databricks Apps, the runtime injects the app's Service Principal creds, so
+    WorkspaceClient() needs no profile. The same code path handles both.
+
+Endpoints:
+  GET /api/machines            list machines (direct SQL on Lakebase)
+  GET /api/machines/{id}       one machine + its recent sensor readings
+  GET /api/bom/{product_id}    explode a product's bill of materials (recursive CTE)
+  GET /api/maintenance?q=...   search maintenance write-ups (full-text search)
+  GET /api/health              liveness + which identity/branch we're serving
+
+Config comes from environment (see app.yaml for the deployed values):
+  LAKEBASE_PROFILE   Databricks profile for LOCAL dev; unset on Databricks Apps
+  LAKEBASE_PROJECT   the Lakebase project id
+  LAKEBASE_BRANCH    the branch to serve (production, or a shared demo branch)
+  LAKEBASE_SCHEMA    schema (default: factory)
+"""
+from __future__ import annotations
+
+import os
+from contextlib import contextmanager
+from pathlib import Path
+
+import psycopg
+from psycopg.rows import dict_row
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from databricks.sdk import WorkspaceClient
+
+PROFILE = os.getenv("LAKEBASE_PROFILE")          # None on Databricks Apps (SP creds injected)
+PROJECT = os.getenv("LAKEBASE_PROJECT")
+BRANCH = os.getenv("LAKEBASE_BRANCH", "production")
+SCHEMA = os.getenv("LAKEBASE_SCHEMA", "factory")
+PORT = int(os.getenv("PORT", "8000"))
+
+app = FastAPI(title="Factory dashboard", version="1.0")
+
+_client: WorkspaceClient | None = None
+
+
+def client() -> WorkspaceClient:
+    global _client
+    if _client is None:
+        _client = WorkspaceClient(profile=PROFILE) if PROFILE else WorkspaceClient()
+    return _client
+
+
+def _endpoint(w: WorkspaceClient):
+    """(host, endpoint_id) for the branch's primary endpoint."""
+    parent = f"projects/{PROJECT}/branches/{BRANCH}"
+    eps = list(w.postgres.list_endpoints(parent=parent))
+    if not eps:
+        raise HTTPException(503, f"branch {BRANCH} has no endpoint")
+    ep = eps[0]
+    host = ep.status.hosts.host if ep.status and ep.status.hosts else None
+    state = ep.status.current_state.value if ep.status and ep.status.current_state else "?"
+    if not host or state != "ACTIVE":
+        raise HTTPException(503, f"branch {BRANCH} not serving (state={state})")
+    return host, (ep.endpoint_id or "primary")
+
+
+@contextmanager
+def db():
+    """A short-lived connection to the branch, using a fresh OAuth credential as
+    the password. Works locally (profile) and on Databricks Apps (SP creds)."""
+    if not PROJECT:
+        raise HTTPException(500, "LAKEBASE_PROJECT is not set")
+    w = client()
+    host, eid = _endpoint(w)
+    cred = w.postgres.generate_database_credential(
+        endpoint=f"projects/{PROJECT}/branches/{BRANCH}/endpoints/{eid}")
+    conn = psycopg.connect(
+        host=host, port=5432, dbname="databricks_postgres",
+        user=w.current_user.me().user_name, password=cred.token,
+        sslmode="require", autocommit=True, row_factory=dict_row, connect_timeout=15)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SET search_path TO {SCHEMA}, public")
+        yield conn
+    finally:
+        conn.close()
+
+
+def query(sql: str, params: list | None = None) -> list[dict]:
+    with db() as conn, conn.cursor() as cur:
+        cur.execute(sql, params or [])
+        return cur.fetchall() if cur.description else []
+
+
+@app.get("/api/health")
+def health():
+    w = client()
+    return {"ok": True, "identity": w.current_user.me().user_name,
+            "project": PROJECT, "branch": BRANCH, "schema": SCHEMA}
+
+
+@app.get("/api/machines")
+def machines():
+    return query(
+        "SELECT machine_id, plant_id, line, type, status, health_pct "
+        "FROM machine ORDER BY machine_id")
+
+
+@app.get("/api/machines/{machine_id}")
+def machine(machine_id: str):
+    rows = query("SELECT * FROM machine WHERE machine_id = %s", [machine_id])
+    if not rows:
+        raise HTTPException(404, f"no machine {machine_id}")
+    readings = query(
+        "SELECT ts, temp_c, vibration_mm_s, rpm, load_pct FROM sensor_reading "
+        "WHERE machine_id = %s ORDER BY ts DESC LIMIT 20", [machine_id])
+    return {"machine": rows[0], "recent_readings": readings}
+
+
+@app.get("/api/bom/{product_id}")
+def bom(product_id: str):
+    """Explode a product's bill of materials with a recursive CTE, the same
+    parts-explosion the pg-sql-parity journey teaches."""
+    return query(
+        """
+        WITH RECURSIVE explode(parent_id, child_part, qty, depth) AS (
+            SELECT parent_id, child_part, qty, 1 FROM bom_edge WHERE parent_id = %s
+          UNION ALL
+            SELECT b.parent_id, b.child_part, b.qty, e.depth + 1
+            FROM bom_edge b JOIN explode e ON b.parent_id = e.child_part
+        )
+        SELECT e.depth, e.child_part, p.name, e.qty
+        FROM explode e LEFT JOIN part p ON p.part_id = e.child_part
+        ORDER BY e.depth, e.child_part
+        """, [product_id])
+
+
+@app.get("/api/maintenance")
+def maintenance(q: str = Query("", description="full-text search over write-ups")):
+    if q.strip():
+        return query(
+            "SELECT log_id, machine_id, ts, writeup, "
+            "ts_rank(to_tsvector('english', writeup), plainto_tsquery('english', %s)) AS rank "
+            "FROM maintenance_log "
+            "WHERE to_tsvector('english', writeup) @@ plainto_tsquery('english', %s) "
+            "ORDER BY rank DESC LIMIT 25", [q, q])
+    return query(
+        "SELECT log_id, machine_id, ts, writeup FROM maintenance_log "
+        "ORDER BY ts DESC LIMIT 25")
+
+
+# ---- serve the single-page UI (a static index.html, no build step) ----
+_STATIC = Path(__file__).parent / "static"
+
+
+@app.get("/")
+def index():
+    page = _STATIC / "index.html"
+    if not page.is_file():
+        return {"message": "UI not found; open /docs for the API"}
+    return FileResponse(page)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=bool(PROFILE))
