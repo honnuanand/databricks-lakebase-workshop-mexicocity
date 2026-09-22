@@ -41,6 +41,15 @@ Each `journeys/<slug>/` folder needs four files, plus at least one runnable arti
 > **Time:** about N minutes  ·  **Status:** live | preview
 ```
 
+## Acronyms (each journey must read cold)
+
+Because a learner may jump straight to any journey, expand every acronym on its FIRST use within
+that journey (in each of the four files, since each is read on its own), then link it to the
+glossary. Example: `[row-level security](../../docs/glossary.md) (RLS)`, then use "RLS" after.
+Prefer plain words where an acronym is not the actual feature name. Keep names that are names
+(JSONB, pgvector, PostGIS) but still glossary-link them once. The glossary is
+[`docs/glossary.md`](glossary.md); add any missing term there.
+
 ## Voice (from the book's STYLE.md — enforce it)
 
 - Open with a scenario or field anecdote, not a definition.
