@@ -1,5 +1,14 @@
 # Query via REST: the Data API, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`data_api.ipynb`](data_api.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`data_api_databricks.py`](data_api_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python data_api.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE` and
 `LB_PROJECT` set to get OAuth tokens.
 

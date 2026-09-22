@@ -1,5 +1,14 @@
 # Feature store, served online, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`pg_features.ipynb`](pg_features.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`pg_features_databricks.py`](pg_features_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python pg_features.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first.
 
 Everything here is a single script: [`./pg_features.py`](./pg_features.py).

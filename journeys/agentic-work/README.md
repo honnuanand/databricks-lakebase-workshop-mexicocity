@@ -42,21 +42,23 @@ No orchestration. No separate state machine. The database is the MES backend.
 
 The agent's function-calling loop is:
 
-```text
-+--- Agent (Model Serving) ---+
-|                             |
-| 1. read memory from DB      |
-| 2. call tool: get_free_machines
-|    → runs SQL, returns rows |
-| 3. decide to act            |
-| 4. call tool: assign_work   |
-|    → INSERT operation row   |
-| 5. remember: append to mem  |
-+-------- Lakebase DB --------+
-     agent_memory
-     machine (status, health)
-     operation (assignments)
+```mermaid
+sequenceDiagram
+    participant A as Agent (Model Serving)
+    participant DB as Lakebase
+    A->>DB: 1. read memory (agent_memory)
+    A->>DB: 2. tool get_free_machines (SELECT on machine)
+    DB-->>A: rows: free machines
+    Note over A: 3. decide to act
+    A->>DB: 4. tool assign_work (INSERT into operation)
+    A->>DB: 5. remember (append to agent_memory)
 ```
+
+The three tables the loop touches, all in one Lakebase database:
+
+- `agent_memory` — what the agent has said and done (read at the start, appended at the end)
+- `machine` — live status and health (read to find free machines)
+- `operation` — the work assignments (written when the agent acts)
 
 Each step reads and writes the same Lakebase database. The database enforces consistency: the
 agent can't double-assign because it reads its own memory first.

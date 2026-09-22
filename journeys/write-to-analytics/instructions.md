@@ -1,5 +1,14 @@
 # Write to analytics, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`write_to_analytics.ipynb`](write_to_analytics.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`write_to_analytics_databricks.py`](write_to_analytics_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python write_to_analytics.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
 This journey combines Postgres operations with Databricks workspace integration. You'll need a Unity Catalog and a SQL warehouse to run the full end-to-end. If you don't, the script will walk you through the forward path (write → read via foreign table) and show you where the reverse path (analytics → write back) happens.

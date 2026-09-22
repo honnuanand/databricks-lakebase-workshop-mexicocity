@@ -1,5 +1,13 @@
 # Postgres in your browser, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`pg_lite.ipynb`](pg_lite.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`pg_lite_databricks.py`](pg_lite_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+
 This journey is interactive: you run SQL in your browser using PGlite (a WASM Postgres).
 There's no Python script to run; instead, you use an HTML editor.
 

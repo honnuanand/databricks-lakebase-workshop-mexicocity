@@ -1,5 +1,14 @@
 # Isolation & locking, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`pg_iso.ipynb`](pg_iso.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`pg_iso_databricks.py`](pg_iso_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python pg_iso.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 Run this on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first.
 
 This script opens **two real connections** to your branch to demonstrate row-level locking:

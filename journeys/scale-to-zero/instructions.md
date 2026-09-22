@@ -1,5 +1,14 @@
 # Scale to zero, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`scale_to_zero.ipynb`](scale_to_zero.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`scale_to_zero_databricks.py`](scale_to_zero_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python scale_to_zero.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
 Everything here is a single script you can read: [`./scale_to_zero.py`](./scale_to_zero.py).

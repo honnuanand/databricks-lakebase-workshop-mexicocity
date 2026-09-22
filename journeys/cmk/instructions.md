@@ -1,5 +1,13 @@
 # Customer-Managed Keys, how to configure and test
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`cmk.ipynb`](cmk.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`cmk_databricks.py`](cmk_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+
 This is a reference guide for setting up and testing [Customer-Managed Keys](../../docs/glossary.md) (CMK) in your Lakebase instance. Unlike other
 journeys, this is **not a runnable script**, CMK setup happens at the workspace/admin level, not
 in a user branch. But you can follow these steps to understand the configuration, and optionally

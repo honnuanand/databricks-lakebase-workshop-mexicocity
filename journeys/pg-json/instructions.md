@@ -1,5 +1,14 @@
 # JSON documents, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`pg_json.ipynb`](pg_json.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`pg_json_databricks.py`](pg_json_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python pg_json.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
 
 Everything here is a single script you can read: [`./pg_json.py`](./pg_json.py). You can run it end to end, or follow the steps by hand to see each piece.

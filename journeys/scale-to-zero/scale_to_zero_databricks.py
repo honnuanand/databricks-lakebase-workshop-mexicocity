@@ -1,0 +1,125 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # Scale to zero - step by step
+# MAGIC
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will check database compute state, stop it, and restart it, dropping cost to 0/hr when idle.
+# MAGIC
+# MAGIC Each step uses the real interface: SDK for control-plane operations, SQL for queries.
+# MAGIC
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Setup - initialize
+
+# COMMAND ----------
+
+import os, sys, time
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import client, _env
+from databricks.sdk.service.postgres import DatabaseInstance
+
+PROJECT = os.environ["LB_PROJECT"]
+w = client()
+
+def get_instance_state(w, project):
+    inst = w.postgres.get_database_instance(name=f"projects/{project}")
+    ep = inst.endpoints[0] if inst.endpoints else None
+    return {
+        "endpoint_id": ep.endpoint_id if ep else "?",
+        "state": ep.status.current_state.value if (ep and ep.status and ep.status.current_state) else "UNKNOWN",
+        "nodes": inst.nodes if inst.nodes else 0,
+        "effective_stopped": inst.effective_stopped if inst.effective_stopped else False,
+        "cu": inst.compute_unit if inst.compute_unit else "?",
+    }
+
+print("connected as", w.current_user.me().user_name)
+print(f"project={PROJECT}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 1 - Check the current compute state
+# MAGIC
+# MAGIC Query the project's compute endpoint to see its current state. This step uses the SDK, not SQL.
+
+# COMMAND ----------
+
+state = get_instance_state(w, PROJECT)
+print(f"  endpoint_id: {state['endpoint_id']}")
+print(f"  state: {state['state']}")
+print(f"  nodes: {state['nodes']}")
+print(f"  cu: {state['cu']}")
+if state['effective_stopped']:
+    print(f"  effective_stopped: {state['effective_stopped']}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 2 - Stop the compute
+# MAGIC
+# MAGIC Call the Lakebase API to stop compute. The script polls until stopped and prints timing.
+
+# COMMAND ----------
+
+t0 = time.time()
+w.postgres.update_database_instance(
+    name=f"projects/{PROJECT}",
+    database_instance=DatabaseInstance(stopped=True))
+
+# Poll until stopped
+while time.time() - t0 < 30:
+    state = get_instance_state(w, PROJECT)
+    if state["state"] == "STOPPED" and state["nodes"] == 0 and state["effective_stopped"]:
+        elapsed = time.time() - t0
+        print(f"  stopped in ~{elapsed:.1f}s; nodes: {state['nodes']}; effective_stopped: true")
+        break
+    time.sleep(0.5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 3 - Verify the stop
+# MAGIC
+# MAGIC Check the state again to confirm compute is stopped.
+
+# COMMAND ----------
+
+state = get_instance_state(w, PROJECT)
+print(f"  endpoint_id: {state['endpoint_id']}")
+print(f"  state: {state['state']}")
+print(f"  nodes: {state['nodes']}")
+print(f"  effective_stopped: {state['effective_stopped']}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 4 - Restart the compute
+# MAGIC
+# MAGIC Call the Lakebase API to start compute. The script polls until active and prints timing.
+
+# COMMAND ----------
+
+t0 = time.time()
+w.postgres.update_database_instance(
+    name=f"projects/{PROJECT}",
+    database_instance=DatabaseInstance(stopped=False))
+
+# Poll until active
+while time.time() - t0 < 60:
+    state = get_instance_state(w, PROJECT)
+    if state["state"] == "ACTIVE" and state["nodes"] > 0:
+        elapsed = time.time() - t0
+        print(f"  started in ~{elapsed:.1f}s; state: {state['state']}; nodes: {state['nodes']}")
+        break
+    time.sleep(0.5)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## What you learned
+# MAGIC
+# MAGIC You controlled database compute costs with scale-to-zero: stopping compute drops cost to 0/hr, restarting takes about 7 seconds, and data remains untouched. No long-running idle charges.
+# MAGIC
+# MAGIC **Next:** Write to analytics - combine Postgres operations with Databricks lakehouse via foreign tables.

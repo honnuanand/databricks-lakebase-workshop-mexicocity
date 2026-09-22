@@ -1,5 +1,14 @@
 # Watch the planner, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`pg_explain.ipynb`](pg_explain.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`pg_explain_databricks.py`](pg_explain_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python pg_explain.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
 Everything here is a single script you can read: [`./pg_explain.py`](./pg_explain.py). You can run it end to end, or follow the steps by hand to see each piece.

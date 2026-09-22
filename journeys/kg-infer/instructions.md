@@ -1,5 +1,14 @@
 # Infer and derive facts, instructions
 
+## How to run this journey
+
+There are a few ways to work through the steps. Pick one:
+
+- **Notebook, step by step (recommended for learning):** open [`kg_infer.ipynb`](kg_infer.ipynb) and run one cell at a time. Reading each result before the next step is where the learning happens.
+- **In a Databricks workspace:** import [`kg_infer_databricks.py`](kg_infer_databricks.py) and run it cell by cell there.
+- **By hand:** follow the numbered steps below, copying each command yourself.
+- **Just see it work:** run `python kg_infer.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
+
 Build on the graph from the previous journeys, or run this script to rebuild it. If you haven't
 done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`,
 `LB_BRANCH`, and `LB_SCHEMA` set.
