@@ -52,6 +52,18 @@ onto everything; represent each step in its real interface:
 Judge per step: "what is this operation actually?" Keep any SQL copy-pasteable and real against
 the `factory` schema, never pseudocode.
 
+**Notebooks must read cold — introduce the factory nouns inline.** A learner may open a notebook
+directly, without the README or `00-setup/`'s "Meet the factory" intro. So the FIRST time a
+notebook names a specific entity, give a one-line gloss inline, don't assume reading order:
+
+- First mention of `M-204`: "M-204, a stamping press on Detroit's Stamping-B line (it starts out
+  `healthy` at 91% health)".
+- First mention of a product/part/BOM: "PRD-GEARBOX-X1, a gearbox built from a housing, two gear
+  assemblies, and bolts".
+- Same for a work order, plant, supplier, etc.: one clause the first time, bare id after.
+
+Keep it to a clause, not a re-teach; the full cast lives in `00-setup/`'s "Meet the factory".
+
 ## Deliverables per journey
 
 Each `journeys/<slug>/` folder needs four docs + the step-by-step notebooks + the optional script:

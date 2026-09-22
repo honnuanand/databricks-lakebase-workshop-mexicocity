@@ -52,8 +52,9 @@ print("connected as", w.current_user.me().user_name)
 
 # MAGIC %md
 # MAGIC ## Step 1, look at M-204 on your branch
-# MAGIC `M-204` is a stamping press. It should be `healthy`. This step is a plain query, so here is
-# MAGIC the SQL you could run in any Postgres tool:
+# MAGIC `M-204` is a stamping press on Detroit's Stamping-B line, one of the machines in the factory
+# MAGIC you loaded in setup. It starts out `healthy` at 91% health. This step is a plain query, so
+# MAGIC here is the SQL you could run in any Postgres tool:
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id = 'M-204';
