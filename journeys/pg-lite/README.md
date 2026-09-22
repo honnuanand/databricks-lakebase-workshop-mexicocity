@@ -35,7 +35,7 @@ Open the interactive SQL editor below. Type or copy-paste real Postgres SQL. Hit
 
 ## The interactive editor
 
-Open [`../../common/pglite-demo.html`](../../common/pglite-demo.html) in your browser.
+Open [`pglite-demo.html`](pglite-demo.html) (in this journey folder) in your browser.
 
 Type SQL or use the "Quick Examples" buttons to load common patterns. Hit "Run SQL" and watch the results appear.
 

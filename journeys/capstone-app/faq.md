@@ -96,11 +96,12 @@ The deploy script assumes Python and Node are in your PATH. Install them or use 
 
 ### Deploy script fails: `app.yaml not found`
 
-You're in the wrong directory. The deploy script must run from `common/capstone-app/`:
+You're in the wrong directory. Run the deploy from the app folder you built (the one holding
+`app.yaml`):
 
 ```bash
-cd common/capstone-app
-python ../scripts/deploy_to_databricks.py --app-name capstone-dashboard --skip-secrets
+cd journeys/capstone-app/app
+python deploy_to_databricks.py --app-name capstone-dashboard --skip-secrets
 ```
 
 (Or use the provided `deploy.sh` which handles the path.)

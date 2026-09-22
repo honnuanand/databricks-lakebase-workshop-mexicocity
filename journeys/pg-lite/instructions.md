@@ -16,11 +16,12 @@ There's no Python script to run; instead, you use an HTML editor.
 Open the interactive editor in your browser:
 
 ```
-../../common/pglite-demo.html
+pglite-demo.html
 ```
 
-Double-click or open it in your editor (VS Code, Sublime, etc.), then right-click → "Open with Browser"
-or simply load it as a file:// URL in Firefox, Chrome, Safari, or Edge.
+It sits right here in this journey folder. Double-click it, or open it in your editor
+(VS Code, Sublime, etc.) and right-click "Open with Browser", or load it as a file:// URL in
+Firefox, Chrome, Safari, or Edge.
 
 The page loads PGlite (a few MB of WebAssembly) on first load. You'll see a status message: "✓ PGlite ready."
 

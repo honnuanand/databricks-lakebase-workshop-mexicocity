@@ -16,13 +16,15 @@ If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you nee
 
 ## Overview
 
-The capstone app lives in [`../../common/capstone-app/`](../../common/capstone-app/) and consists
-of:
+This is a guided build: you create the app yourself in a working folder (this journey suggests
+`app/` inside this journey folder). By the end you will have:
 
-- `frontend/`, React dashboard (machine list, BOM search, maintenance logs)
-- `backend/`, FastAPI service (queries Lakebase directly and via Data API)
+- `frontend/`, React dashboard (machine list, bill-of-materials search, maintenance logs)
+- `backend/`, FastAPI service (queries Lakebase directly and via the Data API)
 - `app.yaml`, Databricks Apps configuration
 - `deploy.sh`, one-command deploy script
+
+The steps below walk you through scaffolding each piece.
 
 ## Step 1, set up the app's Service Principal permissions
 
