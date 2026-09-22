@@ -1,0 +1,20 @@
+# Internal build scratchpad — references live infra (profiles, hosts, grant chains).
+# Not for the public repo.
+memory/
+
+# Internal project instructions (contains internal proxy URL, profile names).
+CLAUDE.md
+
+# Internal build plan (references internal demo infra). Not learner-facing.
+docs/PLAN.md
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
