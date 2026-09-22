@@ -120,6 +120,9 @@ it a story you can hold in your head.
 
 **[Open `00-setup/` and get connected.](00-setup/)**
 
+New to a term or acronym along the way? The [glossary](docs/glossary.md) defines every one in
+plain language, so you never have to leave a journey to look something up.
+
 ---
 
 <img src="assets/databricks-primary-color.svg" alt="Databricks" height="28">

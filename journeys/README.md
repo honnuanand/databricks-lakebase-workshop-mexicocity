@@ -6,8 +6,13 @@ what they are, not by number, so the curriculum can grow without renaming anythi
 below is the intended path, but every journey stands alone, so jump to what you care about.
 
 Each folder holds `README.md` (what and why), `instructions.md` (copy-paste steps),
-`expected.md` (results to check against), and `faq.md` (when it goes wrong), plus a runnable
-artifact in [`../common/`](../common/).
+`expected.md` (results to check against), and `faq.md` (when it goes wrong), plus the runnable
+artifacts right there in the folder: a step-by-step notebook (`<name>.ipynb` for Jupyter and
+`<name>_databricks.py` for a Databricks workspace) and an all-in-one script. The shared helpers
+they build on live in [`../common/`](../common/).
+
+New to a term or acronym in any journey? The [glossary](../docs/glossary.md) defines every one in
+plain language.
 
 **Two status columns:**
 
