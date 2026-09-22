@@ -35,6 +35,23 @@ folder:
 The all-in-one `<slug>.py` script stays as an OPTION ("just run the whole thing"), not the norm.
 Its `--step` flags back the notebook's individual steps.
 
+**Show the right interface for each step — SQL, Python, or both, by context.** Do NOT bolt SQL
+onto everything; represent each step in its real interface:
+
+- A step that is **a query** (SELECT / UPDATE / CREATE INDEX / EXPLAIN / VACUUM): SQL is the star.
+  Databricks: a `%sql` cell runs it directly. Jupyter: show the ```sql in markdown, then a small
+  Python cell that runs it via the helper. Learning the SQL is often the real goal, and it proves
+  the "just Postgres" point: the learner can copy it into psql, the Lakebase SQL editor, or a BI
+  tool.
+- A step that is a **control-plane / SDK operation** (fork a branch, provision, scale to zero,
+  generate a credential, call a model): there is NO SQL for it. Show the Python (SDK) and, where
+  useful, the equivalent `databricks ...` CLI. Never invent a fake SQL statement for a
+  control-plane action, that is dishonest, like claiming an interface that does not exist.
+- A step that is **both** (run SQL and interpret the result in code): show both.
+
+Judge per step: "what is this operation actually?" Keep any SQL copy-pasteable and real against
+the `factory` schema, never pseudocode.
+
 ## Deliverables per journey
 
 Each `journeys/<slug>/` folder needs four docs + the step-by-step notebooks + the optional script:
