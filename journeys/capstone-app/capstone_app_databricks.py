@@ -22,7 +22,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 — Understand the object model
+# MAGIC ## Step 1, Understand the object model
 # MAGIC
 # MAGIC A Databricks App is a container that runs your code. It has an auto-created Service Principal (SP). That SP needs to connect to Lakebase to query the factory data.
 # MAGIC
@@ -36,7 +36,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2 — Grant the app's Service Principal permissions (before deploy)
+# MAGIC ## Step 2, Grant the app's Service Principal permissions (before deploy)
 
 # COMMAND ----------
 
@@ -67,7 +67,7 @@ print("asks you to re-run it after deploying the app.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 — Set up local environment
+# MAGIC ## Step 3, Set up local environment
 
 # COMMAND ----------
 
@@ -99,7 +99,7 @@ print("7. Open http://localhost:3000 in your browser.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 — Test the app locally
+# MAGIC ## Step 4, Test the app locally
 
 # COMMAND ----------
 
@@ -125,7 +125,7 @@ print("  - Did the grant script succeed? (re-run it if not)")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 — Update app configuration
+# MAGIC ## Step 5, Update app configuration
 
 # COMMAND ----------
 
@@ -146,7 +146,7 @@ print("    LAKEBASE_SCHEMA: factory")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 — Deploy to Databricks Apps
+# MAGIC ## Step 6, Deploy to Databricks Apps
 
 # COMMAND ----------
 
@@ -169,7 +169,7 @@ print("  3. Pushes to Databricks Apps.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7 — Re-grant the app SP after first deploy
+# MAGIC ## Step 7, Re-grant the app SP after first deploy
 
 # COMMAND ----------
 
@@ -187,7 +187,7 @@ print("The script is idempotent; re-running is safe.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 8 — Test the deployed app
+# MAGIC ## Step 8, Test the deployed app
 
 # COMMAND ----------
 
@@ -209,7 +209,7 @@ print("  - Redeploy: bash deploy.sh")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 9 — Make changes and redeploy
+# MAGIC ## Step 9, Make changes and redeploy
 
 # COMMAND ----------
 
