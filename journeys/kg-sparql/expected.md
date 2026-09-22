@@ -19,7 +19,7 @@ These are the direct child parts of PRD-GEARBOX-X1 in the BOM.
 
 ## Step 3, multi-hop SPARQL query
 
-Running `python kg_sparql.py --step multi-hop` shows:
+Running `python kg_sparql.py --step multi-hop` shows the [SPARQL](../../docs/glossary.md) pattern:
 
 ```text
 SPARQL multi-hop query: which products contain a part from S-ACME?

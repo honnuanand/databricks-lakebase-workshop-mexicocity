@@ -40,6 +40,11 @@ This lists all suppliers in the graph. Pick one that has parts, then retry.
 If no suppliers have parts, the bom_edge or part_supplier relationship might not have been loaded
 correctly. See [Build a knowledge graph](../kg-build/) FAQ for troubleshooting.
 
+### Why does SPARQL read backward?
+
+[SPARQL](../../docs/glossary.md) patterns use [RDF](../../docs/glossary.md)'s subject-predicate-object triple notation, which can feel backward
+compared to SQL. A SPARQL pattern:
+
 ## Concept clarifications
 
 ### Why does SPARQL read backward?
@@ -66,7 +71,7 @@ AllegroGraph, which uses disk-based indexes and query optimization.
 
 ### Can SPARQL do everything SQL does?
 
-Almost. SPARQL supports:
+Almost. [SPARQL](../../docs/glossary.md) supports:
 - Patterns (like SELECT ... WHERE in SQL)
 - Filtering (WHERE clauses)
 - Aggregation (GROUP BY, COUNT, SUM)

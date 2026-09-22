@@ -8,7 +8,7 @@
 >   cosine similarity (`<=>`) in the same transaction as your operational data.
 > - Finding the best-fit replacement part by similarity (or the closest warehouse by location
 >   vector) happens in SQL without leaving the database.
-> - pgvector with HNSW indexing scales to millions of vectors while staying fast (sub-millisecond
+> - pgvector with [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) indexing scales to millions of vectors while staying fast (sub-millisecond
 >   for typical queries).
 > - pgvector is single-transaction, in-process; for large, batch-synced corpora (RAG over docs
 >   at scale), Databricks Vector Search is the platform tool. pgvector complements it for

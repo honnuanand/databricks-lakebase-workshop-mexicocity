@@ -62,6 +62,13 @@ journey matters to you and never be stuck on a term.
   things sit close together. Used for similarity search.
 - **CDC (change data capture)** — reading a stream of every insert, update, and delete as they
   happen, off the write-ahead log.
+- **HNSW (Hierarchical Navigable Small Worlds)** — an index structure for fast approximate
+  nearest-neighbor search on vectors, supporting millions of embeddings while keeping queries
+  sub-millisecond.
+- **Live data flow (operational + analytical on one copy)** — running operational (OLTP) and
+  analytical (OLAP) work against a single database copy, with no pipeline or sync lag between
+  them. Write through Lakebase, read the same rows from the lakehouse the same moment. Prefer
+  this plain phrase in the journeys rather than an acronym.
 
 ## Manufacturing terms (the running example)
 
@@ -88,3 +95,16 @@ journey matters to you and never be stuck on a term.
 - **KMS (key management service)** — the cloud service (for example AWS KMS) that holds and
   controls encryption keys.
 - **pgcrypto** — a Postgres extension for encrypting individual column values.
+
+## Knowledge graphs and semantic tools
+
+- **RDF (Resource Description Framework)** — a W3C standard for representing facts as triples (subject, predicate, object), forming a graph of linked data. Used as the foundation for knowledge graphs and semantic reasoning.
+- **SPARQL (SPARQL Protocol and RDF Query Language)** — a query language for RDF graphs, analogous to SQL for tables. Queries work by pattern matching on triples.
+- **OWL (Web Ontology Language)** — an extension of RDF that adds logical inference rules and consistency checking. Enables automated reasoning: if you define rules, the system derives new facts automatically.
+- **RDFS (RDF Schema)** — a lighter-weight version of OWL that defines classes and properties; used for basic type hierarchies without full logical inference.
+
+## APIs and web
+
+- **REST** — Representational State Transfer; an architectural style for web APIs using HTTP verbs (GET, POST, PATCH, DELETE) and standard response formats (usually JSON).
+- **PostgREST** — an open-source tool that automatically generates a REST API from a PostgreSQL database schema, following REST conventions.
+- **OAuth** — an authentication standard that lets a user delegate access to their Databricks resources without sharing passwords. Used for API authentication and app integrations.

@@ -32,7 +32,7 @@ admin access).
 
 ### Step 2, get an OAuth token
 
-You can't make Data API requests without a Databricks OAuth token. The script gets one for you:
+You can't make Data API requests without a Databricks [OAuth](../../docs/glossary.md) token. The script gets one for you:
 
 ```bash
 python data_api.py --step token

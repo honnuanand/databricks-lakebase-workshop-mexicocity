@@ -32,7 +32,7 @@ Lakebase advertises itself as Postgres 16 on the wire. When a client connects, i
 The beat worth watching: you run a single SQL query against the information_schema, the same query a BI tool runs, and it maps your entire factory schema: 26 tables, 133 columns, all relationships. No Databricks SDK, no Lakebase-specific plumbing. Just Postgres.
 
 > **From the field**
-> The honest scope: Lakebase is wire-compatible Postgres, so standard introspection works. Some advanced Postgres features (logical decoding for CDC) are on the Lakebase roadmap. You won't find every exotic extension (PostGIS, pgvector, etc.) immediately, but the governance (Unity Catalog) wraps the whole database without needing a separate auth layer. ORMs and BI tools that target Postgres 16 work unmodified. This is about eliminating lock-in, not about getting everything Postgres ever had.
+> The honest scope: Lakebase is wire-compatible Postgres, so standard introspection works. Some advanced Postgres features (logical decoding for [change data capture](../../docs/glossary.md) (CDC)) are on the Lakebase roadmap. You won't find every exotic extension ([PostGIS](../../docs/glossary.md), [pgvector](../../docs/glossary.md), etc.) immediately, but the governance (Unity Catalog) wraps the whole database without needing a separate auth layer. ORMs and BI tools that target Postgres 16 work unmodified. This is about eliminating lock-in, not about getting everything Postgres ever had.
 
 ## What you'll do
 
@@ -54,4 +54,4 @@ Nothing Lakebase-specific; this journey is about confirming you can use the tool
 
 ## Wrapping up
 
-Once you confirm that standard tools work unmodified, the question shifts from "does this fit my stack?" to "what does this let me do that I couldn't before?" The Lakebase-specific journeys answer that: branching, PITR, live data flow, RLS, vector search, knowledge graphs. But the foundation is always "it's just Postgres."
+Once you confirm that standard tools work unmodified, the question shifts from "does this fit my stack?" to "what does this let me do that I couldn't before?" The Lakebase-specific journeys answer that: branching, [point-in-time restore](../../docs/glossary.md) (PITR), live data flow, [row-level security](../../docs/glossary.md) (RLS), vector search, knowledge graphs. But the foundation is always "it's just Postgres."

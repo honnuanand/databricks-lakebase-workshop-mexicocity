@@ -130,7 +130,7 @@ Done. Single SQL query finds replacement parts by similarity, no network hop.
 | ---- | -------- | -------------- |
 | pgvector extension creation | <100ms | one-time per branch |
 | embedding population | ~10ms per part | batch updates, no round-trips |
-| similarity search query latency | <10ms (with HNSW index) | sub-transaction overhead |
+| similarity search query latency | <10ms (with [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) index) | sub-transaction overhead |
 | index creation time | ~100ms for 12 parts | O(n log n); grows with data volume |
 | cosine similarity range | 0.0 to 1.0 | 1 = identical, 0 = orthogonal |
 

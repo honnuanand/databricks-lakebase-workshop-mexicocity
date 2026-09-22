@@ -146,8 +146,7 @@ This runs:
 CREATE INDEX ON factory.part USING hnsw (embedding vector_cosine_ops)
 ```
 
-The `vector_cosine_ops` index family uses cosine similarity (the `<=>` operator). HNSW (Hierarchical
-Navigable Small Worlds) keeps queries fast even with millions of vectors.
+The `vector_cosine_ops` index family uses cosine similarity (the `<=>` operator). [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) keeps queries fast even with millions of vectors.
 
 Check the index exists:
 

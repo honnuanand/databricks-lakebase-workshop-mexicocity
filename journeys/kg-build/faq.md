@@ -54,7 +54,7 @@ SQL is excellent for relational queries over tabular data. But when you have rel
 traverse multiple steps (product → part → supplier → logistics), or when you want to add rules
 that derive new facts, a graph representation makes the structure explicit.
 
-RDF also separates the *schema* from the *data*: you can add new predicates (relationships) or
+[Resource Description Framework](../../docs/glossary.md) (RDF) also separates the *schema* from the *data*: you can add new predicates (relationships) or
 nodes without migrating table schemas. For manufacturing, this is useful when you add a new type
 of relationship (e.g. a part was `certified_for` an industry standard) without altering the
 production database.

@@ -7,7 +7,7 @@
 Probably not, unless you're in a regulated industry (medical, financial, aerospace) or have
 strict data governance requirements. For most workloads, Databricks-managed keys are sufficient.
 
-CMK is required if:
+[Customer-Managed Keys](../../docs/glossary.md) (CMK) is required if:
 - Compliance regulations (HIPAA, PCI-DSS, FedRAMP, ITAR) mandate customer-controlled keys.
 - You're running a multi-tenant SaaS and customers demand cryptographic isolation.
 - Your data is IP or trade secrets that you want to keep completely opaque to the cloud provider.
@@ -16,7 +16,7 @@ CMK is required if:
 
 It depends on your cloud provider and Databricks offering. Typically:
 
-- CMK is configured at the **workspace level**, not per instance.
+- [Customer-Managed Keys](../../docs/glossary.md) is configured at the **workspace level**, not per instance.
 - Once enabled, all **new** instances use CMK.
 - **Existing instances** may need to be migrated (re-encrypted); ask your Databricks account
   team.
@@ -25,7 +25,7 @@ For production, enable CMK at workspace setup time if possible, to avoid migrati
 
 ### Who sets up CMK? Is it a user or admin task?
 
-CMK setup is a **workspace-admin task**. Users cannot enable it. The workflow is:
+[Customer-Managed Keys](../../docs/glossary.md) setup is a **workspace-admin task**. Users cannot enable it. The workflow is:
 
 1. Your KMS team (AWS/Azure/GCP) creates the key and policies.
 2. Your workspace admin (Databricks) configures the workspace to use that key.
@@ -54,7 +54,7 @@ separately.
 
 ### What if my KMS key is compromised?
 
-If an attacker gains access to your KMS key, they can decrypt all your Lakebase data encrypted
+If an attacker gains access to your [Key Management Service](../../docs/glossary.md) key, they can decrypt all your Lakebase data encrypted
 with that key. This is why KMS access should be strictly controlled with IAM policies. If you
 suspect compromise:
 
@@ -100,7 +100,7 @@ on write activity. If you need faster re-encryption, contact Databricks.
 
 ### What if the KMS service is down?
 
-If your KMS is temporarily unavailable, Lakebase instances using that KMS will fail on decrypt
+If your [Key Management Service](../../docs/glossary.md) is temporarily unavailable, Lakebase instances using that KMS will fail on decrypt
 attempts. Queries will return errors. Once the KMS recovers, queries resume. This is why you
 should:
 

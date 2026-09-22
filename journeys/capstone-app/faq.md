@@ -177,7 +177,7 @@ See [`../../00-setup/grants.md`](../../00-setup/grants.md) for full details.
 
 ### Can the app's SP write to the factory schema?
 
-By default, the grant script gives the SP SELECT (read-only) permissions. To grant write
+By default, the grant script gives the [Service Principal](../../docs/glossary.md) (SP) SELECT (read-only) permissions. To grant write
 permissions, you'd need to:
 
 1. Run the grant script with a `--write-access` flag (if the script supports it), or
@@ -197,7 +197,7 @@ The app uses both:
 
 - **Direct SQL (backend):** for complex queries (BOM traversal, multi-table joins, aggregations)
   where SQL is cleaner and faster.
-- **Data API (frontend or backend):** for simple REST queries where JSON is natural (fetch a
+- **Data API (frontend or backend):** for simple [REST](../../docs/glossary.md) queries where JSON is natural (fetch a
   single machine, list suppliers).
 
 For the capstone, the backend uses direct SQL for all queries because they're complex. If you

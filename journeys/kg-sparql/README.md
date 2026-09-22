@@ -4,7 +4,7 @@
 >
 > **Key takeaways**
 >
-> - SPARQL is a query language for RDF graphs, analogous to SQL for tables. It uses pattern matching on triples: specify the shape of data you want (subject, predicate, object variables), and SPARQL returns all matches.
+> - [SPARQL Protocol and RDF Query Language](../../docs/glossary.md) (SPARQL) is a query language for RDF graphs, analogous to SQL for tables. It uses pattern matching on triples: specify the shape of data you want (subject, predicate, object variables), and SPARQL returns all matches.
 > - A multi-hop manufacturing question like "which finished products contain a part supplied by vendor V?" is a single readable SPARQL pattern in the graph, but becomes a 3-table join in SQL.
 > - SPARQL also supports aggregation, filtering, and optional relationships, just like SQL WHERE, GROUP BY, and LEFT JOIN.
 >
@@ -36,7 +36,7 @@ supplied_by → supplier. SPARQL lets you write that pattern directly.
 
 ## What SPARQL is
 
-SPARQL (SPARQL Protocol and RDF Query Language) is a query language for RDF graphs. Like SQL, it
+[SPARQL](../../docs/glossary.md) is a query language for [RDF](../../docs/glossary.md) graphs. Like SQL, it
 returns tuples of results. Unlike SQL's table columns, SPARQL patterns are triples: you specify
 variables for the parts of each triple you want to retrieve, and SPARQL matches them against the
 graph.

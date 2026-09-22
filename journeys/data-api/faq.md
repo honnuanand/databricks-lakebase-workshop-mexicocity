@@ -70,8 +70,8 @@ export LB_SCHEMA=factory
 
 ### Is the Data API the same as PostgREST?
 
-The Lakebase Data API follows PostgREST conventions (HTTP verbs map to SQL operations, JSON
-responses), but it's not the PostgREST library itself. It's a Lakebase-native REST layer. The
+The Lakebase Data API follows [PostgREST](../../docs/glossary.md) conventions (HTTP verbs map to SQL operations, JSON
+responses), but it's not the PostgREST library itself. It's a Lakebase-native [REST](../../docs/glossary.md) layer. The
 API is compatible with PostgREST clients and tools.
 
 ### Can I do complex queries with the Data API?
@@ -97,13 +97,13 @@ The Data API is designed for user-facing apps that need simple, fast queries.
 
 ### Does the Data API support RLS?
 
-Yes. Row-Level Security policies are automatically enforced on Data API requests. The same user
+Yes. [Row-Level Security](../../docs/glossary.md) policies are automatically enforced on Data API requests. The same user
 permissions that apply to SQL queries apply to REST queries. If a user can't SELECT a row in
-SQL, they can't GET it via REST.
+SQL, they can't GET it via [REST](../../docs/glossary.md).
 
 ### What's the latency overhead of REST vs SQL?
 
-REST adds HTTP transport overhead: usually 20-50 ms. For interactive apps, this is fine. For
+[REST](../../docs/glossary.md) adds HTTP transport overhead: usually 20-50 ms. For interactive apps, this is fine. For
 analytics or bulk operations, SQL is faster. If you're serving a thousand queries per second, use
 SQL; if you're serving a mobile app, REST is appropriate.
 
@@ -127,7 +127,7 @@ Note: your token must be valid and have access to the table.
 
 ### Is OAuth the only auth method?
 
-Currently, yes. The Data API uses Databricks OAuth tokens (same as the Databricks CLI and
+Currently, yes. The Data API uses Databricks [OAuth](../../docs/glossary.md) tokens (same as the Databricks CLI and
 SDKs). There's no API key or PAT token support for the Data API.
 
 ### Can I cache results?

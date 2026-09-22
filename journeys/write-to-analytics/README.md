@@ -4,11 +4,11 @@
 >
 > **Key takeaways**
 >
-> - Write a sensor reading through Postgres (OLTP milliseconds) and the same row appears in a lakehouse foreign table immediately, no CDC, no pipeline.
+> - Write a sensor reading through Postgres ([online transaction processing](../../docs/glossary.md) (OLTP) milliseconds) and the same row appears in a lakehouse foreign table immediately, no [change data capture](../../docs/glossary.md) (CDC), no pipeline.
 > - Analytics runs a SQL query on the lakehouse to compute a failure-risk score from the readings.
 > - The score is written back directly to Postgres. Two workloads, one copy, both engines, round-trip closed.
 >
-> **You'll be able to:** demonstrate live data flowing both directions between Postgres (OLTP) and the lakehouse (analytics) with no sync pipeline in between.
+> **You'll be able to:** demonstrate live data flowing both directions between Postgres ([online transaction processing](../../docs/glossary.md) (OLTP)) and the lakehouse ([online analytical processing](../../docs/glossary.md) (OLAP)) with no sync pipeline in between.
 >
 > **Time:** about 20 minutes  ·  **Status:** live
 
@@ -18,7 +18,7 @@ The stamping plant runs live. Sensors on machine M-204 stream temperature, vibra
 
 What if the analytics ran live? The moment a sensor reading arrives at Postgres, it's visible to the lakehouse. Analytics computes a risk score, probability of failure in the next hour, and pushes that score back to Postgres so the MES system can route new work away from risky machines.
 
-That's LTAP (Live Tables as Analytics-Powered): one database copy, both the OLTP and analytics engines running on it simultaneously. No CDC daemon, no ETL pipeline, no sync lag. Write through Postgres, read from the lakehouse, compute analytics, write back.
+That's [LTAP](../../docs/glossary.md) (Live Tables as Analytics-Powered): one database copy, both the [online transaction processing](../../docs/glossary.md) (OLTP) and analytics engines running on it simultaneously. No [change data capture](../../docs/glossary.md) (CDC) daemon, no ETL pipeline, no sync lag. Write through Postgres, read from the lakehouse, compute analytics, write back.
 
 ## How it works
 

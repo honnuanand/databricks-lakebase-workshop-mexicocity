@@ -93,7 +93,7 @@ Done. One copy, both engines, round-trip closed.
 
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
-| OLTP write latency | ~1–5 ms | Postgres ACID write, no pipeline overhead |
+| [online transaction processing](../../docs/glossary.md) (OLTP) write latency | ~1–5 ms | Postgres ACID write, no pipeline overhead |
 | Lakehouse query latency | ~1–2 sec (first run) | warehouse planning + execution, not sync lag |
 | Lakehouse query latency (warm cache) | ~200–500 ms | warehouse serving from cache |
 | Reverse write latency | ~10–50 ms | direct Postgres write, not a pipeline |

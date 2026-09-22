@@ -55,6 +55,6 @@ This is a real setup against live databases. The writes are real INSERTs to Post
 
 Lakebase can integrate with external catalogs (Hive metastores, Iceberg catalogs, etc.) via UC's multi-catalog federation. The setup is more involved (you'd need to register the external catalog in UC first), but the concept is the same. The runnable script assumes Databricks UC; if you want to use an external catalog, you'll need to set it up separately and adapt the script.
 
-## Is there a CDC alternative for real-time capture?
+## Is there a [change data capture](../../docs/glossary.md) (CDC) alternative for real-time capture?
 
-Yes. Databricks is building logical decoding support on Lakebase, which will let you capture a change stream directly from the Postgres WAL. That's on the roadmap. For now, the foreign-table path (live query) is the supported live-integration approach, and it has zero pipeline, it's as close to real-time as a query latency allows.
+Yes. Databricks is building logical decoding support on Lakebase, which will let you capture a change stream directly from the Postgres [write-ahead log](../../docs/glossary.md) (WAL). That's on the roadmap. For now, the foreign-table path (live query) is the supported live-integration approach, and it has zero pipeline, it's as close to real-time as a query latency allows.

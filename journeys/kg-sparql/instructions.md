@@ -37,7 +37,7 @@ Ask the graph: "which parts are contained in product PRD-GEARBOX-X1?"
 python kg_sparql.py --step simple-query
 ```
 
-The SPARQL query is:
+The [SPARQL](../../docs/glossary.md) query is:
 
 ```sparql
 SELECT ?part WHERE {
@@ -56,7 +56,7 @@ Now ask a harder question: "which finished products contain a part supplied by S
 python kg_sparql.py --step multi-hop
 ```
 
-The SPARQL query traverses three relationships:
+The [SPARQL](../../docs/glossary.md) query traverses three relationships:
 
 ```sparql
 SELECT DISTINCT ?product WHERE {
@@ -91,7 +91,7 @@ And runs it against Lakebase, returning the same product IDs.
 
 ### Step 5, aggregation query
 
-SPARQL supports GROUP BY and aggregates like SQL. Ask: "for each supplier, how many distinct
+[SPARQL](../../docs/glossary.md) supports GROUP BY and aggregates like SQL. Ask: "for each supplier, how many distinct
 parts do they supply?"
 
 ```bash

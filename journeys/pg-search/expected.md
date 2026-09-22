@@ -8,7 +8,7 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 log_id  machine_id  writeup
 1       M-204       "Vibration on bearing housing, likely wear. Replaced bearing 6204, tested OK."
 2       M-301       "Hydraulic pressure drop detected. Checked seal, replaced filter."
-3       M-405       "Nosewheel hydraulic actuator sluggish in retract. Replaced O-ring, actuator responsive."
+3       M-405       "Hydraulic line to the bearing housing leaking on the press. Replaced O-ring and bearing, tested OK."
 ```
 
 Free-text notes from engineers. These are the search corpus.
@@ -22,7 +22,7 @@ log_id  machine_id  rank
 2       M-301       0.654
 ```
 
-Logs ranked by relevance to "hydraulic & bearing". Log #3 ranks highest because it has both words close together ("hydraulic actuator" near "bearing"). The rank score is a number proportional to relevance.
+Logs ranked by relevance to "hydraulic & bearing". Log #3 ranks highest because it has both words close together ("Hydraulic line to the bearing housing"). The rank score is a number proportional to relevance.
 
 ## Step 3, fuzzy matching
 

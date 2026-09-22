@@ -52,13 +52,13 @@ engine = create_engine("postgresql+psycopg://user:password@host:5432/databricks_
 
 SQLAlchemy will query information_schema to discover your schema and generate ORM models automatically. This is exactly the "it just works" moment the journey is about.
 
-## Does Lakebase support logical decoding (CDC)?
+## Does Lakebase support logical decoding ([change data capture](../../docs/glossary.md) (CDC))?
 
-Logical decoding (which powers change-data-capture) is on the Lakebase roadmap. For now, the MANAGED_ONLINE_CATALOG foreign-table approach (see [Write to analytics](../write-to-analytics/)) is the supported live-integration method. You can also use Databricks Change Data Capture (CDC) to capture Lakebase table changes in Unity Catalog.
+Logical decoding (which powers change-data-capture) is on the Lakebase roadmap. For now, the MANAGED_ONLINE_CATALOG foreign-table approach (see [Write to analytics](../write-to-analytics/)) is the supported live-integration method. You can also use Databricks [change data capture](../../docs/glossary.md) (CDC) to capture Lakebase table changes in Unity Catalog.
 
 ## Is there a governance model for information_schema?
 
-Yes. Unity Catalog governs all tables, including whether you can read information_schema. If you can SELECT from a table in the factory schema, you can see it in information_schema. UC permissions cascade: if you're denied access to a table, it won't appear in information_schema queries either (depending on your Catalog permissions).
+Yes. [Unity Catalog](../../docs/glossary.md) governs all tables, including whether you can read information_schema. If you can SELECT from a table in the factory schema, you can see it in information_schema. [Unity Catalog](../../docs/glossary.md) (UC) permissions cascade: if you're denied access to a table, it won't appear in information_schema queries either (depending on your Catalog permissions).
 
 ## Why is the wire protocol "Postgres 16" and not "Postgres 17"?
 

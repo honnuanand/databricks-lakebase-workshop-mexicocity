@@ -4,11 +4,11 @@
 >
 > **Key takeaways**
 >
-> - The Lakebase Data API exposes your PostgreSQL database via PostgREST-compatible REST endpoints, so you can query it without a Postgres client or SDK.
-> - Authentication is Databricks OAuth: pass a bearer token, and the API returns JSON. Row-level security (RLS) applies to REST queries just like SQL queries; users only see data they have access to.
-> - REST queries are useful for mobile apps, JavaScript frontends, third-party integrations, and scenarios where you can't install a Postgres driver.
+> - The Lakebase Data API exposes your PostgreSQL database via [PostgREST](../../docs/glossary.md)-compatible [REST](../../docs/glossary.md) endpoints, so you can query it without a Postgres client or SDK.
+> - Authentication is Databricks [OAuth](../../docs/glossary.md): pass a bearer token, and the API returns JSON. [Row-level security](../../docs/glossary.md) (RLS) applies to REST queries just like SQL queries; users only see data they have access to.
+> - [REST](../../docs/glossary.md) queries are useful for mobile apps, JavaScript frontends, third-party integrations, and scenarios where you can't install a Postgres driver.
 >
-> **You'll be able to:** query your Lakebase data via HTTPS GET/POST using OAuth tokens, parse the JSON results, and understand when REST is the right approach.
+> **You'll be able to:** query your Lakebase data via HTTPS GET/POST using [OAuth](../../docs/glossary.md) tokens, parse the JSON results, and understand when [REST](../../docs/glossary.md) is the right approach.
 >
 > **Time:** about 20 minutes  ·  **Status:** live (conditional: requires Data API enabled on the instance)
 
@@ -17,14 +17,14 @@
 Your factory runs a mobile app for supervisors to check machine status and maintenance logs. The app is iOS/Android; it can't easily use psycopg or the Lakebase SDK. You need an HTTP endpoint that returns JSON machine data.
 
 The Lakebase Data API provides exactly that: HTTP GET/POST endpoints that execute SQL and return
-JSON, authenticated with Databricks OAuth. Your app sends a bearer token, requests
+JSON, authenticated with Databricks [OAuth](../../docs/glossary.md). Your app sends a bearer token, requests
 `GET /api/v1/factory.machine?select=machine_id,status`, and gets back JSON.
 
 ## What the Data API is
 
-The Data API is a REST layer on top of PostgreSQL. It follows the PostgREST convention: HTTP
+The Data API is a [REST](../../docs/glossary.md) layer on top of PostgreSQL. It follows the [PostgREST](../../docs/glossary.md) convention: HTTP
 verbs (GET, POST, PATCH, DELETE) map to SQL operations (SELECT, INSERT, UPDATE, DELETE), and
-responses are JSON. Authentication is Databricks OAuth bearer tokens, and Row-Level Security
+responses are JSON. Authentication is Databricks [OAuth](../../docs/glossary.md) bearer tokens, and [Row-Level Security](../../docs/glossary.md)
 applies.
 
 ### API shape
@@ -46,14 +46,14 @@ GET /api/v1/factory.machine?select=machine_id,status&status=eq.healthy
 
 ### Authentication
 
-Pass a Databricks OAuth token as a bearer token:
+Pass a Databricks [OAuth](../../docs/glossary.md) token as a bearer token:
 
 ```
 Authorization: Bearer <oauth_token>
 ```
 
 The token is valid for 1 hour (3600 seconds). The API enforces the same user permissions and
-Row-Level Security policies as SQL queries.
+[Row-Level Security](../../docs/glossary.md) policies as SQL queries.
 
 ### Response format
 

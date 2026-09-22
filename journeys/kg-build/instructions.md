@@ -28,7 +28,7 @@ This loads the factory data into a knowledge graph and prints the triples and qu
 
 ### Step 1, load the BOM as triples
 
-The script queries the factory's bom_edge, product, and part tables, then builds RDF triples
+The script queries the factory's bom_edge, product, and part tables, then builds [RDF](../../docs/glossary.md) triples
 for each relationship:
 
 ```python
@@ -72,7 +72,7 @@ Ask the graph: "what parts does product PRD-GEARBOX-X1 contain?"
 python kg_build.py --step query
 ```
 
-The script uses a simple SPARQL query:
+The script uses a simple [SPARQL](../../docs/glossary.md) query:
 
 ```sparql
 SELECT ?part WHERE {

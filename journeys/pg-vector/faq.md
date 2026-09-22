@@ -164,7 +164,7 @@ pgvector with an HNSW index scales well:
    CREATE INDEX ON factory.part USING hnsw (embedding vector_cosine_ops)
    ```
 
-2. **Tune HNSW parameters** (optional): reduce `m` (max degree) or `ef_construction` for faster
+2. **Tune [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) parameters** (optional): reduce `m` (max degree) or `ef_construction` for faster
    indexing on very large tables:
    ```sql
    CREATE INDEX ON factory.part USING hnsw (embedding vector_cosine_ops)

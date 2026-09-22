@@ -61,7 +61,7 @@ You'll see rows from machine, work_order, and sensor_reading, all real data, all
 
 ### Step 5, check Unity Catalog governance
 
-In a Databricks workspace, open the Data Catalog and navigate to the Lakebase instance's schema. The same tables are listed and governed by UC, no separate catalog sync, no proprietary metadata layer. The single source of truth is Postgres, and UC layers governance on top.
+In a Databricks workspace, open the Data Catalog and navigate to the Lakebase instance's schema. The same tables are listed and governed by [Unity Catalog](../../docs/glossary.md) (UC), no separate catalog sync, no proprietary metadata layer. The single source of truth is Postgres, and UC layers governance on top.
 
 ## What you just did
 

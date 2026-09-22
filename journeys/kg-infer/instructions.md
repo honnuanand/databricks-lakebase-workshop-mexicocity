@@ -36,7 +36,7 @@ affected by the recall."
 python kg_infer.py --step rule-simple
 ```
 
-In RDF/OWL logic (using rdflib's forward-chaining rules):
+In [RDF](../../docs/glossary.md)/[OWL](../../docs/glossary.md) logic (using rdflib's forward-chaining rules):
 
 ```python
 rule = rdflib.plugin.get('rules:BFPR', rdflib.plugin.Plugin)(graph)

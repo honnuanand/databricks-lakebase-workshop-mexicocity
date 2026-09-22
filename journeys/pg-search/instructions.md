@@ -26,7 +26,7 @@ python lakebase.py --sql \
 
 These are unstructured engineer notes, the kind of data that's hard to search with traditional filters.
 
-### Step 2, full-text search (FTS)
+### Step 2, full-text search
 
 Full-text search ranks results by relevance. Here's a query to find notes mentioning "hydraulic" and "bearing":
 
@@ -48,9 +48,9 @@ SELECT log_id, machine_id, writeup,
 
 The `to_tsvector` converts text to a "text search vector" (a ranked list of lexemes, word stems). The `@@` operator matches the query against the vector. `ts_rank` scores the match. Results are ranked by relevance, not just presence.
 
-### Step 3, fuzzy matching with pg_trgm
+### Step 3, fuzzy matching with trigrams
 
-Fuzzy matching tolerates typos. Enable `pg_trgm` and find part numbers close to a given string:
+Fuzzy matching tolerates typos. Enable [pg_trgm](../../docs/glossary.md) and find part numbers close to a given string:
 
 ```bash
 python pg_search.py --step fuzzy
@@ -69,11 +69,11 @@ SELECT part_id, name,
  LIMIT 5;
 ```
 
-The `%` operator asks "is this string similar?" Similarity is measured by overlapping trigrams (3-character substrings). A typo usually preserves most trigrams, so the match still works. `similarity()` returns a score (0 to 1); higher is more similar.
+The `%` operator asks "is this string similar?" Similarity is measured by overlapping [trigrams](../../docs/glossary.md) (3-character substrings). A typo usually preserves most trigrams, so the match still works. `similarity()` returns a score (0 to 1); higher is more similar.
 
-### Step 4, create a GIN index on FTS
+### Step 4, create a GIN index on full-text search
 
-GIN indexes accelerate full-text search:
+[GIN](../../docs/glossary.md) indexes accelerate full-text search:
 
 ```bash
 python pg_search.py --step index

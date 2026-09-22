@@ -4,11 +4,11 @@
 >
 > **Key takeaways**
 >
-> - Knowledge graphs support inference: state a rule (if X is true, then Y must be true), and the graph automatically derives new facts you never stored.
+> - Knowledge graphs support inference: state a rule (if X is true, then Y must be true), and the graph automatically derives new facts you never stored. This uses [RDF Schema](../../docs/glossary.md) (RDFS) or [Web Ontology Language](../../docs/glossary.md) (OWL) rules for reasoning.
 > - A practical rule for manufacturing: "if a part is recalled, then all products containing that part are affected." State this once; the graph applies it to every product.
 > - This is analogous to database triggers or materialized views, but expressed as declarative logic (RDF/OWL) instead of procedural code. The graph does the work.
 >
-> **You'll be able to:** define RDFS/OWL rules on your manufacturing graph, apply them to derive facts (like "product X is affected by recall"), and see how entailment makes implicit relationships explicit.
+> **You'll be able to:** define [RDFS](../../docs/glossary.md)/[OWL](../../docs/glossary.md) rules on your manufacturing graph, apply them to derive facts (like "product X is affected by recall"), and see how entailment makes implicit relationships explicit.
 >
 > **Time:** about 20 minutes  ·  **Status:** live
 
@@ -27,7 +27,7 @@ structure; the graph reasons about it.
 
 ## What knowledge graph inference is
 
-Inference in RDF is based on formal logic. You define rules (called entailment or RDFS/OWL
+Inference in [RDF](../../docs/glossary.md) is based on formal logic. You define rules (called entailment or [RDFS](../../docs/glossary.md)/[OWL](../../docs/glossary.md)
 rules), which are implications: if certain triples exist, then additional triples must logically
 follow.
 

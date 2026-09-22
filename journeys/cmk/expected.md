@@ -18,7 +18,7 @@ Key Rotation: Automatic (annual)
 
 ### 2. KMS audit logs show Decrypt/GenerateDataKey calls
 
-After running a Lakebase query, check your cloud provider's audit logs:
+After running a Lakebase query, check your cloud provider's [Key Management Service](../../docs/glossary.md) audit logs:
 
 **AWS CloudTrail:**
 ```

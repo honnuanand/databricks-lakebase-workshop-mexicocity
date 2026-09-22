@@ -145,7 +145,7 @@ Done. Lakebase is Postgres; your tools work unmodified.
 | Columns discovered | ~133 | all columns across all tables |
 | information_schema query time | <100 ms | fast introspection |
 | Data sample accuracy | 100% | schema inference is correct |
-| Governance integration | Unity Catalog | UC tables visible for every Postgres table, no separate sync |
+| Governance integration | [Unity Catalog](../../docs/glossary.md) | [Unity Catalog](../../docs/glossary.md) (UC) tables visible for every Postgres table, no separate sync |
 
 > **From the field**
 > The key insight: you don't need to build a custom integration for Lakebase into your BI tool, ORM, or driver. If it speaks Postgres, it speaks Lakebase. The information_schema is the same. The wire protocol is the same. The only difference is governance: instead of a Postgres role/permission system, you get Unity Catalog on top, which is audit-friendly and works across the Databricks ecosystem. No proprietary metadata service, no SDK lock-in. Just Postgres.

@@ -1,6 +1,6 @@
 # Customer-Managed Keys, how to configure and test
 
-This is a reference guide for setting up and testing CMK in your Lakebase instance. Unlike other
+This is a reference guide for setting up and testing [Customer-Managed Keys](../../docs/glossary.md) (CMK) in your Lakebase instance. Unlike other
 journeys, this is **not a runnable script**, CMK setup happens at the workspace/admin level, not
 in a user branch. But you can follow these steps to understand the configuration, and optionally
 test with a test key if your workspace admin has enabled it.
@@ -16,7 +16,7 @@ test with a test key if your workspace admin has enabled it.
 
 ### Step 1, create a KMS key
 
-In the AWS console, go to AWS Key Management Service (KMS) and create a customer-managed key:
+In the AWS console, go to AWS [Key Management Service](../../docs/glossary.md) (KMS) and create a customer-managed key:
 
 ```
 Region: <your-workspace-region>
@@ -57,7 +57,7 @@ workspace to use it. Once configured, all new Lakebase instances use the key.
 
 ### Step 1, create a key
 
-In Azure Key Vault, create a key:
+In Azure [Key Vault](../../docs/glossary.md), create a key:
 
 ```
 Key type: RSA or EC
@@ -83,7 +83,7 @@ Provide the key URI to your Databricks workspace admin to configure the workspac
 
 ### Step 1, create a key
 
-In GCP Cloud KMS, create a key:
+In GCP Cloud [Key Management Service](../../docs/glossary.md), create a key:
 
 ```
 Location: <your-workspace-region>

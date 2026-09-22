@@ -32,7 +32,7 @@ Parts contained in PRD-GEARBOX-X1:
   PT-HOUSING-08
 ```
 
-This is a direct query into the graph's contains relationships. The SPARQL query is:
+This is a direct query into the graph's contains relationships. The [SPARQL](../../docs/glossary.md) query is:
 
 ```sparql
 SELECT ?part WHERE {

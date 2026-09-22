@@ -59,7 +59,7 @@ automatically.
 
 ### Is entailment the same as a SQL trigger?
 
-Conceptually, yes. A trigger in SQL says "when X happens, do Y." A rule in RDF says "if X is
+Conceptually, yes. A trigger in SQL says "when X happens, do Y." A rule in [RDF](../../docs/glossary.md) says "if X is
 true, then Y logically follows." The main differences:
 
 - Triggers are procedural (imperative code); rules are declarative (logical statements).
@@ -87,9 +87,9 @@ This rule only fires for safety-critical parts. You can also combine multiple co
 
 ### What happens if rules conflict?
 
-RDF entailment is monotonic: rules can only add new triples, never remove them. So conflicts
+[RDF](../../docs/glossary.md) entailment is monotonic: rules can only add new triples, never remove them. So conflicts
 aren't possible in the traditional sense. However, you can have contradictory facts (e.g., a part
-marked both safe and recalled). OWL (the full ontology language) has consistency checking to
+marked both safe and recalled). [OWL](../../docs/glossary.md) (the full ontology language) has consistency checking to
 catch these; rdflib's basic inference doesn't. For production use, consider using a full OWL
 reasoner if you need consistency validation.
 

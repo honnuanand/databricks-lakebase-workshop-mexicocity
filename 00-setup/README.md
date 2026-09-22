@@ -3,6 +3,10 @@
 This is the on-ramp. About 20 minutes, done once, and it unblocks every journey. By the end you
 have a live Lakebase project, the access it needs, and **your own zero-copy branch** to work on.
 
+> **Tip**
+> If a term or acronym is unfamiliar anywhere in the workshop, the [glossary](../docs/glossary.md)
+> defines it in plain language.
+
 Work through these in order:
 
 | Step | File | What it does |
@@ -43,6 +47,30 @@ A **project** holds everything. Inside it, **branches** are the git-style copies
 the default; yours is `u-<name>`). Each branch exposes an **endpoint**, the compute you actually
 connect to over the Postgres wire. Behind the endpoint is a normal Postgres **database** with a
 **schema** and your factory **tables**.
+
+## Meet the factory
+
+Every journey runs against one running example: a multi-plant smart-manufacturing operation, in
+the `factory` schema. You load it onto your branch in [`your-branch.md`](your-branch.md). Getting
+to know the cast now means the journeys read easily later, because the same machines, parts, and
+orders show up throughout.
+
+- **Three plants**, run by two business units: `PL-DETROIT` and `PL-AUSTIN` (operator NorthAxle),
+  and `PL-MUNICH` (operator EuroDrive). Each has production lines.
+- **Machines** on those lines, named `M-1xx` at Detroit, `M-3xx` at Austin, `M-4xx` at Munich.
+  The recurring one to know is **`M-204`**, a stamping press on Detroit's Stamping-B line. It
+  starts out `healthy` at 91% health, and it's the machine you'll fork, break, re-tag, and
+  diagnose across several journeys. When you see `M-204`, that's the one.
+- **Sensor readings** stream off each machine (temperature, vibration, rpm, load). `M-204` has a
+  vibration reading quietly creeping up, which the maintenance journeys pick up on.
+- **A bill of materials**: products built from parts built from sub-parts. `PRD-GEARBOX-X1` is a
+  gearbox made of a housing, two gear assemblies, and bolts; each gear assembly is a gear plus
+  two bearings. That tree is what the recursive-query and knowledge-graph journeys walk.
+- **Work orders and operations** (the shop floor), **suppliers, warehouses, and inventory** (the
+  supply chain), and **maintenance write-ups** (free text the AI journeys learn to read).
+
+You don't need to memorize any of this. It's seeded for you, and each journey reintroduces the
+few rows it touches. `M-204` is just the character worth remembering.
 
 ## When you're done
 
