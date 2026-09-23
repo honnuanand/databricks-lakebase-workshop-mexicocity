@@ -17,7 +17,7 @@ plain language.
 **Two status columns:**
 
 - **Build** tracks how far this workshop has written the journey: ⬜ not started · 🟡 drafting ·
-  🟢 done (all four files + a runnable artifact) · ⭐ reviewed.
+  🟢 done (all four files + a runnable artifact) · ⭐ proven on a live run.
 - **Runs** tracks the capability itself: **live** = runs fully against your branch · **preview**
   = a roadmap capability shown honestly against Postgres, labeled as not-yet-GA.
 
@@ -27,7 +27,7 @@ The capabilities a plain Postgres cannot do. Run these first; they are why Lakeb
 
 | # | Journey | What you'll do | Build | Runs |
 | - | ------- | -------------- | ----- | ---- |
-| 1 | [Branch the brain](branch-the-brain/) | Fork your whole factory database in seconds (zero-copy), diverge it, throw it away with production untouched. | 🟢 | live |
+| 1 | [Branch the brain](branch-the-brain/) | Fork your whole factory database in seconds (zero-copy), diverge it, throw it away with production untouched. | ⭐ | live |
 | 2 | [Break it, then rewind](break-and-rewind/) | Delete live machine data on purpose, then point-in-time-restore the database to seconds ago. No backup job. | 🟢 | live |
 | 3 | [Scale to zero](scale-to-zero/) | Stop the compute for an idle line, watch the cost meter hit $0, start it back in seconds. | 🟢 | live |
 | 4 | [One copy, both directions](write-to-analytics/) | Write sensor telemetry through Lakebase, query it in the lakehouse the same moment, push a failure-risk score back. No pipeline. | 🟢 | live |

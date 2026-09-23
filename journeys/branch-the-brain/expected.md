@@ -13,12 +13,12 @@ couple of seconds, production unchanged.
 ## Step 2, fork
 
 ```text
-  fork API returned in ~700 ms; endpoint ACTIVE in ~2.4s
+  fork API returned in ~900 ms; endpoint ACTIVE in ~1.9s
 ```
 
-The API call is well under a second. The endpoint reaches ACTIVE in roughly 2 to 3 seconds. If
-your first fork of a session is slower (cold), run it again; warm forks are consistently a
-couple of seconds.
+The API call is about a second. The endpoint reaches ACTIVE in roughly 2 seconds (measured 1.9s
+on a live run; yours will vary a little). If your first fork of a session is slower (cold), run
+it again; warm forks are consistently a couple of seconds.
 
 ## Step 3, diverge on the fork
 
