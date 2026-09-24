@@ -123,6 +123,10 @@ it a story you can hold in your head.
 New to a term or acronym along the way? The [glossary](docs/glossary.md) defines every one in
 plain language, so you never have to leave a journey to look something up.
 
+**Running this for a room?** The [facilitator agenda](docs/AGENDA.md) has ready-made tracks by
+audience and time (DBA migration, AI builders, platform, security, a 60-minute taster), plus a
+persona matrix for building your own.
+
 ---
 
 <img src="assets/databricks-primary-color.svg" alt="Databricks" height="28">
