@@ -20,20 +20,26 @@ The LSN is the write-ahead log position at this moment. The script stores it to 
 ## Step 3, delete runs
 
 ```text
-  2 work orders deleted
+  deleted: 0 work orders and 0 operations remain (all gone)
 ```
 
-The work_order table is now empty.
+Both tables are now empty. The delete removes the `operation` rows first, because they
+reference `work_order` by a foreign key, then the work orders themselves. That is the kind of
+over-broad cleanup this journey recovers from.
 
 ## Step 4, recover from PITR branch
 
 ```text
   PITR branch created: u-alex-restore
-  recovery API returned in ~700 ms; endpoint ACTIVE in ~2.3s
+  recovery API returned in ~700 ms; endpoint ACTIVE in ~1.9s
   Recovered work orders from PITR branch:
   ('WO-8821', 'PRD-GEARBOX-X1', 50, 'released')
   ('WO-8822', 'PRD-AXLE-A2', 120, 'in_progress')
+  (2 work orders, 3 operations)
 ```
+
+The recovery branch is created at the LSN from before the delete (via `source_branch_lsn`), so
+both the work orders and their operations come back exactly as they were.
 
 The recovered rows are identical to Step 1. The PITR branch reached ACTIVE in a couple of seconds, the same speed as any branch creation.
 

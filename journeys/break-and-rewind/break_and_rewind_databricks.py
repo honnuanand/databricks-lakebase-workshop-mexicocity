@@ -98,15 +98,20 @@ print(f"This LSN marks the moment before we delete. We will use it to recover th
 
 # COMMAND ----------
 
+# The fat-fingered cleanup: operation rows reference work_order (a foreign key),
+# so we remove the child operations first, then the work orders.
 with connect_branch(MINE) as conn:
     with conn.cursor() as cur:
+        cur.execute("DELETE FROM operation")     # children first (FK to work_order)
         cur.execute("DELETE FROM work_order")
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM work_order")
-        count = cur.fetchone()[0]
-print(f"Delete complete. Work orders remaining: {count}")
-if count == 0:
-    print("All work orders have been deleted from your branch.")
+        wo = cur.fetchone()[0]
+        cur.execute("SELECT count(*) FROM operation")
+        ops = cur.fetchone()[0]
+print(f"Delete complete. Work orders remaining: {wo}, operations remaining: {ops}")
+if wo == 0 and ops == 0:
+    print("All work orders and their operations have been deleted from your branch.")
 
 # COMMAND ----------
 
@@ -122,7 +127,7 @@ if count == 0:
 # MAGIC     parent=f"projects/{project}",
 # MAGIC     branch=Branch(spec=BranchSpec(
 # MAGIC         source_branch=branch_name(project, mine),
-# MAGIC         source_lsn=lsn,
+# MAGIC         source_branch_lsn=lsn,
 # MAGIC         no_expiry=True)),
 # MAGIC     branch_id=restore)
 # MAGIC ```
@@ -144,7 +149,7 @@ w.postgres.create_branch(
     parent=f"projects/{PROJECT}",
     branch=Branch(spec=BranchSpec(
         source_branch=branch_name(PROJECT, MINE),
-        source_lsn=lsn,
+        source_branch_lsn=lsn,
         no_expiry=True)),
     branch_id=RESTORE, replace_existing=False)
 api_ms = (time.time() - t0) * 1000

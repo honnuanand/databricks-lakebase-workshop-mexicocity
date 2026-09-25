@@ -28,7 +28,7 @@ The capabilities a plain Postgres cannot do. Run these first; they are why Lakeb
 | # | Journey | What you'll do | Build | Runs |
 | - | ------- | -------------- | ----- | ---- |
 | 1 | [Branch the brain](branch-the-brain/) | Fork your whole factory database in seconds (zero-copy), diverge it, throw it away with production untouched. | ⭐ | live |
-| 2 | [Break it, then rewind](break-and-rewind/) | Delete live machine data on purpose, then point-in-time-restore the database to seconds ago. No backup job. | 🟢 | live |
+| 2 | [Break it, then rewind](break-and-rewind/) | Delete live machine data on purpose, then point-in-time-restore the database to seconds ago. No backup job. | ⭐ | live |
 | 3 | [Scale to zero](scale-to-zero/) | Stop the compute for an idle line, watch the cost meter hit $0, start it back in seconds. | 🟢 | live |
 | 4 | [One copy, both directions](write-to-analytics/) | Write sensor telemetry through Lakebase, query it in the lakehouse the same moment, push a failure-risk score back. No pipeline. | 🟢 | live |
 | 5 | [Fits your landscape](pg-integration/) | Point any Postgres driver, ORM, or BI tool at Lakebase and watch it map the schema. Governed by Unity Catalog. | 🟢 | live |

@@ -55,13 +55,16 @@ def _connect_branch(w, project, branch):
 
 def _show_work_orders(conn, label):
     with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM operation")
+        n_ops = cur.fetchone()[0]
         cur.execute("SELECT wo_id, product_id, qty, status FROM work_order ORDER BY wo_id")
         rows = cur.fetchall()
     if not rows:
-        print(f"  [{label}] (no work orders)")
+        print(f"  [{label}] (no work orders, {n_ops} operations)")
     else:
         for row in rows:
             print(f"  [{label}] {row}")
+        print(f"  [{label}] ({len(rows)} work orders, {n_ops} operations)")
 
 
 def capture_lsn(w, project, mine):
@@ -75,15 +78,24 @@ def capture_lsn(w, project, mine):
 
 
 def delete_work_orders(w, project, mine):
-    """Delete all work orders on the branch."""
+    """The 'fat-fingered cleanup': wipe the work orders and their operations.
+
+    operation rows reference work_order (a foreign key), so a real cleanup has to
+    remove the child rows too. Deleting both is exactly the kind of over-broad
+    DELETE this journey is about recovering from."""
     with _connect_branch(w, project, mine) as conn:
         with conn.cursor() as cur:
+            cur.execute("DELETE FROM operation")     # children first (FK to work_order)
             cur.execute("DELETE FROM work_order")
-            # psycopg doesn't give us rowcount easily; just confirm they're gone
         with conn.cursor() as cur:
             cur.execute("SELECT count(*) FROM work_order")
-            count = cur.fetchone()[0]
-    print(f"  {count} work orders remain (deleted successfully)" if count == 0 else f"  ERROR: {count} work orders remain")
+            wo = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM operation")
+            ops = cur.fetchone()[0]
+    if wo == 0 and ops == 0:
+        print(f"  deleted: {wo} work orders and {ops} operations remain (all gone)")
+    else:
+        print(f"  ERROR: {wo} work orders / {ops} operations still remain")
 
 
 def recover_via_pitr(w, project, mine, restore, lsn):
@@ -99,7 +111,7 @@ def recover_via_pitr(w, project, mine, restore, lsn):
     t0 = time.time()
     w.postgres.create_branch(
         parent=f"projects/{project}",
-        branch=Branch(spec=BranchSpec(source_branch=branch_name(project, mine), source_lsn=lsn, no_expiry=True)),
+        branch=Branch(spec=BranchSpec(source_branch=branch_name(project, mine), source_branch_lsn=lsn, no_expiry=True)),
         branch_id=restore, replace_existing=False)
     api_ms = (time.time() - t0) * 1000
     waited = wait_active(w, project, restore)
