@@ -4,13 +4,13 @@
 >
 > **Key takeaways**
 >
-> - Write a sensor reading through Postgres ([online transaction processing](../../docs/glossary.md) (OLTP) milliseconds) and the same row appears in a lakehouse foreign table immediately, no [change data capture](../../docs/glossary.md) (CDC), no pipeline.
-> - Analytics runs a SQL query on the lakehouse to compute a failure-risk score from the readings.
-> - The score is written back directly to Postgres. Two workloads, one copy, both engines, round-trip closed.
+> - Your operational rows are the same rows analytics reads: one copy, no [change data capture](../../docs/glossary.md) (CDC) job copying between an [online transaction processing](../../docs/glossary.md) (OLTP) store and an [online analytical processing](../../docs/glossary.md) (OLAP) store.
+> - You write a sensor reading through Postgres, compute a failure-risk score, and write it back onto the row, all live on your branch, so the operational side serves an analytics-derived value at OLTP latency.
+> - The lakehouse read of those same rows (through a Unity Catalog foreign catalog on a SQL warehouse) needs a metastore-admin catalog registration. This journey shows the exact query for it rather than faking output, so the "no pipeline" claim stays honest.
 >
-> **You'll be able to:** demonstrate live data flowing both directions between Postgres ([online transaction processing](../../docs/glossary.md) (OLTP)) and the lakehouse ([online analytical processing](../../docs/glossary.md) (OLAP)) with no sync pipeline in between.
+> **You'll be able to:** run the operational write-compute-write-back-read round trip live, and know exactly the query that reads the same rows from the lakehouse once the database is registered in Unity Catalog.
 >
-> **Time:** about 20 minutes  ·  **Status:** live
+> **Time:** about 20 minutes  ·  **Status:** live (operational round trip) + explainer (the lakehouse read needs a UC catalog an admin registers)
 
 ## The scenario
 

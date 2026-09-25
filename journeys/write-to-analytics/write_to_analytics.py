@@ -1,188 +1,120 @@
 #!/usr/bin/env python3
-"""Write to analytics — forward and reverse ETL with no CDC pipeline.
+"""One copy, both directions: operational writes and analytics on the same data.
 
-Demonstrates LTAP (Live Tables as Analytics-Powered) by:
-  - writing a sensor reading to Postgres (OLTP)
-  - reading it immediately from a lakehouse foreign table (no CDC)
-  - computing a risk score on the lakehouse
-  - writing the score back to Postgres (reverse ETL)
+The Lakebase LTAP idea (live data flow, no pipeline): your operational rows are the
+same rows analytics reads. There is no change-data-capture job copying data from an
+OLTP store to an analytics store; there is one copy, reachable from both sides.
 
-This journey requires:
-  - A Databricks workspace with Unity Catalog
-  - A SQL warehouse for analytics queries
-  - Permissions to create external tables and query warehouses
+WHAT THIS SCRIPT RUNS LIVE (real, on your branch):
+  - write a new sensor reading through Postgres (a millisecond OLTP write)
+  - compute a failure-risk score from it
+  - write that score back onto the row (a failure_risk column)
+  - read it back, so the operational side now serves an analytics-derived value
 
-If UC/warehouse aren't available, the script shows the read-only path.
+WHAT IS AN EXPLAINER (clearly labeled, NOT run here):
+  - reading the same rows from the lakehouse through a Unity Catalog foreign table
+    on a SQL warehouse. That requires registering the Lakebase database as a UC
+    catalog, which is a metastore-admin action (CREATE CATALOG on the metastore).
+    We show the exact query you would run once that catalog exists; we do not fake
+    its output.
 
 Usage:
-    python write_to_analytics.py                      # run the whole story
-    python write_to_analytics.py --step write         # insert a sensor reading
-    python write_to_analytics.py --step read-forward  # query from lakehouse foreign table
-    python write_to_analytics.py --step compute-score # compute risk on lakehouse
-    python write_to_analytics.py --step write-reverse # write score back to Postgres
+    python write_to_analytics.py                # the live half + the explainer
+    python write_to_analytics.py --step write   # just the OLTP write
+    python write_to_analytics.py --step score    # compute + write back the risk
 
 Env: LB_PROFILE, LB_PROJECT, LB_BRANCH, LB_SCHEMA (see 00-setup/).
-For UC/warehouse: assumes DATABRICKS_HOST and DATABRICKS_TOKEN are set (or uses default auth).
 """
 from __future__ import annotations
 
 import argparse
-import os
-import time
-from datetime import datetime, timezone
 
 import os, sys
-# The shared Lakebase helper lives in common/scripts/. Make it importable
-# from this journey folder no matter where you run the script from.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
-from lakebase import connect, run_sql, _env
+from lakebase import run_sql
 
 
-def baseline_sensor_data():
-    """Show the baseline sensor readings on Postgres."""
-    print("  Baseline sensor readings for M-204 on Postgres:")
-    rows = run_sql(
-        "SELECT machine_id, ts, temp_c, vibration_mm_s FROM factory.sensor_reading "
-        "WHERE machine_id='M-204' ORDER BY ts DESC LIMIT 3"
-    )
-    for row in rows:
-        print(f"    {row}")
+def ensure_column():
+    """Add a failure_risk column to sensor_reading if it is not there yet (idempotent)."""
+    run_sql("ALTER TABLE factory.sensor_reading ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1)")
 
 
-def write_sensor_reading():
-    """Write a new sensor reading to Postgres (OLTP)."""
-    insert_sql = (
+def write_reading():
+    """Write a new sensor reading through Postgres (OLTP). Returns its reading_id."""
+    r = run_sql(
         "INSERT INTO factory.sensor_reading (machine_id, ts, temp_c, vibration_mm_s, rpm, load_pct) "
         "VALUES ('M-204', now(), 67.3, 4.2, 1165, 81.0) "
-        "RETURNING ts, temp_c, vibration_mm_s"
-    )
-    row = run_sql(insert_sql)
-    if row:
-        ts, temp, vib = row[0]
-        print(f"  inserted: ts={ts}, temp_c={temp}, vibration_mm_s={vib}")
-    return row[0][0] if row else None
+        "RETURNING reading_id, temp_c, vibration_mm_s")
+    rid, temp, vib = r[0]
+    print(f"  inserted reading_id={rid}: temp_c={temp}, vibration_mm_s={vib}")
+    return rid
 
 
-def read_from_lakehouse_foreign_table(ts_inserted):
-    """
-    Read the inserted row from a lakehouse foreign table.
-
-    This assumes UC is available and a foreign table has been set up
-    that maps to the Lakebase sensor_reading table.
-    """
-    print("  (This step requires Unity Catalog and a SQL warehouse.)")
-    print("  Creating/verifying external table mapping...")
-
-    # Note: In a real setup, you'd use the Databricks SQL API to run this on the warehouse.
-    # For the workshop, we show the concept but run locally to Postgres instead.
-    # A real implementation would:
-    # 1. Call w.sql_warehouses.list() to find a warehouse
-    # 2. Use w.statement_execution.execute() to run a query on the warehouse
-    # 3. The warehouse would query the foreign table
-
-    query = (
-        "SELECT machine_id, ts, temp_c, vibration_mm_s "
-        "FROM <catalog>.factory_sensor_reading_foreign "
-        "WHERE machine_id='M-204' "
-        "ORDER BY ts DESC LIMIT 1"
-    )
-    print(f"  SQL on lakehouse warehouse:\n    {query}")
-    print(f"  (Simulated; would show the row visible ~{0.2-1.5}s after write via foreign table)")
-
-    # For the workshop, show expected output
-    print(f"  Expected result from lakehouse (same row, same moment): ('M-204', {ts_inserted}, 67.3, 4.2)")
+def score_and_write_back(rid):
+    """Compute a failure-risk score and write it back onto the row."""
+    run_sql(
+        "UPDATE factory.sensor_reading "
+        "SET failure_risk = ROUND(100 * (vibration_mm_s / 10.0 + temp_c / 100.0), 1) "
+        f"WHERE reading_id = {rid}")
+    row = run_sql(
+        "SELECT reading_id, machine_id, temp_c, vibration_mm_s, failure_risk "
+        f"FROM factory.sensor_reading WHERE reading_id = {rid}")[0]
+    print(f"  scored + wrote back: {row}")
+    return row
 
 
-def compute_risk_score():
-    """
-    Compute a failure risk score on the lakehouse (analytics).
-
-    In a real setup, this runs on a SQL warehouse. Here we show the concept.
-    """
-    print("  Simulated analytics query on lakehouse warehouse:")
-    query = (
-        "SELECT machine_id, ROUND(100 * (vibration_mm_s / 10.0 + temp_c / 100.0), 1) AS failure_risk_pct "
-        "FROM <catalog>.factory_sensor_reading_foreign "
-        "WHERE machine_id='M-204' AND ts > now() - interval '1 hour'"
-    )
-    print(f"    {query}")
-
-    # Compute from the values we inserted: temp=67.3, vib=4.2
-    risk = round(100 * (4.2 / 10.0 + 67.3 / 100.0), 1)
-    print(f"  failure_risk_pct = {risk}")
-    return risk
-
-
-def write_risk_back_to_postgres(risk_score):
-    """Write the computed risk score back to Postgres (reverse ETL)."""
-    # Add a failure_risk field to track the computed score
-    # In a real setup, this would be an UPDATE on the sensor_reading row or an INSERT to a risk_score table
-    print(f"  Writing risk score back to Postgres:")
-
-    # For the workshop, just show the concept (actual write would require schema change)
-    update_sql = (
-        "INSERT INTO factory.sensor_reading (machine_id, ts, temp_c, vibration_mm_s, rpm, load_pct) "
-        "SELECT machine_id, ts, temp_c, vibration_mm_s, rpm, load_pct "
-        "FROM factory.sensor_reading WHERE machine_id='M-204' ORDER BY ts DESC LIMIT 1"
-    )
-    print(f"    (schema note: full reverse-ETL would add a failure_risk column or a separate risk_score table)")
-    print(f"    Simulated write latency: ~45 ms")
-    print(f"    Updated sensor_reading: machine_id='M-204', failure_risk_pct={risk_score}")
-
-
-def read_risk_from_postgres():
-    """Read the risk score from Postgres after reverse write."""
-    print("  Reading risk score from Postgres (MES system can use it):")
-    rows = run_sql(
-        "SELECT machine_id, ts, temp_c, vibration_mm_s FROM factory.sensor_reading "
-        "WHERE machine_id='M-204' ORDER BY ts DESC LIMIT 1"
-    )
-    for row in rows:
-        print(f"    {row} [with failure_risk_pct computed on lakehouse]")
+def lakehouse_explainer():
+    """Show, honestly labeled, the lakehouse side that needs a UC catalog registration."""
+    print("  EXPLAINER (not run here): reading the SAME rows from the lakehouse.")
+    print("  Once an admin registers this Lakebase database as a Unity Catalog online catalog,")
+    print("  the operational rows are visible to a SQL warehouse with no pipeline and no copy:")
+    print()
+    print("    -- on a SQL warehouse, against the UC foreign catalog for this database:")
+    print("    SELECT machine_id, ts, temp_c, vibration_mm_s, failure_risk")
+    print("    FROM <catalog>.factory.sensor_reading")
+    print("    WHERE machine_id = 'M-204' ORDER BY ts DESC LIMIT 1;")
+    print()
+    print("  The row you just wrote through Postgres appears there immediately: it is the same")
+    print("  copy, not a synced one. Registering the catalog needs CREATE CATALOG on the")
+    print("  metastore (a workspace/metastore-admin action), so this workshop shows the query")
+    print("  rather than running it for you. Nothing here is simulated: the write and score above")
+    print("  are real on your branch; this step is the one that needs admin setup.")
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--step", choices=["write", "read-forward", "compute-score", "write-reverse"])
+    ap.add_argument("--step", choices=["write", "score"])
     args = ap.parse_args()
 
+    ensure_column()
+
     if args.step == "write":
-        write_sensor_reading()
+        write_reading()
         return
-    if args.step == "read-forward":
-        # Note: in a real scenario, this would use the Databricks SQL API and a warehouse
-        # For now, show the concept
-        ts = write_sensor_reading() if not args.step else datetime.now(timezone.utc)
-        read_from_lakehouse_foreign_table(ts)
-        return
-    if args.step == "compute-score":
-        risk = compute_risk_score()
-        return
-    if args.step == "write-reverse":
-        risk = compute_risk_score()
-        write_risk_back_to_postgres(risk)
+    if args.step == "score":
+        rid = write_reading()
+        score_and_write_back(rid)
         return
 
     # full story
-    print("1. Baseline sensor data on Postgres:")
-    baseline_sensor_data()
+    print("1. Write a new sensor reading through Postgres (OLTP), a millisecond write:")
+    rid = write_reading()
 
-    print("\n2. Write a new sensor reading through Postgres (OLTP):")
-    ts = write_sensor_reading()
+    print("\n2. Compute a failure-risk score and write it back onto the row (reverse step):")
+    score_and_write_back(rid)
 
-    print("\n3. Read from lakehouse (forward-ETL, no CDC):")
-    read_from_lakehouse_foreign_table(ts)
+    print("\n3. The operational side now serves an analytics-derived value at OLTP latency.")
+    print("   Read it straight back from Postgres:")
+    row = run_sql(
+        "SELECT machine_id, temp_c, vibration_mm_s, failure_risk "
+        f"FROM factory.sensor_reading WHERE reading_id = {rid}")[0]
+    print(f"  {row}")
 
-    print("\n4. Compute risk score on lakehouse analytics:")
-    risk = compute_risk_score()
+    print("\n4. The lakehouse side (same copy, no pipeline):")
+    lakehouse_explainer()
 
-    print("\n5. Write score back to Postgres (reverse-ETL):")
-    write_risk_back_to_postgres(risk)
-
-    print("\n6. Read score from Postgres (MES system can use it):")
-    read_risk_from_postgres()
-
-    print("\nDone. One copy, both engines, round-trip closed.")
+    print("\nDone. The write, the score, and the write-back are real on your branch. The lakehouse")
+    print("read is one query away once the database is registered in Unity Catalog.")
 
 
 if __name__ == "__main__":

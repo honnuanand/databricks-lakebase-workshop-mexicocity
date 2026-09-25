@@ -30,7 +30,7 @@ The capabilities a plain Postgres cannot do. Run these first; they are why Lakeb
 | 1 | [Branch the brain](branch-the-brain/) | Fork your whole factory database in seconds (zero-copy), diverge it, throw it away with production untouched. | ⭐ | live |
 | 2 | [Break it, then rewind](break-and-rewind/) | Delete live machine data on purpose, then point-in-time-restore the database to seconds ago. No backup job. | ⭐ | live |
 | 3 | [Scale to zero](scale-to-zero/) | Idle compute auto-suspends to $0 on its own; the next query wakes it in about two seconds. | ⭐ | live |
-| 4 | [One copy, both directions](write-to-analytics/) | Write sensor telemetry through Lakebase, query it in the lakehouse the same moment, push a failure-risk score back. No pipeline. | 🟢 | live |
+| 4 | [One copy, both directions](write-to-analytics/) | Write a reading through Lakebase, compute a failure-risk score, write it back; the same rows read from the lakehouse (explainer). | ⭐ | live |
 | 5 | [Fits your landscape](pg-integration/) | Point any Postgres driver, ORM, or BI tool at Lakebase and watch it map the schema. Governed by Unity Catalog. | 🟢 | live |
 
 ## AI on one database
@@ -93,9 +93,9 @@ Model factory knowledge as a graph and reason over it, all on Lakebase.
 
 ---
 
-**Progress:** 31 of 31 written · 3 proven on a live run (⭐: branch-the-brain, break-and-rewind,
-scale-to-zero). Live verification continues journey by journey. This table is the source of truth
-for both order and build status.
+**Progress:** 31 of 31 written · 4 proven on a live run (⭐: branch-the-brain, break-and-rewind,
+scale-to-zero, write-to-analytics). Live verification continues journey by journey. This table is
+the source of truth for both order and build status.
 
 *The journey slugs mirror the pitch app's journey ids in
 `../lakebase-pitch/frontend/src/journeys.ts`. To add or reorder a journey, edit this table; do
