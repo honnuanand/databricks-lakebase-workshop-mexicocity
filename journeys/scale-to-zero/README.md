@@ -4,51 +4,77 @@
 >
 > **Key takeaways**
 >
-> - Stop the database compute on demand: the instance releases its nodes in about 4 seconds and the cost meter freezes at $0.
-> - Restart it in about 7 seconds. The compute spins back up and the meter runs again.
-> - This is stop/start on demand, not auto-idle-with-millisecond-wake. Idle compute costs nothing; you only pay when you're serving.
+> - A Lakebase Autoscaling endpoint auto-suspends its compute to zero when it sits idle: state
+>   goes to `IDLE`, the compute nodes are released, and you pay nothing for compute. No stop
+>   button, it happens on its own.
+> - The next query wakes it. A cold wake from `IDLE` to serving measured about 1.7 seconds on a
+>   live run; a warm query is faster.
+> - Suspending compute never touches your data. Only the compute goes away and comes back; the
+>   storage, schema, and history stay.
 >
-> **You'll be able to:** stop and start database compute on demand, watch the cost meter tick to zero, and restart in seconds.
+> **You'll be able to:** see an endpoint's state (ACTIVE vs IDLE), watch idle compute cost
+> nothing, and wake it on demand with one query, timing the wake.
 >
 > **Time:** about 10 minutes  ·  **Status:** live
 
 ## The scenario
 
-It's 17:00 on Friday. The stamping plant shifts end. Production stopped for the day, the [manufacturing execution system](../../docs/glossary.md) (MES) is idle, and the factory runs on skeleton crew until Monday morning. But the database still runs. The database compute, the memory, the reserved capacity, all humming along at full price for two days of nobody querying it.
+It's 17:00 on Friday. The stamping plant's shift ends. Production stops for the weekend, the
+[manufacturing execution system](../../docs/glossary.md) (MES) goes quiet, and nobody queries the
+database until Monday. On a always-on database you pay full price for those idle hours anyway.
 
-On most databases, you pay for always-on. Maybe you've got reserved instances for the peak hours, but the idle hours bleed money. On Lakebase, you stop the compute.
+On Lakebase Autoscaling, you do not have to do anything. When the queries stop, the endpoint's
+compute auto-suspends to zero. Over the weekend it costs nothing for compute. Monday morning, the
+first query wakes it in about two seconds and it is serving again.
 
 ## How it works
 
-Unlike some databases, where "stopping" means downtime or a backup to slow rollback, stopping Lakebase compute is surgical. The database storage stays. The schema, the data, the backups, all untouched. Only the compute (the nodes, the memory, the cache) shuts down and releases back to the cloud. Restart it when production starts Monday, and you're serving again in seconds.
+An Autoscaling endpoint has a suspend timeout. After that long with no queries, the endpoint
+transitions to `IDLE`: the compute nodes are released back to the cloud, so there is no compute
+cost while it sits idle. The storage is separate and stays, so nothing is lost. The next
+connection wakes the compute (`IDLE` to `ACTIVE`) and answers the query.
 
 > **Note**
-> This journey demonstrates stop/start on demand. Some databases claim "auto-idle" with millisecond wake times, but that usually means you keep paying for reserved capacity standing by. On Lakebase, "scale to zero" means the compute truly stops, the meter reads $0/hr, and restart is genuinely a cycle, not a warm standby. The honest scope: you stop/start by hand (or with a scheduled job); it's not automatic millisecond-granularity idle wake.
+> This is genuinely automatic, not a manual stop button. You do not run a "stop" command; idle
+> suspension is the default behavior. (There is a way to force an endpoint off,
+> `EndpointSpec.disabled`, but the cost story is the automatic suspend, so that is what this
+> journey shows.) On a warm endpoint you will not see a cold wake; point the journey at a branch
+> that has been idle for a few minutes, such as `production`, to watch the wake clearly.
 
 ## The wow moment
 
-The beat worth watching: you stop the compute, the cost meter freezes at $0, and the state indicator goes dark. Nothing is running. Then you restart, and the database is serving again in about seven seconds. The moment matters because it breaks the mental model of "database = always-on cost center." This one has a switch.
+The beat worth watching: you look at an endpoint that has gone `IDLE` on its own (costing
+nothing), then run a single query and watch it wake to `ACTIVE` and answer, in about two seconds.
+It breaks the mental model of "database = always-on cost center." Idle is free, and waking is a
+query away.
 
 > **From the field**
-> The honest number: stopping takes about 4 seconds (the instance transitions to `STOPPED`, nodes release). Restarting takes about 7 seconds (the instance transitions to `AVAILABLE`, nodes provision). These are real measurements; cold starts (first start of a very-long-idle instance) can be slightly slower. Compare that to a RDS "pause database" (which isn't truly zero compute on many instance types) or a Snowflake warehouse start (typically 30–60 seconds of warmup). This is genuine stop/start.
+> The honest numbers, measured live: a cold wake from `IDLE` to serving took about 1.7 seconds
+> (a `SELECT 1` that had to bring the compute back). A warm query, where the endpoint was already
+> `ACTIVE`, was around a second (that is mostly the network round trip to the region plus minting
+> a fresh credential, not a wake). Compare a Snowflake warehouse cold start, typically tens of
+> seconds. Waking Lakebase compute is a couple of seconds, and the idle time before it was free.
 
 ## What you'll do
 
-1. Check your branch's compute state and cost rate (running).
-2. Stop the compute and watch the cost meter freeze.
-3. Confirm the instance is stopped and the cost is $0.
-4. Restart the compute and time how long until it's serving again.
-5. Confirm the data is untouched and the meter is running again.
+1. Look at your branch's endpoint state (`ACTIVE` = serving, `IDLE` = suspended to zero).
+2. Understand that idle compute suspends to zero on its own, no action needed.
+3. Wake the endpoint with a single query and time the `IDLE` to `ACTIVE` wake.
+4. Confirm the endpoint is serving again and your data is exactly as it was.
 
-Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output and timings to check against are in [`expected.md`](expected.md).
+Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output and timings
+to check against are in [`expected.md`](expected.md).
 
 ## Prerequisites
 
-Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect. Nothing else; this journey stands on its own. Be aware that if you're on a shared project, stopping compute affects *all* other journeys on the same project until you restart. If you're unsure, ask your instructor.
-
-> **Warning**
-> Stopping compute on a shared project will pause other journeys running on the same project. Only run this if you're sure you're on your own project or have coordinated with others on the team.
+Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect. Nothing else;
+this journey stands on its own. To see a clear cold wake, use a branch you have not queried for a
+few minutes (your own branch may still be warm from a previous journey); the `production` branch
+is often idle and makes the wake obvious.
 
 ## Wrapping up
 
-Once you can reliably stop compute to $0 and restart in seconds, the mental model of the database as an always-on cost center changes. The next journey shows how to connect the database to the lakehouse: [Write to analytics](../write-to-analytics/) demonstrates live data flow in both directions without a pipeline.
+Once idle compute costs nothing and waking is a two-second query, the database stops being an
+always-on cost center. The next journey connects the database to the lakehouse:
+[One copy, both directions](../write-to-analytics/) shows operational and analytical work on one
+copy, with no pipeline.

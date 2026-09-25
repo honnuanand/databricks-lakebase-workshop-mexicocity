@@ -1,92 +1,73 @@
 # Scale to zero, expected results
 
-Use this to check your run. Timings are from our measurements on a warm project; yours will be close but not identical. The *shape* is what matters: sub-5-second stop, sub-10-second start, nodes dropping to zero and cost meter freezing.
+Use this to check your run. Endpoint states and timings are from a live run; yours will be
+close. The shape is what matters: idle costs nothing, waking is a couple of seconds.
 
-## Step 1, initial state
+## Step 1, the endpoint state
 
-```text
-  endpoint_id: primary
-  state: ACTIVE
-  nodes: 1
-  cu: 1
-```
-
-The compute is running, serving.
-
-## Step 2, stop
+If you have queried this branch recently:
 
 ```text
-  stopping compute ...
-  stopped in ~4.2s; nodes: 0; effective_stopped: true
+  branch u-arao: endpoint primary is ACTIVE
+  -> serving: compute is up and metering.
 ```
 
-The API call returns fast; the instance transitions to `STOPPED` and nodes drop to zero in about 4 seconds. The effective_stopped flag confirms compute is truly released.
-
-## Step 3, status after stop
+If it has been idle for a few minutes (try `--branch production`):
 
 ```text
-  endpoint_id: primary
-  state: STOPPED
-  nodes: 0
-  effective_stopped: true
+  branch production: endpoint primary is IDLE
+  -> suspended to zero: no compute nodes, no compute cost right now.
 ```
 
-No nodes. No compute. Cost meter is at $0/hr.
+## Step 3, wake it on demand
 
-## Step 4, restart
+Waking a genuinely idle endpoint (the interesting case):
 
 ```text
-  starting compute ...
-  started in ~7.1s; state: ACTIVE; nodes: 1
+  endpoint is IDLE; a single query will wake it. timing...
+  woke IDLE -> ACTIVE; first query answered in ~1700 ms
 ```
 
-Restarting takes about 7 seconds. The instance transitions from STOPPED to ACTIVE and nodes come back up.
-
-## Step 5, status after restart
+If the endpoint was already warm, you will instead see it stay `ACTIVE` and the query return in
+around a second (that is the network round trip, not a wake):
 
 ```text
-  endpoint_id: primary
-  state: ACTIVE
-  nodes: 1
-  cu: 1
+  endpoint is ACTIVE; running a query (already warm, so this is not a cold wake)
+  ACTIVE; first query answered in ~1000 ms
 ```
-
-Back to where we started. The compute is serving again.
 
 ## Full run
 
-Running `python scale_to_zero.py` with no arguments prints the whole story:
-
 ```text
-1. Check current state:
-  endpoint_id: primary
-  state: ACTIVE
-  nodes: 1
-  cu: 1
-2. Stop the compute:
-  stopping compute ...
-  stopped in ~4.2s; nodes: 0; effective_stopped: true
-3. Verify the stop (no compute, cost = $0):
-  endpoint_id: primary
-  state: STOPPED
-  nodes: 0
-  effective_stopped: true
-4. Restart the compute:
-  starting compute ...
-  started in ~7.1s; state: ACTIVE; nodes: 1
-5. Verify data is untouched:
-  machine count: 8
-Done. Compute stopped and restarted; data intact.
+1. The endpoint's current state:
+  branch production: endpoint primary is IDLE
+  -> suspended to zero: no compute nodes, no compute cost right now.
+
+2. Idle compute scales to zero on its own.
+   ...
+
+3. Wake it on demand with a single query:
+  endpoint is IDLE; a single query will wake it. timing...
+  woke IDLE -> ACTIVE; first query answered in ~1700 ms
+
+4. Back to serving, and the data is exactly as it was:
+  branch production: endpoint primary is ACTIVE
+  -> serving: compute is up and metering.
+
+Done. Idle costs nothing; waking on demand took ~1.7s. You only pay when you serve.
 ```
 
 ## The numbers that matter
 
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
-| stop time | about 4s | compute releases; cost meter freezes at $0 |
-| restart time | about 7s | the compute cycle from zero to serving |
-| nodes while stopped | 0 | no reserved standby capacity; truly zero cost |
-| data after restart | identical | stopping compute does not touch the database |
+| idle endpoint state | `IDLE`, no nodes | compute released, no compute cost |
+| cold wake (IDLE to serving) | about 1.7s (measured) | "start on demand" is seconds, not minutes |
+| warm query | about 1s | already active; this is round trip, not a wake |
+| data after wake | unchanged | suspend touches compute only, never storage |
 
 > **From the field**
-> The honest numbers: stopping takes about 4 seconds and truly releases the nodes (effective_stopped=true, nodes=0). Restarting takes about 7 seconds. These are real measurements on warm instances. A cold start (if the project is very idle) can be slower. Compare that to some databases' "pause" operations, which may keep reserved capacity around, or to Snowflake warehouse start times (typically 30–60 seconds of warmup). This stop/start is genuine and fast.
+> To see a cold wake you need an endpoint that has actually gone `IDLE`, which takes a few
+> minutes of no queries. If everything shows `ACTIVE`, you have been querying it; wait a few
+> minutes, or point `--branch` at one you have not touched. The auto-suspend is real, it just is
+> not instant.

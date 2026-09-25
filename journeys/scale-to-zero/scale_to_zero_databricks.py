@@ -1,125 +1,109 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Scale to zero - step by step
+# MAGIC # Scale to zero, step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will check database compute state, stop it, and restart it, dropping cost to 0/hr when idle.
+# MAGIC A hands-on lab. Run one cell at a time. You will see that a Lakebase Autoscaling endpoint
+# MAGIC auto-suspends its compute to zero when idle (costing nothing) and wakes on the next query in
+# MAGIC about two seconds. There is no stop button to press: idle is free, automatically.
 # MAGIC
-# MAGIC Each step uses the real interface: SDK for control-plane operations, SQL for queries.
-# MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA`
+# MAGIC are set and the factory is loaded on your branch.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Setup - initialize
+# MAGIC ## Setup, connect
 
 # COMMAND ----------
 
-import os, sys, time
+import os, sys, time, psycopg
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
-from lakebase import client, _env
-from databricks.sdk.service.postgres import DatabaseInstance
+from lakebase import client, branch_name, PG_PORT, DEFAULT_DB
 
 PROJECT = os.environ["LB_PROJECT"]
+MINE    = os.environ["LB_BRANCH"]
 w = client()
 
-def get_instance_state(w, project):
-    inst = w.postgres.get_database_instance(name=f"projects/{project}")
-    ep = inst.endpoints[0] if inst.endpoints else None
-    return {
-        "endpoint_id": ep.endpoint_id if ep else "?",
-        "state": ep.status.current_state.value if (ep and ep.status and ep.status.current_state) else "UNKNOWN",
-        "nodes": inst.nodes if inst.nodes else 0,
-        "effective_stopped": inst.effective_stopped if inst.effective_stopped else False,
-        "cu": inst.compute_unit if inst.compute_unit else "?",
-    }
+def endpoint_state(branch):
+    e = list(w.postgres.list_endpoints(parent=branch_name(PROJECT, branch)))[0]
+    st = e.status.current_state.value if e.status and e.status.current_state else "?"
+    host = e.status.hosts.host if e.status and e.status.hosts else None
+    return st, host, (e.endpoint_id or "primary")
 
 print("connected as", w.current_user.me().user_name)
-print(f"project={PROJECT}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 - Check the current compute state
+# MAGIC ## Step 1, the endpoint's current state
 # MAGIC
-# MAGIC Query the project's compute endpoint to see its current state. This step uses the SDK, not SQL.
+# MAGIC `ACTIVE` means compute is up and metering. `IDLE` means it auto-suspended to zero: no compute,
+# MAGIC no compute cost. A branch you just used is usually ACTIVE; one you have not queried for a few
+# MAGIC minutes will be IDLE. This is a control-plane read (the SDK), not SQL.
 
 # COMMAND ----------
 
-state = get_instance_state(w, PROJECT)
-print(f"  endpoint_id: {state['endpoint_id']}")
-print(f"  state: {state['state']}")
-print(f"  nodes: {state['nodes']}")
-print(f"  cu: {state['cu']}")
-if state['effective_stopped']:
-    print(f"  effective_stopped: {state['effective_stopped']}")
+st, host, eid = endpoint_state(MINE)
+print(f"branch {MINE}: endpoint {eid} is {st}")
+print("IDLE = suspended to zero (free); ACTIVE = serving (metering).")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2 - Stop the compute
+# MAGIC ## Step 2, idle scales to zero on its own
 # MAGIC
-# MAGIC Call the Lakebase API to stop compute. The script polls until stopped and prints timing.
+# MAGIC You do not stop it. With no queries, the endpoint auto-suspends to `IDLE` and the compute is
+# MAGIC released. To watch a cold wake clearly, point at a branch that has been idle (for example
+# MAGIC `production` if you have not touched it): set `MINE = "production"` in the setup cell and
+# MAGIC re-run, or continue on your own branch (the cell below labels whether it was a cold wake).
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Step 3, wake it on demand with one query, timed
+# MAGIC
+# MAGIC A single `SELECT 1` wakes the endpoint. Waking is about the compute, not any table, so this
+# MAGIC works on any branch. The SQL:
+# MAGIC
+# MAGIC ```sql
+# MAGIC SELECT 1;
+# MAGIC ```
+
+# COMMAND ----------
+
+st, host, eid = endpoint_state(MINE)
+cold = (st == "IDLE")
+print("endpoint is IDLE; timing the wake..." if cold else f"endpoint is {st} (warm, not a cold wake)")
 t0 = time.time()
-w.postgres.update_database_instance(
-    name=f"projects/{PROJECT}",
-    database_instance=DatabaseInstance(stopped=True))
-
-# Poll until stopped
-while time.time() - t0 < 30:
-    state = get_instance_state(w, PROJECT)
-    if state["state"] == "STOPPED" and state["nodes"] == 0 and state["effective_stopped"]:
-        elapsed = time.time() - t0
-        print(f"  stopped in ~{elapsed:.1f}s; nodes: {state['nodes']}; effective_stopped: true")
-        break
-    time.sleep(0.5)
+cred = w.postgres.generate_database_credential(endpoint=f"{branch_name(PROJECT, MINE)}/endpoints/{eid}")
+conn = psycopg.connect(host=host, port=PG_PORT, dbname=DEFAULT_DB,
+                       user=w.current_user.me().user_name, password=cred.token,
+                       sslmode="require", autocommit=True, connect_timeout=30)
+with conn.cursor() as cur:
+    cur.execute("SELECT 1"); cur.fetchone()
+dt = (time.time() - t0) * 1000
+conn.close()
+st2, _, _ = endpoint_state(MINE)
+print(f"{'woke IDLE -> ' + st2 if cold else st2}; first query answered in {dt:.0f} ms")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 - Verify the stop
+# MAGIC ## Step 4, the storage stayed, only compute went away
 # MAGIC
-# MAGIC Check the state again to confirm compute is stopped.
+# MAGIC Suspending compute never touches your data; only the compute is released and then restored.
+# MAGIC Confirm the endpoint is serving again.
 
 # COMMAND ----------
 
-state = get_instance_state(w, PROJECT)
-print(f"  endpoint_id: {state['endpoint_id']}")
-print(f"  state: {state['state']}")
-print(f"  nodes: {state['nodes']}")
-print(f"  effective_stopped: {state['effective_stopped']}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 4 - Restart the compute
-# MAGIC
-# MAGIC Call the Lakebase API to start compute. The script polls until active and prints timing.
-
-# COMMAND ----------
-
-t0 = time.time()
-w.postgres.update_database_instance(
-    name=f"projects/{PROJECT}",
-    database_instance=DatabaseInstance(stopped=False))
-
-# Poll until active
-while time.time() - t0 < 60:
-    state = get_instance_state(w, PROJECT)
-    if state["state"] == "ACTIVE" and state["nodes"] > 0:
-        elapsed = time.time() - t0
-        print(f"  started in ~{elapsed:.1f}s; state: {state['state']}; nodes: {state['nodes']}")
-        break
-    time.sleep(0.5)
+st, _, _ = endpoint_state(MINE)
+print(f"branch {MINE} endpoint is now {st}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You controlled database compute costs with scale-to-zero: stopping compute drops cost to 0/hr, restarting takes about 7 seconds, and data remains untouched. No long-running idle charges.
-# MAGIC
-# MAGIC **Next:** Write to analytics - combine Postgres operations with Databricks lakehouse via foreign tables.
+# MAGIC Idle Lakebase compute costs nothing, automatically, and wakes on demand in about two seconds
+# MAGIC (a cold wake measured about 1.7s on a live run; a warm query is faster). You pay only when you
+# MAGIC serve. Next: **One copy, both directions** shows operational and analytical work on one copy.
