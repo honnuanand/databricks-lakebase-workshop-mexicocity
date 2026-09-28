@@ -1,14 +1,15 @@
 <img src="assets/lakebase-lockup.png" alt="Lakebase" height="56">
 
-> ## 🚧 Work in progress
+> ## ✅ Manufacturing edition: ready
 >
-> This workshop is being actively built and is **not ready to run end to end yet.** Content,
-> scripts, and structure will change. Feel free to look around, but hold off on working through
-> it until this banner comes down.
+> The **manufacturing** edition is complete and verified: all 31 journeys have been run
+> end to end against a live Lakebase, and their expected results reflect real measured output.
+> Work through it on the [`manufacturing`](../../tree/manufacturing) branch.
 >
-> This edition uses a **manufacturing** running example. **Coming soon:** separate branches for
-> other domains, starting with **healthcare** and **finance**, built on the same Lakebase core,
-> so you can learn the same capabilities through whichever domain fits you best.
+> **In progress (parallel):** [`finance`](../../tree/finance) and [`healthcare`](../../tree/healthcare)
+> editions, built on this same Lakebase core, so you can learn the same capabilities through
+> whichever domain fits you best. This `main` branch holds the shared core the domain editions
+> build on.
 
 # Lakebase Workshop
 
