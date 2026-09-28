@@ -11,18 +11,18 @@ hard-coded to any workspace:
     LB_PROFILE      Databricks CLI profile to auth as (from 00-setup/auth.md)
     LB_PROJECT      the Lakebase project id (from 00-setup/provision.md)
     LB_BRANCH       your branch id, e.g. u-alex (from 00-setup/your-branch.md)
-    LB_SCHEMA       schema to use (default: factory)
+    LB_SCHEMA       schema to use (default: bank)
 
 Usage (from another script):
     from lakebase import connect, run_sql, branch_endpoint
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM machine")
+            cur.execute("SELECT count(*) FROM account")
             print(cur.fetchone())
 
 Or as a CLI smoke test:
     python lakebase.py --check          # SELECT 1 on your branch
-    python lakebase.py --sql "SELECT machine_id, status FROM factory.machine"
+    python lakebase.py --sql "SELECT account_id, status FROM bank.account"
 """
 from __future__ import annotations
 
@@ -102,7 +102,7 @@ def connect(project: Optional[str] = None, branch: Optional[str] = None,
         host=host, port=PG_PORT, dbname=dbname,
         user=user, password=cred.token,
         sslmode="require", autocommit=True, connect_timeout=20)
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
     with conn.cursor() as cur:
         cur.execute(f"SET search_path TO {schema}, public")
     return conn
