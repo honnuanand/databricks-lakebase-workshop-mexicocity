@@ -85,13 +85,16 @@ def simple_query(g: Graph) -> list[str]:
 
 
 def multi_hop_query(g: Graph) -> list[str]:
-    """SPARQL query: which products contain parts from supplier S-ACME?"""
+    """SPARQL: which products contain a part supplied by SUP-FASTENALL?
+
+    `contains` chains parent->child, so `contains+` (one or more hops) walks the whole
+    bill-of-materials tree, catching parts nested under subassemblies too. That multi-hop
+    reachability is exactly what reads naturally as a graph and is painful as SQL joins."""
     query_text = """
         PREFIX factory: <http://factory.local/>
         SELECT DISTINCT ?product WHERE {
-            ?product factory:contains ?part .
-            ?part factory:supplied_by ?supplier .
-            FILTER (?supplier = factory:S-ACME)
+            ?product factory:contains+ ?part .
+            ?part factory:supplied_by factory:SUP-FASTENALL .
         }
     """
     results = g.query(query_text)
@@ -137,7 +140,7 @@ def main() -> None:
             return
 
     if args.step == "multi-hop" or not args.step:
-        print("\nSPARQL multi-hop query: which products contain a part from S-ACME?")
+        print("\nSPARQL multi-hop query: which products contain a part from SUP-FASTENALL?")
         products = multi_hop_query(g)
         for product in products:
             print(f"  {product}")
@@ -153,7 +156,7 @@ def main() -> None:
         JOIN factory.part pt ON b.child_part = pt.part_id
         LEFT JOIN factory.part_supplier ps ON pt.part_id = ps.part_id
         LEFT JOIN factory.supplier s ON ps.supplier_id = s.supplier_id
-        WHERE s.supplier_id = 'S-ACME'
+        WHERE s.supplier_id = 'SUP-FASTENALL'
         """
         print(sql)
 
@@ -167,7 +170,7 @@ def main() -> None:
                         JOIN factory.part pt ON b.child_part = pt.part_id
                         LEFT JOIN factory.part_supplier ps ON pt.part_id = ps.part_id
                         LEFT JOIN factory.supplier s ON ps.supplier_id = s.supplier_id
-                        WHERE s.supplier_id = 'S-ACME'
+                        WHERE s.supplier_id = 'SUP-FASTENALL'
                     """)
                     rows = cur.fetchall()
                     print(f"  SQL Result: {rows}")

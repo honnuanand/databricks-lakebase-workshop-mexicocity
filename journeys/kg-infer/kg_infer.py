@@ -116,19 +116,30 @@ def main() -> None:
         print("\nApplying entailment...")
         FACTORY = Namespace("http://factory.local/")
 
-        # Manual forward-chaining for this simple rule
-        # Find all (product contains part) where (part recalled=true)
+        # Forward-chaining for the rule: a product is affected if it contains a recalled
+        # part ANYWHERE in its bill-of-materials tree (directly or via subassemblies).
+        # `contains` chains parent->child, so we walk it transitively from each product.
         count_before = len(g)
-        for obj in g.objects(None, URIRef(FACTORY.recalled)):
-            if obj == Literal(True):
-                # This is a recalled part
-                for subj in g.subjects(URIRef(FACTORY.contains), obj):
-                    # subj is a product containing the recalled part
-                    g.add((
-                        subj,
-                        URIRef(FACTORY.affected_by_recall),
-                        Literal(True)
-                    ))
+
+        # 1. collect the recalled parts (subjects of `recalled = true`)
+        recalled_parts = {s for s, o in g.subject_objects(URIRef(FACTORY.recalled))
+                          if o == Literal(True)}
+
+        # 2. for every product, walk contains* and mark it affected if it reaches a recalled part
+        def reaches(node, targets, seen=None):
+            seen = seen or set()
+            for child in g.objects(node, URIRef(FACTORY.contains)):
+                if child in targets:
+                    return True
+                if child not in seen:
+                    seen.add(child)
+                    if reaches(child, targets, seen):
+                        return True
+            return False
+
+        for product in g.subjects(URIRef(FACTORY.type), URIRef(FACTORY.Product)):
+            if reaches(product, recalled_parts):
+                g.add((product, URIRef(FACTORY.affected_by_recall), Literal(True)))
 
         count_after = len(g)
         print(f"  Triples before: {count_before}")

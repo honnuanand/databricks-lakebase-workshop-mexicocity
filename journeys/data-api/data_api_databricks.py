@@ -9,7 +9,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Setup — install httpx and get your connection info
+# MAGIC ## Setup, install httpx and get your connection info
 
 # COMMAND ----------
 
@@ -30,7 +30,7 @@ print("httpx ready.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 — Get connection info and OAuth token
+# MAGIC ## Step 1, Get connection info and OAuth token
 
 # COMMAND ----------
 
@@ -54,7 +54,7 @@ print(f"  Data API URL: https://{host}/api/v1/")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2 — Get an OAuth token from Databricks
+# MAGIC ## Step 2, Get an OAuth token from Databricks
 
 # COMMAND ----------
 
@@ -77,7 +77,7 @@ print(f"  Expires in: 3600 seconds (1 hour)")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 — Check if the Data API is enabled on your instance
+# MAGIC ## Step 3, Check if the Data API is enabled on your instance
 
 # COMMAND ----------
 
@@ -116,7 +116,7 @@ except Exception as e:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 — Fetch all machines via REST (if enabled)
+# MAGIC ## Step 4, Fetch all machines via REST (if enabled)
 
 # COMMAND ----------
 
@@ -145,7 +145,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 — Filter with query parameters
+# MAGIC ## Step 5, Filter with query parameters
 
 # COMMAND ----------
 
@@ -176,7 +176,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 — Compare REST to SQL
+# MAGIC ## Step 6, Compare REST to SQL
 # MAGIC
 # MAGIC The same query in SQL:
 # MAGIC

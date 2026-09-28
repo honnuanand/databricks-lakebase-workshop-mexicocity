@@ -11,7 +11,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Setup — install rdflib and connect to your branch
+# MAGIC ## Setup, install rdflib and connect to your branch
 
 # COMMAND ----------
 
@@ -33,9 +33,9 @@ print("rdflib installed. Ready to load the graph.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 — Load the BOM as triples
+# MAGIC ## Step 1, Load the BOM as triples
 # MAGIC
-# MAGIC The factory has a bill of materials (BOM): products are made of parts, parts are supplied by suppliers, and machines operate in plants. We convert this into RDF triples—the subject-predicate-object triples that form a knowledge graph.
+# MAGIC The factory has a bill of materials (BOM): products are made of parts, parts are supplied by suppliers, and machines operate in plants. We convert this into RDF triples, the subject-predicate-object triples that form a knowledge graph.
 # MAGIC
 # MAGIC Each triple is a fact: `(product, contains, part)`, `(part, supplied_by, supplier)`, `(machine, operates_in, plant)`.
 # MAGIC
@@ -108,7 +108,7 @@ for key, val in stats.items():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2 — Query the graph for a single BOM path
+# MAGIC ## Step 2, Query the graph for a single BOM path
 # MAGIC
 # MAGIC Ask the graph: "which parts are directly contained in product PRD-GEARBOX-X1?"
 # MAGIC
@@ -131,7 +131,7 @@ for part in sorted(parts):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 — Show the equivalent SQL
+# MAGIC ## Step 3, Show the equivalent SQL
 # MAGIC
 # MAGIC The same query in SQL is straightforward for a simple containment:
 # MAGIC

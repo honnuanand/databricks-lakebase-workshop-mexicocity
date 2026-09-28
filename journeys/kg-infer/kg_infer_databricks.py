@@ -2,14 +2,14 @@
 # MAGIC %md
 # MAGIC # Infer and derive facts, step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will define business logic as forward-chaining inference rules on a knowledge graph, then apply entailment to derive new facts automatically. This is how you express "if this part is recalled, then any product containing it is affected"—and let the graph reason about consequences.
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will define business logic as forward-chaining inference rules on a knowledge graph, then apply entailment to derive new facts automatically. This is how you express "if this part is recalled, then any product containing it is affected", and let the graph reason about consequences.
 # MAGIC
 # MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Setup — install rdflib and load the graph
+# MAGIC ## Setup, install rdflib and load the graph
 
 # COMMAND ----------
 
@@ -30,7 +30,7 @@ print("rdflib ready. Loading the graph...")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 — Load the graph from the factory
+# MAGIC ## Step 1, Load the graph from the factory
 
 # COMMAND ----------
 
@@ -67,7 +67,7 @@ print(f"Graph loaded: {len(g)} triples")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2 — Define a business rule: if a part is recalled, products containing it are affected
+# MAGIC ## Step 2, Define a business rule: if a part is recalled, products containing it are affected
 
 # COMMAND ----------
 
@@ -87,7 +87,7 @@ print("  Then (product is affected by recall)")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 — Mark a part as recalled
+# MAGIC ## Step 3, Mark a part as recalled
 # MAGIC
 # MAGIC Add a fact to the graph: part PT-BEARING-6204 is recalled.
 
@@ -102,7 +102,7 @@ print(f"Graph now has {len(g)} triples.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 — Query for affected products BEFORE inference
+# MAGIC ## Step 4, Query for affected products BEFORE inference
 # MAGIC
 # MAGIC Ask: "which products are marked as affected by a recall?"
 # MAGIC
@@ -124,7 +124,7 @@ print(f"Products affected (before inference): {affected_before}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 — Apply inference
+# MAGIC ## Step 5, Apply inference
 # MAGIC
 # MAGIC Use forward chaining to apply the rule. The reasoner looks for all facts matching the rule's premises, and adds new facts (the conclusion) for each match.
 
@@ -146,7 +146,7 @@ print(f"  Graph now has {triples_after} triples (was {triples_before}).")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 — Query for affected products AFTER inference
+# MAGIC ## Step 6, Query for affected products AFTER inference
 # MAGIC
 # MAGIC Ask the same question again: "which products are affected?"
 # MAGIC

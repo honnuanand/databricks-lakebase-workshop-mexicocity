@@ -66,7 +66,7 @@ SQL Server, this is the "it already does what you need" track.
 | 22 | [Postgres in your browser](pg-lite/) | A full Postgres compiled to WebAssembly (PGlite), running client-side, speaking the same SQL as Lakebase. | 🟢 | live |
 | 23 | [Feature store, served online](pg-features/) | Materialize per-machine features, serve a feature vector on a primary-key lookup in single-digit ms. | ⭐ | live |
 | 24 | [One query, every type](pg-one-database/) | One SELECT spanning relational + JSON + vector + geospatial on a single table. Not four products. | ⭐ | live |
-| 25 | [Your commits are a change feed](pg-cdc/) | Tap the commit log: every insert/update/delete as an ordered, LSN-stamped feed via logical decoding. | 🟢 | preview |
+| 25 | [Your commits are a change feed](pg-cdc/) | Tap the commit log: every insert/update/delete as an ordered, LSN-stamped feed via logical decoding. | ⭐ | preview |
 
 ## The knowledge graph track
 
@@ -74,16 +74,16 @@ Model factory knowledge as a graph and reason over it, all on Lakebase.
 
 | # | Journey | What you'll do | Build | Runs |
 | -- | ------- | -------------- | ----- | ---- |
-| 26 | [Build the knowledge graph](kg-build/) | Turn scattered facts (part → subassembly → product → plant) into RDF triples in Lakebase; draw the graph. | 🟢 | live |
-| 27 | [Ask the graph in SPARQL](kg-sparql/) | A multi-hop question ("which products use a part from a disrupted supplier?") that's natural as SPARQL, ugly as SQL joins. | 🟢 | live |
-| 28 | [The graph reasons](kg-infer/) | State a taxonomy and one rule; the graph derives facts you never wrote down (which products a recall touches). | 🟢 | live |
+| 26 | [Build the knowledge graph](kg-build/) | Turn scattered facts (part → subassembly → product → plant) into RDF triples in Lakebase; draw the graph. | ⭐ | live |
+| 27 | [Ask the graph in SPARQL](kg-sparql/) | A multi-hop question ("which products use a part from a disrupted supplier?") that's natural as SPARQL, ugly as SQL joins. | ⭐ | live |
+| 28 | [The graph reasons](kg-infer/) | State a taxonomy and one rule; the graph derives facts you never wrote down (which products a recall touches). | ⭐ | live |
 
 ## Security and access
 
 | # | Journey | What you'll do | Build | Runs |
 | -- | ------- | -------------- | ----- | ---- |
-| 29 | [Customer-managed keys](cmk/) | Your encryption key in your own KMS; revoke it and every project goes dark. The kill-switch is yours. (Explainer.) | 🟢 | live |
-| 30 | [Data API (REST)](data-api/) | Your table as an auto-generated, PostgREST-compatible REST API, authenticated by Databricks OAuth. | 🟢 | live |
+| 29 | [Customer-managed keys](cmk/) | Your encryption key in your own KMS; revoke it and every project goes dark. The kill-switch is yours. (Explainer.) | ⭐ | live |
+| 30 | [Data API (REST)](data-api/) | Your table as an auto-generated, PostgREST-compatible REST API, authenticated by Databricks OAuth. | ⭐ | live |
 
 ## Capstone
 

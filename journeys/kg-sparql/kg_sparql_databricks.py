@@ -9,7 +9,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Setup — install rdflib and load the graph
+# MAGIC ## Setup, install rdflib and load the graph
 
 # COMMAND ----------
 
@@ -30,7 +30,7 @@ print("rdflib ready. Loading the graph...")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 — Load the graph from the factory
+# MAGIC ## Step 1, Load the graph from the factory
 # MAGIC
 # MAGIC Load products, parts, BOM edges, suppliers, and machine relationships from Lakebase into an in-memory RDF graph.
 
@@ -71,7 +71,7 @@ print(f"Graph loaded: {len(g)} triples")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2 — Simple SPARQL query
+# MAGIC ## Step 2, Simple SPARQL query
 # MAGIC
 # MAGIC Ask the graph with SPARQL: "which parts are contained in product PRD-GEARBOX-X1?"
 # MAGIC
@@ -105,7 +105,7 @@ for row in results:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 — Multi-hop SPARQL query
+# MAGIC ## Step 3, Multi-hop SPARQL query
 # MAGIC
 # MAGIC Now a harder question: "which finished products contain a part supplied by S-ACME?"
 # MAGIC
@@ -144,7 +144,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 — Equivalent SQL
+# MAGIC ## Step 4, Equivalent SQL
 # MAGIC
 # MAGIC The same query in SQL requires three joins:
 # MAGIC
@@ -188,7 +188,7 @@ print(f"\nBoth queries return {len(products)} products. The SPARQL reads more na
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 — Aggregation query
+# MAGIC ## Step 5, Aggregation query
 # MAGIC
 # MAGIC SPARQL supports GROUP BY and aggregates, just like SQL. Ask: "for each supplier, how many distinct parts do they supply?"
 # MAGIC

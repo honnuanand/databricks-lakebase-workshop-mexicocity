@@ -22,12 +22,33 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import client, branch_endpoint, connect, _env
 
+# Use httpx if present, otherwise fall back to requests (a workshop dependency).
+# Both expose a Client() context manager with .get()/.post() here, so the call sites
+# below work either way. No runtime pip install.
 try:
     import httpx
 except ImportError:
-    print("httpx not installed. Installing...")
-    subprocess.run(["pip", "install", "httpx"], check=True)
-    import httpx
+    import requests
+
+    class _RequestsClient:
+        def __init__(self, timeout=10):
+            self._s = requests.Session()
+            self._timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            self._s.close()
+
+        def get(self, url, headers=None, params=None):
+            return self._s.get(url, headers=headers, params=params, timeout=self._timeout)
+
+        def post(self, url, headers=None, json=None):
+            return self._s.post(url, headers=headers, json=json, timeout=self._timeout)
+
+    class httpx:  # shim namespace so `httpx.Client(...)` keeps working
+        Client = _RequestsClient
 
 
 def get_oauth_token(profile: str) -> str:
@@ -48,8 +69,8 @@ def check_data_api(host: str, token: str) -> tuple[bool, str]:
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
-        with httpx.Client(timeout=10) as client:
-            response = client.get(url, headers=headers, params={"limit": 1})
+        with httpx.Client(timeout=10) as http:
+            response = http.get(url, headers=headers, params={"limit": 1})
             if response.status_code == 200:
                 return True, "Data API is ENABLED"
             elif response.status_code == 404:
@@ -65,8 +86,8 @@ def get_machines(host: str, token: str) -> list[dict]:
     url = f"https://{host}/api/v1/factory.machine"
     headers = {"Authorization": f"Bearer {token}"}
 
-    with httpx.Client(timeout=10) as client:
-        response = client.get(url, headers=headers)
+    with httpx.Client(timeout=10) as http:
+        response = http.get(url, headers=headers)
         response.raise_for_status()
         return response.json()
 
@@ -77,8 +98,8 @@ def get_filtered_machines(host: str, token: str) -> list[dict]:
     headers = {"Authorization": f"Bearer {token}"}
     params = {"select": "machine_id,status", "status": "eq.healthy"}
 
-    with httpx.Client(timeout=10) as client:
-        response = client.get(url, headers=headers, params=params)
+    with httpx.Client(timeout=10) as http:
+        response = http.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response.json()
 
@@ -130,6 +151,22 @@ def main() -> None:
         print(f"  Token: {token[:20]}... (truncated)")
         print(f"  Expires in: 3600 seconds (1 hour)")
         if args.step:
+            return
+
+    # In the full run, if the Data API is not enabled on this instance, stop here with
+    # the honest explainer rather than making calls that return 400. The Data API is
+    # turned on from the Lakebase UI (no programmatic switch), so this is expected.
+    if not args.step:
+        enabled, msg = check_data_api(host, token)
+        if not enabled:
+            print(f"\nThe Data API is not enabled on this instance ({msg}).")
+            print("This journey makes real HTTPS calls when it is enabled; it does not mock them.")
+            print("To enable it: Databricks console -> Lakebase -> your instance -> Settings ->")
+            print("turn on the Data API, then re-run. The calls below are what you would run:")
+            print("  GET  https://<host>/api/v1/factory.machine")
+            print("  GET  https://<host>/api/v1/factory.machine?select=machine_id,status&status=eq.healthy")
+            print("\nEverything up to here is real: the OAuth token above is live. The REST reads")
+            print("just need the Data API switched on, which is an instance setting, not a script step.")
             return
 
     if args.step == "get-machines" or not args.step:
@@ -185,8 +222,8 @@ def main() -> None:
         }
 
         try:
-            with httpx.Client(timeout=10) as client:
-                response = client.post(url, headers=headers, json=data)
+            with httpx.Client(timeout=10) as http:
+                response = http.post(url, headers=headers, json=data)
                 if response.status_code in [200, 201]:
                     print(f"  Success: {response.status_code}")
                 else:

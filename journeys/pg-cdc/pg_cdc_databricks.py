@@ -12,10 +12,10 @@
 
 # MAGIC ## What is logical decoding?
 # MAGIC
-# MAGIC Postgres maintains a [write-ahead log](../../docs/glossary.md) (WAL): a durable, ordered, byte-exact record of every change. Logical decoding exposes that log as readable records: every committed transaction becomes an INSERT/UPDATE/DELETE record with a log sequence number (LSN). This is [change data capture](../../docs/glossary.md) (CDC) — the changelog is native to Postgres.
+# MAGIC Postgres maintains a [write-ahead log](../../docs/glossary.md) (WAL): a durable, ordered, byte-exact record of every change. Logical decoding exposes that log as readable records: every committed transaction becomes an INSERT/UPDATE/DELETE record with a log sequence number (LSN). This is [change data capture](../../docs/glossary.md) (CDC), the changelog is native to Postgres.
 # COMMAND ----------
 
-# MAGIC ## Setup — connect
+# MAGIC ## Setup, connect
 # COMMAND ----------
 
 import os, sys
@@ -31,7 +31,7 @@ print('Note: This is a preview. Logical decoding is on the Lakebase roadmap.')
 
 # COMMAND ----------
 
-# MAGIC ## Step 1 — Create demo table
+# MAGIC ## Step 1, Create demo table
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE TABLE machine_cdc_demo (
@@ -67,7 +67,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 2 — Create logical replication slot
+# MAGIC ## Step 2, Create logical replication slot
 # MAGIC
 # MAGIC Create a slot that captures committed changes from this point forward:
 # MAGIC
@@ -87,11 +87,11 @@ with connect() as conn:
                 print(f'✓ Created logical replication slot {SLOT_NAME}')
         except Exception as e:
             print(f'  Note: {e}')
-            print(f'  (Logical decoding requires REPLICATION role — see FAQ)')
+            print(f'  (Logical decoding requires REPLICATION role, see FAQ)')
 
 # COMMAND ----------
 
-# MAGIC ## Step 3 — Make committed writes
+# MAGIC ## Step 3, Make committed writes
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO machine_cdc_demo VALUES ('M-100', 'operational', 99.5);
@@ -120,7 +120,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 4 — Decode changes from the slot
+# MAGIC ## Step 4, Decode changes from the slot
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT lsn, data FROM pg_logical_slot_get_changes('workshop_slot', NULL, NULL)
