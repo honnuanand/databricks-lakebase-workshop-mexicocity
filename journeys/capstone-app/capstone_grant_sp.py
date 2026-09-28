@@ -67,40 +67,33 @@ def grant_app_sp(
     # Step 1: get the app's Service Principal
     ws = make_ws_client(workspace_profile)
     try:
-        # Try to find app by name in the workspace apps
-        app_result = ws.apps.get_by_name(app_name)
-        if app_result and hasattr(app_result, 'service_principal_id'):
-            sp_id = app_result.service_principal_id
-        else:
-            # App may not exist yet; create a placeholder or warn
-            print(f"Warning: App '{app_name}' not found yet.")
-            print(f"         After deploying, re-run this script to complete grants.")
+        # Look the app up by name (it must have been created first, which also
+        # provisions its Service Principal).
+        app_result = ws.apps.get(name=app_name)
+        sp_id = getattr(app_result, "service_principal_id", None)
+        sp_client_id = getattr(app_result, "service_principal_client_id", None)
+        if not sp_id or not sp_client_id:
+            print(f"Warning: App '{app_name}' has no Service Principal yet.")
+            print(f"         Create the app first (databricks apps create {app_name}), then re-run.")
             return
     except Exception as e:
         print(f"Warning: Could not fetch app '{app_name}': {e}")
-        print(f"         App may not be deployed yet. After deploying, re-run this script.")
-        return
+        print(f"         Create the app first (databricks apps create {app_name}), then re-run.")
+    print(f"  Found app Service Principal: client_id={sp_client_id}  id={sp_id}")
 
-    print(f"  Found app Service Principal: {sp_id}")
-
-    # Step 2: Get the app's Client ID (for PostgreSQL role name)
-    # The SP ID is the principal ID; we need the client ID.
-    # For now, use the SP ID as the role name (Lakebase convention)
-    sp_client_id = str(sp_id)  # In real scenarios, this would be extracted from app details
-
-    # Step 3: Get Lakebase connection details
+    # Step 3: Get Lakebase connection details for the branch the app will serve
     lb_ws = make_ws_client(lakebase_profile)
+    host, endpoint_id, _ = branch_endpoint(lb_ws, lakebase_project, lakebase_branch)
+    lakebase_host = lakebase_host or host
     if not lakebase_host:
-        lakebase_host, _, _ = branch_endpoint(lb_ws, lakebase_project, lakebase_branch)
-        if not lakebase_host:
-            raise RuntimeError(f"Could not get endpoint for branch '{lakebase_branch}'")
+        raise RuntimeError(f"Could not get endpoint for branch '{lakebase_branch}'")
 
     print(f"  Lakebase host: {lakebase_host}")
 
-    # Step 4: Get OAuth credential to connect as current user
+    # Step 4: Get an OAuth credential to connect as the current user (admin) to run the grants
     me = lb_ws.current_user.me()
     cred = lb_ws.postgres.generate_database_credential(
-        instance_names=[lakebase_project.split('/')[-1] if '/' in lakebase_project else lakebase_project]
+        endpoint=f"projects/{lakebase_project}/branches/{lakebase_branch}/endpoints/{endpoint_id}"
     )
 
     # Step 5: Connect to Lakebase and grant permissions
