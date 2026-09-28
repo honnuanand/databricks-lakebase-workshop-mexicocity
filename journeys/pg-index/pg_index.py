@@ -116,8 +116,11 @@ def explain_all(conn):
         ("BTREE", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE machine_id = 'M-100'"),
         ("HASH", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE status_code = 5"),
         ("GIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE spec @> '{{\"model\": \"CNC-X1\"}}'::jsonb"),
-        ("BRIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE created_at > now() - interval '90 days'"),
-        ("GIST", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE location <-> point(45.0, -73.0) < 1"),
+        # A narrow time window so the BRIN index is selective (a 90-day window matches
+        # most rows, where the planner correctly prefers a seq scan).
+        ("BRIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE created_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),
+        # A nearest-neighbor ORDER BY ... LIMIT is what a GiST distance index accelerates.
+        ("GIST", f"SELECT * FROM {schema}.{DEMO_TABLE} ORDER BY location <-> point(45.0, -73.0) LIMIT 5"),
     ]
 
     with conn.cursor() as cur:
@@ -125,7 +128,8 @@ def explain_all(conn):
         for am_name, query in queries:
             uses_index = _explain_uses_index(cur, query)
             status = "✓" if uses_index else "✗"
-            print(f"  {status} {am_name:8} query uses index")
+            note = "" if uses_index else "  (planner chose a seq scan; cost-based, expected on small/low-selectivity data)"
+            print(f"  {status} {am_name:8} query uses index{note}")
 
 
 def main():
