@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Geospatial—PostGIS for supply chain locations.
+"""Geospatial, PostGIS for supply chain locations.
 
 ST_DWithin for "within N km", <-> for nearest-neighbor, GiST indexes.
 Enable PostGIS, store plants/warehouses/suppliers as geographic points,
@@ -141,7 +141,7 @@ def run_explain():
 def run_end_to_end():
     """Run all steps end to end."""
     print("\n" + "="*60)
-    print("GEOSPATIAL—POSTGIS SUPPLY CHAIN LOCATIONS")
+    print("GEOSPATIAL, POSTGIS SUPPLY CHAIN LOCATIONS")
     print("="*60)
 
     print("\n=== Step 1: Enable PostGIS ===")

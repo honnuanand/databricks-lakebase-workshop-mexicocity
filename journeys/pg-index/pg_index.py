@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One table, every index type — six AMs proven by the planner.
+"""One table, every index type, six AMs proven by the planner.
 
 A single table carries every data type from the Postgres track: relational,
 JSON, time-series, geography, vector. Create each index (btree, hash, gin,
@@ -100,7 +100,7 @@ def create_indexes(conn):
         cur.execute(f"CREATE INDEX IF NOT EXISTS idx_gist_location ON {schema}.{DEMO_TABLE} USING GIST (location)")
         print("✓ GIST index on location (geospatial distance <->)")
 
-        # 6. HNSW (vector similarity) — requires pgvector
+        # 6. HNSW (vector similarity), requires pgvector
         try:
             cur.execute(f"CREATE INDEX IF NOT EXISTS idx_hnsw_embedding ON {schema}.{DEMO_TABLE} USING HNSW (embedding vector_cosine_ops)")
             print("✓ HNSW index on embedding (vector similarity <=>)")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The agent does the work — read, act, remember on one database.
+"""The agent does the work, read, act, remember on one database.
 
 Demonstrates agentic work with real function calling:
   - agent reads machine status (tool call to SQL)
@@ -42,6 +42,23 @@ TABLE_MACHINE = "factory.machine"
 TABLE_OPERATION = "factory.operation"
 
 
+def _setup():
+    """Ensure the work order the agent will release exists (released, unassigned).
+
+    Idempotent: creates WO-1001 for a seeded product if it is not there yet, and
+    clears any operations from a prior run so the agent starts unassigned."""
+    with connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT product_id FROM factory.product ORDER BY product_id LIMIT 1")
+            product = cur.fetchone()[0]
+            cur.execute("DELETE FROM factory.operation WHERE wo_id = %s", [WO_ID])
+            cur.execute(
+                """INSERT INTO factory.work_order (wo_id, plant_id, product_id, qty, status, due_ts)
+                   VALUES (%s, 'PL-DETROIT', %s, 20, 'released', now() + interval '1 day')
+                   ON CONFLICT (wo_id) DO UPDATE SET status = 'released'""",
+                [WO_ID, product])
+
+
 def _show_state():
     """Show the initial state of machines and work orders."""
     with connect() as conn:
@@ -76,10 +93,17 @@ def _assign_work_order(wo_id: str, machine_id: str) -> str:
     """Tool: assign a work order to a machine."""
     with connect() as conn:
         with conn.cursor() as cur:
+            # Give the operation a concrete time window. The factory may carry a GiST
+            # exclusion constraint (from the no-double-booking journey) that forbids two
+            # overlapping operations on one machine, so we schedule a slot well clear of
+            # any seeded ones and make the op_id stable for re-runs.
             cur.execute(
-                f"""INSERT INTO {TABLE_OPERATION} (op_id, wo_id, machine_id, seq, status)
-                   VALUES ('OP-' || gen_random_uuid()::text, %s, %s, 1, 'pending')""",
-                [wo_id, machine_id],
+                f"""INSERT INTO {TABLE_OPERATION}
+                        (op_id, wo_id, machine_id, seq, status, starts_at, ends_at)
+                   VALUES (%s, %s, %s, 1, 'pending',
+                           now() + interval '7 days', now() + interval '7 days' + interval '2 hours')
+                   ON CONFLICT (op_id) DO NOTHING""",
+                [f"OP-{wo_id}", wo_id, machine_id],
             )
     return "ok"
 
@@ -179,7 +203,7 @@ def release(call_num: int = 1):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Agent does the work — read, act, remember")
+    ap = argparse.ArgumentParser(description="Agent does the work, read, act, remember")
     ap.add_argument(
         "--step",
         choices=["release", "release-again"],
@@ -187,6 +211,7 @@ def main():
     )
     args = ap.parse_args()
 
+    _setup()
     _show_state()
 
     if args.step == "release":

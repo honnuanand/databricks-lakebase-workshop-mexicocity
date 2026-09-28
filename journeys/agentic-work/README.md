@@ -56,9 +56,9 @@ sequenceDiagram
 
 The three tables the loop touches, all in one Lakebase database:
 
-- `agent_memory` — what the agent has said and done (read at the start, appended at the end)
-- `machine` — live status and health (read to find free machines)
-- `operation` — the work assignments (written when the agent acts)
+- `agent_memory`, what the agent has said and done (read at the start, appended at the end)
+- `machine`, live status and health (read to find free machines)
+- `operation`, the work assignments (written when the agent acts)
 
 Each step reads and writes the same Lakebase database. The database enforces consistency: the
 agent can't double-assign because it reads its own memory first.

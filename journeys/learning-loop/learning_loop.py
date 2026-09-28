@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Human-in-the-loop learning loop — extract, route, correct, analyze on one table.
+"""Human-in-the-loop learning loop, extract, route, correct, analyze on one table.
 
 Demonstrates the closed-loop pattern:
   1. Seed maintenance write-ups (free text)
@@ -37,13 +37,14 @@ FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 CONF_THRESHOLD = 0.75
 TABLE = "factory.maintenance_log"
 
-# Real-world messy maintenance write-ups. Some clear, some ambiguous.
+# Real-world messy maintenance write-ups on real factory machines. Some clear, some
+# ambiguous, so the AI's confidence score varies and low-confidence ones route to a human.
 WRITEUPS = [
-    ("WU-001", "M-204", "Hydraulic line on leg B leaking, found ice on exterior, isolated line, monitor pressure."),
-    ("WU-002", "M-405", "L MLG tire worn to indicator, replace at next A-check."),
-    ("WU-003", "M-301", "Cabin ka-band intermittent, pax complaints on last 3 legs; swap modem?"),
-    ("WU-004", "M-108", "APU slow to start, ~40s hung start x2, investigate."),
-    ("WU-005", "M-204", "Something off with the thing on the right side, maybe hydraulics? not sure"),
+    ("WU-001", "M-204", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
+    ("WU-002", "M-421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
+    ("WU-003", "M-311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
+    ("WU-004", "M-102", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
+    ("WU-005", "M-204", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
 ]
 
 
@@ -69,6 +70,9 @@ def seed():
     """Seed the maintenance_log table with free-text write-ups."""
     with connect() as conn:
         with conn.cursor() as cur:
+            # The routing state (auto_accepted / needs_review) is not in the base schema;
+            # add it once (idempotent), the way an app would evolve its own table.
+            cur.execute(f"ALTER TABLE {TABLE} ADD COLUMN IF NOT EXISTS status TEXT")
             cur.execute(f"DELETE FROM {TABLE}")
             for wid, mid, writeup in WRITEUPS:
                 cur.execute(
@@ -106,13 +110,14 @@ def extract():
 
         response = _fm_call(prompt)
         if response is None:
-            # Fallback simulation
+            # Fallback if the model endpoint is unavailable: a crude keyword guess so
+            # the routing still demonstrates. Factory subsystems, not aviation.
             if "leaking" in writeup.lower() or "hydraulic" in writeup.lower():
-                extract_dict = {"system": "hydraulic", "defect": "line_leak", "action": "isolated", "confidence": 0.92}
-            elif "tire" in writeup.lower() or "worn" in writeup.lower():
-                extract_dict = {"system": "landing_gear", "defect": "tire_wear", "action": "schedule_replace", "confidence": 0.89}
-            elif "intermittent" in writeup.lower() or "ka-band" in writeup.lower():
-                extract_dict = {"system": "communications", "defect": "intermittent_reception", "action": "investigate", "confidence": 0.68}
+                extract_dict = {"system": "hydraulics", "defect": "line_leak", "action": "isolated", "confidence": 0.92}
+            elif "spindle" in writeup.lower() or "coolant" in writeup.lower() or "hot" in writeup.lower():
+                extract_dict = {"system": "cnc_spindle", "defect": "overheating", "action": "schedule_pump_replace", "confidence": 0.89}
+            elif "intermittent" in writeup.lower() or "tool changer" in writeup.lower():
+                extract_dict = {"system": "tool_changer", "defect": "intermittent_actuator", "action": "investigate", "confidence": 0.68}
             elif "apu" in writeup.lower() or "slow" in writeup.lower():
                 extract_dict = {"system": "apu", "defect": "slow_start", "action": "investigate", "confidence": 0.71}
             else:
@@ -211,7 +216,7 @@ def analytics():
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Human-in-the-loop learning loop — extract, route, correct, analyze"
+        description="Human-in-the-loop learning loop, extract, route, correct, analyze"
     )
     ap.add_argument(
         "--step",

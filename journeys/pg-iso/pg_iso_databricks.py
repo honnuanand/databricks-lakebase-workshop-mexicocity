@@ -8,7 +8,7 @@
 # MAGIC **Before you start:** finish `00-setup/`.
 # COMMAND ----------
 
-# MAGIC ## Setup — connect
+# MAGIC ## Setup, connect
 # COMMAND ----------
 
 import os, sys, time
@@ -41,7 +41,7 @@ print('Ready to demonstrate locking.')
 
 # COMMAND ----------
 
-# MAGIC ## Step 1 — Create demo table and row
+# MAGIC ## Step 1, Create demo table and row
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE TABLE machine_isolation_demo (
@@ -66,7 +66,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 2 — Session A: BEGIN + UPDATE (hold transaction)
+# MAGIC ## Step 2, Session A: BEGIN + UPDATE (hold transaction)
 # MAGIC
 # MAGIC Open Connection A, start transaction, update the row, but do NOT commit yet.
 # MAGIC
@@ -88,7 +88,7 @@ print(f'  Rows now have 9 slots (locally to Session A)')
 
 # COMMAND ----------
 
-# MAGIC ## Step 3 — Session B: UPDATE (will block)
+# MAGIC ## Step 3, Session B: UPDATE (will block)
 # MAGIC
 # MAGIC Open Connection B and try to update the same row. Session B blocks on Session A's lock.
 # MAGIC
@@ -125,7 +125,7 @@ print(f'  Session B still blocked: {not result_b["done"]}')
 
 # COMMAND ----------
 
-# MAGIC ## Step 4 — Session A: COMMIT (release lock)
+# MAGIC ## Step 4, Session A: COMMIT (release lock)
 # MAGIC
 # MAGIC Commit the transaction on Session A, releasing the lock.
 # MAGIC
@@ -148,7 +148,7 @@ conn_a.close()
 
 # COMMAND ----------
 
-# MAGIC ## Step 5 — Confirm both updates landed
+# MAGIC ## Step 5, Confirm both updates landed
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT machine_id, maintenance_slots FROM machine_isolation_demo

@@ -8,7 +8,7 @@
 # MAGIC **Before you start:** finish `00-setup/`.
 # COMMAND ----------
 
-# MAGIC ## Setup — connect
+# MAGIC ## Setup, connect
 # COMMAND ----------
 
 import os, sys
@@ -27,7 +27,7 @@ print('Ready.')
 
 # COMMAND ----------
 
-# MAGIC ## Step 1 — Create table with 6 data types
+# MAGIC ## Step 1, Create table with 6 data types
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE TABLE machine_index_demo (
@@ -54,23 +54,23 @@ with connect() as conn:
                 embedding VECTOR(256)
             )
         """)
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public")
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{DEMO_TABLE}
             SELECT
                 'M-' || g,
                 (g % 10)::int,
                 jsonb_build_object('model', 'CNC-' || (g % 5), 'year', 2020 + (g % 4)),
-                now() - (g || ' days')::interval,
-                point(45.0 + (g::float % 10) / 100, -73.0 + (g::float % 10) / 100),
-                ('{{'::text || ARRAY_AGG(0.5 FILTER (WHERE false))::text || '}}'::text)::vector(256)
+                now() - (g % 365 || ' days')::interval,
+                point(45.0 + (g::numeric % 10) / 100, -73.0 + (g::numeric % 10) / 100),
+                (array_fill(0.5::real, ARRAY[256]))::vector(256)
             FROM generate_series(1, 60000) g
-            GROUP BY g
         """)
         print(f'✓ Created {SCHEMA}.{DEMO_TABLE} (60k rows, 6 data types)')
 
 # COMMAND ----------
 
-# MAGIC ## Step 2 — Create 6 indexes
+# MAGIC ## Step 2, Create 6 indexes
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE INDEX idx_btree_machine_id ON machine_index_demo USING BTREE (machine_id);
@@ -102,26 +102,36 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 3 — Show EXPLAIN for each query type
+# MAGIC ## Step 3, Show EXPLAIN for each query type
 # MAGIC
 # MAGIC Each query uses its matching index.
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
+        def _explain_uses_index(query: str) -> bool:
+            cur.execute(f"EXPLAIN {query}")
+            plan = cur.fetchall()
+            plan_text = "\n".join([row[0] for row in plan])
+            return "Index" in plan_text
+
         queries = [
-            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE machine_id = 'M-100' LIMIT 1"),
-            ('HASH', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE status_code = 5 LIMIT 1"),
-            ('GIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE spec @> '{{\"model\": \"CNC-1\"}}' LIMIT 1"),
-            ('BRIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE created_at > now() - interval '90 days' LIMIT 1"),
-            ('GIST', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE location <-> point(45, -73) < 1 LIMIT 1"),
+            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE machine_id = 'M-100'"),
+            ('HASH', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE status_code = 5"),
+            ('GIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE spec @> '{{\"model\": \"CNC-1\"}}'::jsonb"),
+            ('BRIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE created_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),
+            ('GIST', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} ORDER BY location <-> point(45.0, -73.0) LIMIT 5"),
         ]
+
+        print("Explain shows which index each query uses:")
         for name, query in queries:
             try:
-                index_used = show_plan(cur, query)
-                print(f'{name:8} → {index_used}')
+                uses_index = _explain_uses_index(query)
+                status = "✓" if uses_index else "✗"
+                note = "" if uses_index else "  (planner chose a seq scan; cost-based, expected on small/low-selectivity data)"
+                print(f"  {status} {name:8} query uses index{note}")
             except Exception as e:
-                print(f'{name:8} → {type(e).__name__}')
+                print(f"  ✗ {name:8} error: {type(e).__name__}")
 
 # COMMAND ----------
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Isolation & locking — two sessions hit one row, one waits.
+"""Isolation & locking, two sessions hit one row, one waits.
 
 Session A does BEGIN + UPDATE on a row and holds it open.
 Session B tries to UPDATE the same row and blocks (wait event = Lock).
@@ -62,7 +62,7 @@ def main():
             )
             print(f"   Slots before any update: {cur.fetchone()[0]}")
 
-    print("\n2. Session A: BEGIN + UPDATE (book 1 slot) — HOLD transaction open")
+    print("\n2. Session A: BEGIN + UPDATE (book 1 slot), HOLD transaction open")
     conn_a = connect()
     with conn_a.cursor() as cur_a:
         cur_a.execute("BEGIN")
@@ -78,7 +78,7 @@ def main():
             print(f"   Session A sees: {check.fetchone()[0]} slots after booking 1")
         print("   Session A is holding the transaction open (row is LOCKED)")
 
-        print("\n3. Session B: try to UPDATE the same row (book 5 slots) — WILL BLOCK")
+        print("\n3. Session B: try to UPDATE the same row (book 5 slots), WILL BLOCK")
         conn_b = connect()
         start_wait = time.time()
 

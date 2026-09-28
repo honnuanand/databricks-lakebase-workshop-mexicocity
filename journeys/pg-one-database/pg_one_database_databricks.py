@@ -38,6 +38,8 @@ print('Ready.')
 
 with connect() as conn:
     with conn.cursor() as cur:
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public")
+        cur.execute("CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public")
         cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.{DEMO_TABLE}")
         cur.execute(f"""
             CREATE TABLE {SCHEMA}.{DEMO_TABLE} (
@@ -66,13 +68,16 @@ with connect() as conn:
             INSERT INTO {SCHEMA}.{DEMO_TABLE}(machine_id, plant_id, line, spec, embedding, location)
             SELECT
                 'M-' || g,
-                (ARRAY['PL-DETROIT', 'PL-SHANGHAI'])[1 + (g % 2)],
-                (ARRAY['Stamping-A', 'Assembly-1', 'Welding-B'])[1 + (g % 3)],
-                jsonb_build_object('type', 'Press', 'year', 2020 + (g % 4)),
-                ('{{'::text || ARRAY_AGG(0.5 FILTER (WHERE false))::text || '}}'::text)::vector(64),
-                ST_GeomFromText('POINT(45.0 -73.0)')
+                (ARRAY['PL-DETROIT', 'PL-SHANGHAI', 'PL-FREMONT'])[1 + (g % 3)],
+                (ARRAY['Stamping-A', 'Assembly-1', 'Finishing'])[1 + (g % 3)],
+                jsonb_build_object(
+                    'type', (ARRAY['CNC', 'Press', 'Robot'])[1 + (g % 3)],
+                    'year', 2020 + (g % 5),
+                    'version', '3.' || (g % 10)
+                ),
+                (array_fill((0.5 + (g % 10)::real / 100.0), ARRAY[64]))::vector(64),
+                ST_MakePoint(-73.0 + (g % 10)::numeric / 100, 45.0 + (g % 10)::numeric / 100)
             FROM generate_series(1, 1000) g
-            GROUP BY g
         """)
         print(f'✓ Populated 1000 machines with all data types')
 
@@ -107,17 +112,23 @@ with connect() as conn:
                 plant_id,
                 line,
                 (spec->>'type') as machine_type,
-                (spec->>'year')::int as manufacture_year
+                (spec->>'year')::int as manufacture_year,
+                (embedding <-> (SELECT embedding FROM {SCHEMA}.{DEMO_TABLE} WHERE machine_id='M-1'))::numeric(6,4) as embedding_distance,
+                ST_Distance(location, ST_MakePoint(-73.0, 45.0)::geometry) * 111.0 as km_from_ref
             FROM {SCHEMA}.{DEMO_TABLE}
             WHERE
                 plant_id = 'PL-DETROIT'
                 AND (spec->>'type') = 'Press'
+                AND ST_DWithin(location, ST_MakePoint(-73.0, 45.0)::geometry, 0.1)
+            ORDER BY embedding_distance, km_from_ref
             LIMIT 5
         """)
         rows = cur.fetchall()
-        print(f'✓ Unified query returned {len(rows)} rows')
-        for row in rows[:3]:
-            print(f'  {row}')
+        cols = [desc[0] for desc in cur.description]
+
+        print(f'Results (single query, single plan):')
+        for row in rows:
+            print(f'  {row[0]:6} | {row[1]:12} | {row[2]:12} | {row[3]:6} | {row[4]:4} | dist={row[5]:.4f} | km={row[6]:.4f}')
 
 # COMMAND ----------
 

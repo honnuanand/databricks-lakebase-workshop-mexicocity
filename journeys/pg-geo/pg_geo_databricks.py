@@ -62,7 +62,7 @@ with connect() as conn:
         # Populate geography columns from lat/lon
         for table, col in tables:
             try:
-                cur.execute(f"UPDATE {table} SET {col} = geography(POINT(lon, lat)) WHERE {col} IS NULL AND lat IS NOT NULL AND lon IS NOT NULL")
+                cur.execute(f"UPDATE {table} SET {col} = ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography WHERE {col} IS NULL AND lat IS NOT NULL AND lon IS NOT NULL")
                 print(f"Populated {col} on {table}")
             except:
                 pass
@@ -94,9 +94,9 @@ else:
 
     sql = f"""
     SELECT warehouse_id, plant_id,
-           ROUND((ST_Distance(geo, geography(POINT({plant_lon}, {plant_lat}))) / 1000.0)::NUMERIC, 2) as distance_km
+           ROUND((ST_Distance(geo, ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography) / 1000.0)::NUMERIC, 2) as distance_km
       FROM factory.warehouse
-     WHERE ST_DWithin(geo, geography(POINT({plant_lon}, {plant_lat})), 100000)
+     WHERE ST_DWithin(geo, ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography, 100000)
      ORDER BY distance_km
      LIMIT 10
     """
@@ -131,9 +131,9 @@ else:
 
     sql = f"""
     SELECT supplier_id, name,
-           ROUND((geo <-> geography(POINT({plant_lon}, {plant_lat})))::NUMERIC, 0) as distance_meters
+           ROUND((geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography)::NUMERIC, 0) as distance_meters
       FROM factory.supplier
-     ORDER BY geo <-> geography(POINT({plant_lon}, {plant_lat}))
+     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography
      LIMIT 3
     """
     rows = run_sql(sql)
@@ -194,7 +194,7 @@ else:
     sql = f"""
     EXPLAIN (ANALYZE, BUFFERS)
     SELECT supplier_id FROM factory.supplier
-     ORDER BY geo <-> geography(POINT({plant_lon}, {plant_lat}))
+     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography
      LIMIT 3
     """
     rows = run_sql(sql)

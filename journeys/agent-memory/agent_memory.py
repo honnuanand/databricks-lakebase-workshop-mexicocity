@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Agent memory — two agents share one governed Lakebase table.
+"""Agent memory, two agents share one governed Lakebase table.
 
 Demonstrates multi-agent shared state on one database:
   - seed the agent_memory table with a prior maintenance note
   - ask the maintenance advisor a question; it reads the note, responds, appends the turn
   - ask the MES assistant the same question; it reads BOTH the note AND the advisor's
     response, responds, appends its turn
-  - no message queue, no cache, no orchestration — just one table
+  - no message queue, no cache, no orchestration, just one table
 
 Usage:
     python agent_memory.py                    # run the whole story
@@ -74,7 +74,7 @@ def _call_agent(agent_id: str, question: str) -> str:
             prior_rows = cur.fetchall()
 
     prior_text = "\n  - ".join(
-        [f"{r[0]} ({r[1]}): {r[2][:100]}" if r[1] != "assistant" else r[2][:100]]
+        (f"{r[0]} ({r[1]}): {r[2][:100]}" if r[1] != "assistant" else r[2][:100])
         for r in prior_rows
     )
     if prior_text:
@@ -195,7 +195,7 @@ def mes():
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Agent memory — two agents share one governed Lakebase table"
+        description="Agent memory, two agents share one governed Lakebase table"
     )
     ap.add_argument(
         "--step",
