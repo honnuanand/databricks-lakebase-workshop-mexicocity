@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Search, three ways—full-text, fuzzy, and hybrid ranking.
+"""Search, three ways, full-text, fuzzy, and hybrid ranking.
 
 FTS (full-text search) with ts_rank, fuzzy matching with pg_trgm trigrams,
 and hybrid blending of keyword + semantic signals (with pgvector).
@@ -91,7 +91,7 @@ def run_hybrid():
 def run_end_to_end():
     """Run all steps end to end."""
     print("\n" + "="*60)
-    print("SEARCH, THREE WAYS—FTS, FUZZY, HYBRID")
+    print("SEARCH, THREE WAYS, FTS, FUZZY, HYBRID")
     print("="*60)
 
     print("\n=== Step 1: Inspect Maintenance Write-ups ===")

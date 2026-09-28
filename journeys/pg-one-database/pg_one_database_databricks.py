@@ -8,7 +8,7 @@
 # MAGIC **Before you start:** finish `00-setup/`.
 # COMMAND ----------
 
-# MAGIC ## Setup — connect
+# MAGIC ## Setup, connect
 # COMMAND ----------
 
 import os, sys
@@ -22,7 +22,7 @@ print('Ready.')
 
 # COMMAND ----------
 
-# MAGIC ## Step 1 — Create unified table (4 data types)
+# MAGIC ## Step 1, Create unified table (4 data types)
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE TABLE machine_unified_demo (
@@ -53,7 +53,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 2 — Populate with 1000 machines
+# MAGIC ## Step 2, Populate with 1000 machines
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO machine_unified_demo(...) SELECT ... FROM generate_series(1, 1000) g
@@ -78,7 +78,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 3 — Run unified query
+# MAGIC ## Step 3, Run unified query
 # MAGIC
 # MAGIC One query filtering on relational (plant_id), JSON (spec->>'type'), and geospatial (ST_DWithin) columns:
 # MAGIC

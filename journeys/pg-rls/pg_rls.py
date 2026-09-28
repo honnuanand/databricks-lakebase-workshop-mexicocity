@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Row-level security—multi-plant tenancy with RLS policies.
+"""Row-level security, multi-plant tenancy with RLS policies.
 
 Create roles for each operator/plant, define RLS policies, and verify
 that the same query returns different rows for different operators.
@@ -116,7 +116,7 @@ def run_explain():
 def run_end_to_end():
     """Run all steps end to end."""
     print("\n" + "="*60)
-    print("ROW-LEVEL SECURITY—MULTI-PLANT TENANCY")
+    print("ROW-LEVEL SECURITY, MULTI-PLANT TENANCY")
     print("="*60)
 
     run_roles()

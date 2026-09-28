@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""No double-booking—GiST exclusion constraints on time ranges.
+"""No double-booking, GiST exclusion constraints on time ranges.
 
 Prevent overlapping operations on the same machine using EXCLUDE USING gist.
 """
@@ -22,9 +22,11 @@ def run_constraint():
             except:
                 pass
 
+            # Postgres has no ADD CONSTRAINT IF NOT EXISTS; drop then add so it's idempotent.
+            cur.execute("ALTER TABLE factory.operation DROP CONSTRAINT IF EXISTS no_machine_overlap")
             sql = """
             ALTER TABLE factory.operation
-              ADD CONSTRAINT IF NOT EXISTS no_machine_overlap
+              ADD CONSTRAINT no_machine_overlap
               EXCLUDE USING gist (machine_id WITH =,
                                   tstzrange(starts_at, ends_at) WITH &&);
             """
@@ -32,15 +34,15 @@ def run_constraint():
                 cur.execute(sql)
                 print("  Exclusion constraint created: no_machine_overlap")
             except Exception as e:
-                print(f"  Constraint may already exist: {e}")
+                print(f"  Could not create constraint: {e}")
 
 def run_overlap():
     """Step 3: Try to insert an overlapping operation."""
     print("\n=== Step 3: Attempt Overlapping Insert ===")
 
-    # Get an existing operation to create an overlap
+    # Get an existing operation (and its work order, to satisfy the FK) to overlap.
     ops = run_sql("""
-    SELECT op_id, machine_id, starts_at, ends_at
+    SELECT op_id, wo_id, machine_id, starts_at, ends_at
       FROM factory.operation
      WHERE machine_id IS NOT NULL AND starts_at IS NOT NULL AND ends_at IS NOT NULL
      LIMIT 1
@@ -50,36 +52,38 @@ def run_overlap():
         print("  No existing operations found")
         return
 
-    op_id, machine_id, starts_at, ends_at = ops[0]
+    op_id, wo_id, machine_id, starts_at, ends_at = ops[0]
 
-    # Try to insert an overlapping operation
+    # Clean any prior test row so this is re-runnable, then try to insert an overlap.
     with connect() as conn:
         with conn.cursor() as cur:
+            cur.execute("DELETE FROM factory.operation WHERE op_id = 'OP-OVERLAP'")
             try:
-                # Create an operation that overlaps
-                overlap_start = starts_at  # same start
-                overlap_end = ends_at + __import__('datetime').timedelta(hours=1)  # extends past end
-
-                cur.execute(f"""
+                overlap_start = starts_at  # same start as an existing op on this machine
+                overlap_end = ends_at + __import__('datetime').timedelta(hours=1)
+                cur.execute("""
                 INSERT INTO factory.operation
-                  (op_id, wo_id, machine_id, seq, starts_at, ends_at, status)
+                  (op_id, wo_id, machine_id, seq, status, starts_at, ends_at)
                 VALUES
-                  ('OP-OVERLAP', 'WO-TEST', %s, 1, %s, %s, 'pending')
-                """, (machine_id, overlap_start, overlap_end))
+                  ('OP-OVERLAP', %s, %s, 99, 'pending', %s, %s)
+                """, (wo_id, machine_id, overlap_start, overlap_end))
                 print(f"  ERROR: Overlap should have been rejected!")
             except Exception as e:
                 error_msg = str(e)
-                if "no_machine_overlap" in error_msg:
-                    print(f"  Good: Overlap rejected by constraint")
-                    print(f"    {error_msg[:100]}...")
+                if "no_machine_overlap" in error_msg or "conflicting key" in error_msg or "exclusion" in error_msg.lower():
+                    print(f"  Good: the database rejected the overlapping operation.")
+                    print(f"    {error_msg.splitlines()[0][:120]}")
                 else:
-                    print(f"  Error: {error_msg[:100]}...")
+                    print(f"  Unexpected error: {error_msg[:120]}")
 
 def run_explain():
     """Step 4: EXPLAIN shows constraint check."""
     print("\n=== Step 4: EXPLAIN Shows Constraint Check ===")
 
-    sql = "EXPLAIN INSERT INTO factory.operation VALUES ('test', 'wo', 'M-204', 1, now(), now() + interval '1 hour', 'pending')"
+    sql = ("EXPLAIN INSERT INTO factory.operation "
+           "(op_id, wo_id, machine_id, seq, status, starts_at, ends_at) "
+           "SELECT 'op-explain', wo_id, 'M-204', 98, 'pending', now(), now() + interval '1 hour' "
+           "FROM factory.operation LIMIT 1")
 
     with connect() as conn:
         with conn.cursor() as cur:
@@ -92,7 +96,7 @@ def run_explain():
 def run_end_to_end():
     """Run all steps end to end."""
     print("\n" + "="*60)
-    print("NO DOUBLE-BOOKING—GIST EXCLUSION CONSTRAINTS")
+    print("NO DOUBLE-BOOKING, GIST EXCLUSION CONSTRAINTS")
     print("="*60)
 
     print("\n=== Step 1: Inspect Operation Table ===")

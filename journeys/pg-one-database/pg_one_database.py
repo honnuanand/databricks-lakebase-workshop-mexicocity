@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One query, every type — relational + JSON + vector + geo unified.
+"""One query, every type, relational + JSON + vector + geo unified.
 
 A single table spans all four data models: relational columns, JSONB specs,
 vector embeddings, and geospatial coordinates. One SELECT across all four
@@ -70,7 +70,10 @@ def setup(conn):
                     'year', 2020 + (g % 5),
                     'version', '3.' || (g % 10)
                 ),
-                (array_fill(0.5::real, ARRAY[64]))::vector(64) + (g % 10)::real / 100.0,
+                -- a per-row embedding: fill all 64 dims with a value that varies by row,
+                -- so different machines have different (comparable) vectors. Building the
+                -- array with the per-row value avoids adding a scalar to a vector (unsupported).
+                (array_fill((0.5 + (g % 10)::real / 100.0), ARRAY[64]))::vector(64),
                 ST_MakePoint(-73.0 + (g % 10)::numeric / 100, 45.0 + (g % 10)::numeric / 100)
             FROM generate_series(1, 1000) g
         """)
@@ -141,7 +144,7 @@ def show_explain(conn):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="One table, every data type — unified query")
+    ap = argparse.ArgumentParser(description="One table, every data type, unified query")
     ap.add_argument(
         "--step",
         choices=["sql"],

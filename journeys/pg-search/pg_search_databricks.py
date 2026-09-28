@@ -81,13 +81,13 @@ for row in rows:
 # MAGIC %md
 # MAGIC ## Step 3, fuzzy matching on part IDs using pg_trgm
 # MAGIC
-# MAGIC Enable pg_trgm (trigram matching), then find parts similar to a sample ID. The `%` operator means "similar to". The SQL:
+# MAGIC Enable pg_trgm (trigram matching), then find parts similar to a sample ID. The `%` operator means "similar to". In a parameterized query, psycopg treats `%` as a parameter marker, so it must be doubled to `%%`. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT part_id, name,
 # MAGIC        similarity(part_id, %s) as sim
 # MAGIC   FROM factory.part
-# MAGIC  WHERE part_id % %s
+# MAGIC  WHERE part_id %% %s
 # MAGIC  ORDER BY sim DESC
 # MAGIC  LIMIT 5
 # MAGIC ```
@@ -113,7 +113,7 @@ else:
     SELECT part_id, name,
            similarity(part_id, %s) as sim
       FROM factory.part
-     WHERE part_id % %s
+     WHERE part_id %% %s
      ORDER BY sim DESC
      LIMIT 5
     """

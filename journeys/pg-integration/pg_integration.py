@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pg integration — show that Lakebase is standard Postgres.
+"""Pg integration, show that Lakebase is standard Postgres.
 
 Demonstrates that standard Postgres clients, ORMs, and BI tools
 work unmodified by:
@@ -148,7 +148,7 @@ def main():
 
     print("\n5. Confirm schema in Unity Catalog (governance):")
     print("  (Open your Databricks workspace Data Catalog and navigate to")
-    print(f"   the Lakebase instance's {schema} schema — same tables and columns")
+    print(f"   the Lakebase instance's {schema} schema, same tables and columns")
     print("   visible, governed by Unity Catalog.)")
 
     print("\nDone. Lakebase is Postgres; your tools work unmodified.")

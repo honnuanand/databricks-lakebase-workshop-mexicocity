@@ -56,16 +56,16 @@ SQL Server, this is the "it already does what you need" track.
 | 12 | [Geospatial](pg-geo/) | Plants, warehouses, and suppliers on a map: "within N km of a depot" and "nearest to" in SQL, with PostGIS. | 🟢 | live |
 | 13 | [Search, three ways](pg-search/) | Full-text, fuzzy (typo-tolerant serial numbers), and hybrid search over decades of maintenance write-ups. | ⭐ | live |
 | 14 | [Row-level security](pg-rls/) | Multiple plants share one machine table; each sees only its own rows, enforced by the database. Plus column encryption. | ⭐ | live |
-| 15 | [No double-booking](pg-booking/) | The database refuses to schedule two overlapping operations on the same machine (GiST exclusion). | 🟢 | live |
-| 16 | [Watch the planner](pg-explain/) | EXPLAIN ANALYZE a slow scan, add one index, watch the cost-based planner flip its plan, with real numbers. | 🟢 | live |
-| 17 | [Tune the planner](pg-perf/) | Fix a bad row estimate on correlated columns with extended statistics. Measured, honest. | 🟢 | live |
+| 15 | [No double-booking](pg-booking/) | The database refuses to schedule two overlapping operations on the same machine (GiST exclusion). | ⭐ | live |
+| 16 | [Watch the planner](pg-explain/) | EXPLAIN ANALYZE a slow scan, add one index, watch the cost-based planner flip its plan, with real numbers. | ⭐ | live |
+| 17 | [Tune the planner](pg-perf/) | Fix a bad row estimate on correlated columns with extended statistics. Measured, honest. | ⭐ | live |
 | 18 | [One engine, every index](pg-index/) | One table, six index types (btree, hash, gin, brin, gist, hnsw); prove the planner picks each. | 🟢 | live |
-| 19 | [MVCC and the WAL](pg-mvcc/) | Watch one row become two versions on UPDATE, dead tuples accumulate, VACUUM reclaim, the WAL advance. | 🟢 | live |
+| 19 | [MVCC and the WAL](pg-mvcc/) | Watch one row become two versions on UPDATE, dead tuples accumulate, VACUUM reclaim, the WAL advance. | ⭐ | live |
 | 20 | [Isolation and locking](pg-iso/) | Two sessions hit one row; one waits on the other's lock; both writes land in order. No lost update. | 🟢 | live |
 | 21 | [Scale-out: partitioning](pg-partition/) | Partition sensor readings by month; watch the planner prune to one partition. Analytics scales out to the lakehouse. | 🟢 | live |
 | 22 | [Postgres in your browser](pg-lite/) | A full Postgres compiled to WebAssembly (PGlite), running client-side, speaking the same SQL as Lakebase. | 🟢 | live |
 | 23 | [Feature store, served online](pg-features/) | Materialize per-machine features, serve a feature vector on a primary-key lookup in single-digit ms. | 🟢 | live |
-| 24 | [One query, every type](pg-one-database/) | One SELECT spanning relational + JSON + vector + geospatial on a single table. Not four products. | 🟢 | live |
+| 24 | [One query, every type](pg-one-database/) | One SELECT spanning relational + JSON + vector + geospatial on a single table. Not four products. | ⭐ | live |
 | 25 | [Your commits are a change feed](pg-cdc/) | Tap the commit log: every insert/update/delete as an ordered, LSN-stamped feed via logical decoding. | 🟢 | preview |
 
 ## The knowledge graph track

@@ -27,53 +27,67 @@ print("connected; schema:", SCHEMA)
 # MAGIC %md
 # MAGIC ## Step 1, create roles for plant operators
 # MAGIC
-# MAGIC Create roles representing operators at different plants. The SQL:
+# MAGIC Create restricted roles for each operator at a real plant (Detroit, Austin, Munich, the plants in the factory seed). Grant schema access and membership so we can SET ROLE into them to demonstrate RLS enforcement. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE ROLE IF NOT EXISTS operator_detroit;
-# MAGIC CREATE ROLE IF NOT EXISTS operator_chicago;
-# MAGIC CREATE ROLE IF NOT EXISTS operator_toronto;
-# MAGIC GRANT USAGE ON SCHEMA factory TO operator_detroit, operator_chicago, operator_toronto;
-# MAGIC GRANT SELECT ON ALL TABLES IN SCHEMA factory TO operator_detroit, operator_chicago, operator_toronto;
+# MAGIC SELECT 1 FROM pg_roles WHERE rolname = 'op_detroit';
+# MAGIC CREATE ROLE op_detroit;
+# MAGIC GRANT USAGE ON SCHEMA factory TO op_detroit;
+# MAGIC GRANT SELECT ON factory.machine TO op_detroit;
+# MAGIC GRANT op_detroit TO current_user;
 # MAGIC ```
 
 # COMMAND ----------
 
-roles = ["operator_detroit", "operator_chicago", "operator_toronto"]
+# Operator roles, one per real plant in the factory seed.
+operators = {"op_detroit": "PL-DETROIT", "op_austin": "PL-AUSTIN", "op_munich": "PL-MUNICH"}
+
+me_rows = run_sql("SELECT current_user")
+me = me_rows[0][0]
 
 with connect() as conn:
     with conn.cursor() as cur:
-        for role in roles:
-            try:
-                cur.execute(f"CREATE ROLE IF NOT EXISTS {role}")
-                print(f"Created role: {role}")
-            except Exception as e:
-                print(f"{role} exists or error: {e}")
-
-        # Grant permissions
-        cur.execute(f"GRANT USAGE ON SCHEMA factory TO {', '.join(roles)}")
-        cur.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA factory TO {', '.join(roles)}")
-        print(f"Granted permissions to all roles")
+        for role, plant in operators.items():
+            # Check if role exists via catalog, since CREATE ROLE IF NOT EXISTS is invalid in Postgres
+            cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role,))
+            if cur.fetchone():
+                print(f"  role already exists: {role}")
+            else:
+                cur.execute(f"CREATE ROLE {role}")
+                print(f"  created role: {role}")
+            cur.execute(f"GRANT USAGE ON SCHEMA factory TO {role}")
+            cur.execute(f"GRANT SELECT ON factory.machine TO {role}")
+            # membership so we can SET ROLE into it to demonstrate enforcement
+            cur.execute(f'GRANT {role} TO "{me}"')
+        print("  granted schema/table SELECT and membership to all operator roles")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 2, create and enable RLS policy
 # MAGIC
-# MAGIC Enable RLS on the machine table, then create a policy that filters rows based on the app context variable. The SQL:
+# MAGIC Enable RLS on the machine table with both ENABLE and FORCE (FORCE makes the policy apply to the table owner too). Then create a policy that filters rows based on the plant context variable. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC ALTER TABLE factory.machine ENABLE ROW LEVEL SECURITY;
-# MAGIC CREATE POLICY IF NOT EXISTS machine_operator_isolation ON factory.machine
+# MAGIC ALTER TABLE factory.machine FORCE ROW LEVEL SECURITY;
+# MAGIC DROP POLICY IF EXISTS machine_operator_isolation ON factory.machine;
+# MAGIC CREATE POLICY machine_operator_isolation ON factory.machine
 # MAGIC   FOR SELECT
 # MAGIC   USING (plant_id = current_setting('app.current_operator_plant', true))
 # MAGIC ```
 
 # COMMAND ----------
 
-sql_enable = "ALTER TABLE factory.machine ENABLE ROW LEVEL SECURITY"
+# ENABLE turns policies on, but the table OWNER bypasses them unless we also
+# FORCE row-level security. Without FORCE, the owner sees all rows and the demo
+# looks like it does nothing. FORCE makes the policy apply to the owner too.
+sql_enable = ("ALTER TABLE factory.machine ENABLE ROW LEVEL SECURITY;"
+              "ALTER TABLE factory.machine FORCE ROW LEVEL SECURITY;")
+# Postgres has no CREATE POLICY IF NOT EXISTS; drop any prior one, then create.
+sql_drop = "DROP POLICY IF EXISTS machine_operator_isolation ON factory.machine;"
 sql_policy = """
-CREATE POLICY IF NOT EXISTS machine_operator_isolation ON factory.machine
+CREATE POLICY machine_operator_isolation ON factory.machine
   FOR SELECT
   USING (plant_id = current_setting('app.current_operator_plant', true))
 """
@@ -81,44 +95,45 @@ CREATE POLICY IF NOT EXISTS machine_operator_isolation ON factory.machine
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(sql_enable)
+        cur.execute(sql_drop)
         cur.execute(sql_policy)
-        print("RLS enabled on factory.machine")
-        print("Policy created: machine_operator_isolation")
+        print("  RLS enabled on factory.machine")
+        print("  Policy created: machine_operator_isolation")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, query with RLS for different operators
+# MAGIC ## Step 3, same query, different operators
 # MAGIC
-# MAGIC Set the app context and query the machine table. The same query returns different rows depending on the operator context. The SQL:
+# MAGIC Set each operator role, set its plant context, and run the same SELECT. The database returns only that operator's machines, enforced by the policy. We SET ROLE into each operator because RLS is only enforced for a role that does NOT have BYPASSRLS (and is not the table owner). The query is identical; only the context changes. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SET app.current_operator_plant = 'PLANT-ID';
-# MAGIC SELECT machine_id, plant_id, status FROM factory.machine
+# MAGIC SET ROLE op_detroit;
+# MAGIC SET app.current_operator_plant = 'PL-DETROIT';
+# MAGIC SELECT machine_id, plant_id, status FROM factory.machine ORDER BY machine_id;
+# MAGIC RESET ROLE;
+# MAGIC RESET app.current_operator_plant;
 # MAGIC ```
 
 # COMMAND ----------
 
-# Get a sample plant
-plants = run_sql("SELECT plant_id FROM factory.plant LIMIT 1")
-if not plants:
-    print("No plants found")
-else:
-    plant_id = plants[0][0]
+# Operator roles, one per real plant in the factory seed.
+operators = {"op_detroit": "PL-DETROIT", "op_austin": "PL-AUSTIN", "op_munich": "PL-MUNICH"}
 
-    sql = "SELECT machine_id, plant_id, status FROM factory.machine"
+sql = "SELECT machine_id, plant_id, status FROM factory.machine ORDER BY machine_id"
 
-    with connect() as conn:
-        with conn.cursor() as cur:
-            # Query as if operator_detroit
-            cur.execute(f"SET app.current_operator_plant = '{plant_id}'")
+with connect() as conn:
+    with conn.cursor() as cur:
+        for role, plant in operators.items():
+            cur.execute(f"SET ROLE {role}")
+            cur.execute(f"SET app.current_operator_plant = '{plant}'")
             cur.execute(sql)
             rows = cur.fetchall()
-            print(f"Querying as operator for plant {plant_id}:")
-            for row in rows[:5]:
-                print(f"  {row}")
-            if len(rows) > 5:
-                print(f"  ... ({len(rows)} total rows)")
+            cur.execute("RESET ROLE")
+            cur.execute("RESET app.current_operator_plant")
+            print(f"\n  as {role} (plant {plant}): {len(rows)} machines, the SAME query:")
+            for row in rows:
+                print(f"    {row}")
 
 # COMMAND ----------
 
