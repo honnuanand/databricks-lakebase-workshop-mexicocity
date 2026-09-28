@@ -11,31 +11,49 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
+# Operator roles, one per real plant in the factory seed (PL-DETROIT, PL-AUSTIN, PL-MUNICH).
+OPERATORS = {"op_detroit": "PL-DETROIT", "op_austin": "PL-AUSTIN", "op_munich": "PL-MUNICH"}
+
+
 def run_roles():
-    """Step 1: Create roles for each plant operator."""
+    """Step 1: Create a restricted role per plant operator.
+
+    Important: the row-level security policy is only enforced for a role that does
+    NOT have the BYPASSRLS attribute (and is not the table owner). The workshop's
+    own login often has BYPASSRLS, so to SEE isolation we create plain roles, grant
+    ourselves membership, and later SET ROLE into them before querying.
+    """
     print("\n=== Step 1: Create Roles ===")
-    roles = ["operator_detroit", "operator_chicago", "operator_toronto"]
+    me_rows = run_sql("SELECT current_user")
+    me = me_rows[0][0]
     with connect() as conn:
         with conn.cursor() as cur:
-            for role in roles:
-                try:
-                    cur.execute(f"CREATE ROLE IF NOT EXISTS {role}")
-                    print(f"  Created role: {role}")
-                except Exception as e:
-                    print(f"  {role} exists or error: {e}")
-
-            # Grant permissions
-            cur.execute(f"GRANT USAGE ON SCHEMA factory TO {', '.join(roles)}")
-            cur.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA factory TO {', '.join(roles)}")
-            print(f"  Granted permissions to all roles")
+            for role in OPERATORS:
+                cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role,))
+                if cur.fetchone():
+                    print(f"  role already exists: {role}")
+                else:
+                    cur.execute(f"CREATE ROLE {role}")
+                    print(f"  created role: {role}")
+                cur.execute(f"GRANT USAGE ON SCHEMA factory TO {role}")
+                cur.execute(f"GRANT SELECT ON factory.machine TO {role}")
+                # membership so we can SET ROLE into it to demonstrate enforcement
+                cur.execute(f'GRANT {role} TO "{me}"')
+            print("  granted schema/table SELECT and membership to all operator roles")
 
 def run_policy():
     """Step 2: Create and enable RLS policy."""
     print("\n=== Step 2: Create RLS Policy ===")
 
-    sql_enable = "ALTER TABLE factory.machine ENABLE ROW LEVEL SECURITY;"
+    # ENABLE turns policies on, but the table OWNER bypasses them unless we also
+    # FORCE row-level security. Without FORCE, the owner sees all rows and the demo
+    # looks like it does nothing. FORCE makes the policy apply to the owner too.
+    sql_enable = ("ALTER TABLE factory.machine ENABLE ROW LEVEL SECURITY;"
+                  "ALTER TABLE factory.machine FORCE ROW LEVEL SECURITY;")
+    # Postgres has no CREATE POLICY IF NOT EXISTS; drop any prior one, then create.
+    sql_drop = "DROP POLICY IF EXISTS machine_operator_isolation ON factory.machine;"
     sql_policy = """
-    CREATE POLICY IF NOT EXISTS machine_operator_isolation ON factory.machine
+    CREATE POLICY machine_operator_isolation ON factory.machine
       FOR SELECT
       USING (plant_id = current_setting('app.current_operator_plant', true));
     """
@@ -43,35 +61,33 @@ def run_policy():
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(sql_enable)
+            cur.execute(sql_drop)
             cur.execute(sql_policy)
             print("  RLS enabled on factory.machine")
             print("  Policy created: machine_operator_isolation")
 
 def run_query():
-    """Step 3: Query with RLS for different operators."""
-    print("\n=== Step 3: Query with Different Operators ===")
+    """Step 3: The SAME query returns different rows for different operators.
 
-    # Get a sample plant
-    plants = run_sql("SELECT plant_id FROM factory.plant LIMIT 1")
-    if not plants:
-        print("  No plants found")
-        return
-
-    plant_id = plants[0][0]
-
-    sql = "SELECT machine_id, plant_id, status FROM factory.machine"
+    We SET ROLE into each restricted operator role (which does not bypass RLS),
+    set its plant context, and run the identical SELECT. The database returns only
+    that operator's machines, enforced by the policy, not by anything in the query.
+    """
+    print("\n=== Step 3: Same Query, Different Operators ===")
+    sql = "SELECT machine_id, plant_id, status FROM factory.machine ORDER BY machine_id"
 
     with connect() as conn:
         with conn.cursor() as cur:
-            # Query as if operator_detroit
-            cur.execute(f"SET app.current_operator_plant = '{plant_id}'")
-            cur.execute(sql)
-            rows = cur.fetchall()
-            print(f"\n  Querying as operator for plant {plant_id}:")
-            for row in rows[:5]:
-                print(f"    {row}")
-            if len(rows) > 5:
-                print(f"    ... ({len(rows)} total rows)")
+            for role, plant in OPERATORS.items():
+                cur.execute(f"SET ROLE {role}")
+                cur.execute(f"SET app.current_operator_plant = '{plant}'")
+                cur.execute(sql)
+                rows = cur.fetchall()
+                cur.execute("RESET ROLE")
+                cur.execute("RESET app.current_operator_plant")
+                print(f"\n  as {role} (plant {plant}): {len(rows)} machines, the SAME query:")
+                for row in rows:
+                    print(f"    {row}")
 
 def run_explain():
     """Step 4: EXPLAIN shows RLS policy filter."""

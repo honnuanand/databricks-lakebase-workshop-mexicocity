@@ -48,11 +48,13 @@ def run_fuzzy():
 
     sample_id = sample_parts[0][0]
 
+    # Note: the pg_trgm similarity operator is `%`; psycopg treats `%` as a
+    # parameter marker, so it must be doubled to `%%` in a parameterized query.
     sql = f"""
     SELECT part_id, name,
            similarity(part_id, %s) as sim
       FROM factory.part
-     WHERE part_id % %s
+     WHERE part_id %% %s
      ORDER BY sim DESC
      LIMIT 5;
     """

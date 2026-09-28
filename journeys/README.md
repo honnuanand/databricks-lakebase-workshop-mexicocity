@@ -51,11 +51,11 @@ SQL Server, this is the "it already does what you need" track.
 
 | # | Journey | What you'll do | Build | Runs |
 | -- | ------- | -------------- | ----- | ---- |
-| 10 | [SQL you already know](pg-sql-parity/) | Window functions, recursive CTEs (the CONNECT BY replacement = a BOM explosion), MERGE, Oracle idiom map. | 🟢 | live |
-| 11 | [JSON documents](pg-json/) | Store varying part/product spec sheets as JSONB, query containment and paths in-engine, GIN-index them. | 🟢 | live |
+| 10 | [SQL you already know](pg-sql-parity/) | Window functions, recursive CTEs (the CONNECT BY replacement = a BOM explosion), MERGE, Oracle idiom map. | ⭐ | live |
+| 11 | [JSON documents](pg-json/) | Store varying part/product spec sheets as JSONB, query containment and paths in-engine, GIN-index them. | ⭐ | live |
 | 12 | [Geospatial](pg-geo/) | Plants, warehouses, and suppliers on a map: "within N km of a depot" and "nearest to" in SQL, with PostGIS. | 🟢 | live |
-| 13 | [Search, three ways](pg-search/) | Full-text, fuzzy (typo-tolerant serial numbers), and hybrid search over decades of maintenance write-ups. | 🟢 | live |
-| 14 | [Row-level security](pg-rls/) | Multiple plants share one machine table; each sees only its own rows, enforced by the database. Plus column encryption. | 🟢 | live |
+| 13 | [Search, three ways](pg-search/) | Full-text, fuzzy (typo-tolerant serial numbers), and hybrid search over decades of maintenance write-ups. | ⭐ | live |
+| 14 | [Row-level security](pg-rls/) | Multiple plants share one machine table; each sees only its own rows, enforced by the database. Plus column encryption. | ⭐ | live |
 | 15 | [No double-booking](pg-booking/) | The database refuses to schedule two overlapping operations on the same machine (GiST exclusion). | 🟢 | live |
 | 16 | [Watch the planner](pg-explain/) | EXPLAIN ANALYZE a slow scan, add one index, watch the cost-based planner flip its plan, with real numbers. | 🟢 | live |
 | 17 | [Tune the planner](pg-perf/) | Fix a bad row estimate on correlated columns with extended statistics. Measured, honest. | 🟢 | live |
