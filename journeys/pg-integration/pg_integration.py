@@ -103,7 +103,7 @@ def sample_data(schema: str = "factory"):
 
     for table in key_tables:
         try:
-            query = f"SELECT * FROM {schema}.{table} LIMIT 3 ORDER BY 1"
+            query = f"SELECT * FROM {schema}.{table} ORDER BY 1 LIMIT 3"
             rows = run_sql(query)
             print(f"\nSample from {table}:")
             print(f"  ({len(rows)} rows shown)")

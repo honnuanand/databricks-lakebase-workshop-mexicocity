@@ -31,7 +31,7 @@ The capabilities a plain Postgres cannot do. Run these first; they are why Lakeb
 | 2 | [Break it, then rewind](break-and-rewind/) | Delete live machine data on purpose, then point-in-time-restore the database to seconds ago. No backup job. | ⭐ | live |
 | 3 | [Scale to zero](scale-to-zero/) | Idle compute auto-suspends to $0 on its own; the next query wakes it in about two seconds. | ⭐ | live |
 | 4 | [One copy, both directions](write-to-analytics/) | Write a reading through Lakebase, compute a failure-risk score, write it back; the same rows read from the lakehouse (explainer). | ⭐ | live |
-| 5 | [Fits your landscape](pg-integration/) | Point any Postgres driver, ORM, or BI tool at Lakebase and watch it map the schema. Governed by Unity Catalog. | 🟢 | live |
+| 5 | [Fits your landscape](pg-integration/) | Point any Postgres driver, ORM, or BI tool at Lakebase and watch it map the schema. Governed by Unity Catalog. | ⭐ | live |
 
 ## AI on one database
 
