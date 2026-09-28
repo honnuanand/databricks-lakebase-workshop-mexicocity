@@ -22,20 +22,20 @@
 ## The scenario
 
 Your factory has decades of free-text maintenance write-ups. Engineers write them in a hurry:
-"Hydraulic line on leg B leaking, found ice on exterior, isolated line, monitor pressure."
-Another one: "Vibration, something off, maybe bearings? Take a look." A third: "Compressor
-discharge temp high, standard 85C target, currently 92C, within tolerance."
+"Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line,
+monitor pressure." Another one: "Vibration, something off, maybe bearings? Take a look." A third:
+"CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."
 
 The operations team wants to extract the key facts from each write-up: which subsystem broke,
 what was the defect, what action was taken. That's normally a human job, or a model that gets it
 right 70% of the time and is wrong enough that no one trusts the output.
 
-On Lakebase, the model *scores its own confidence* in the extraction. High-confidence entries
-(e.g., "compressor discharge temp high", clear, standard pattern) auto-accept and flow to
-operations. Uncertain ones (e.g., "something off, maybe bearings?") route to an engineer's
-review queue. When the engineer corrects it, the correction writes back *atomically*: one SQL
-row updated with both the final answer and the correction timestamp. No two systems. The
-analytics team then reads the same table and measures: how often did the model get high-confidence
+On Lakebase, the model scores its own confidence in the extraction. High-confidence entries
+(e.g., a clear write-up with standard terminology) auto-accept and flow to operations. Uncertain
+ones (e.g., a vague note like "something off with the thing on the right side?") route to an
+engineer's review queue. When the engineer corrects it, the correction writes back atomically:
+one SQL row updated with both the final answer and the correction timestamp. No two systems.
+The analytics team then reads the same table and measures: how often did the model get high-confidence
 entries right? How many low-confidence ones did humans need to fix? That signal goes straight to
 the ML team.
 

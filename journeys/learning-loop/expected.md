@@ -15,47 +15,47 @@ The raw input (first 4 columns) and the AI extraction (last 4 columns).
 ## Step 2, seed
 
 ```text
-(1, 'M-204', ..., 'Hydraulic line on leg B leaking, found ice on exterior, isolated line, monitor pressure.')
-(2, 'M-405', ..., 'L MLG tire worn to indicator, replace at next A-check.')
-(3, 'M-301', ..., 'Cabin ka-band intermittent, pax complaints on last 3 legs; swap modem?')
-(4, 'M-108', ..., 'APU slow to start, ~40s hung start x2, investigate.')
-(5, 'M-204', ..., 'Something off with the thing on the right side, maybe hydraulics? not sure')
+(1, 'M-204', ..., 'Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure.')
+(2, 'M-421', ..., 'CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM.')
+(3, 'M-311', ..., 'Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?')
+(4, 'M-102', ..., 'Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive.')
+(5, 'M-204', ..., 'Something off with the thing on the right side of the press, maybe hydraulics? not sure')
 ```
 
-Five messy, real-world maintenance write-ups.
+Five messy, real-world maintenance write-ups from the factory floor.
 
 ## Step 3, extract
 
 ```text
 Extracted 5 maintenance write-ups:
-  1. system=hydraulic, defect=line_leak, action=isolated_line, confidence=0.92, status=auto_accepted
-  2. system=landing_gear, defect=tire_worn, action=replace_at_check, confidence=0.89, status=auto_accepted
-  3. system=communications, defect=intermittent_reception, action=swap_modem, confidence=0.68, status=needs_review
-  4. system=apu, defect=slow_start, action=investigate, confidence=0.71, status=needs_review
-  5. system=?, defect=vague, action=investigate, confidence=0.38, status=needs_review
+  1. system=hydraulic line to bearing housing, defect=leak, confidence~0.90, status=auto_accepted
+  2. system=CNC spindle cooling, defect=overheating, confidence~0.85, status=auto_accepted
+  3. system=CNC tool changer, defect=intermittent, confidence~0.60, status=needs_review
+  4. system=robot arm drive, defect=slow response, confidence~0.60, status=needs_review
+  5. system=hydraulics (uncertain), defect=vague, confidence~0.20-0.30, status=needs_review
 ```
 
 The exact field values will vary (Claude's extraction is probabilistic), but the pattern is clear:
-- Entries 1-2: high confidence (> 0.75), auto-accepted
-- Entries 3-5: low confidence, needs review
+- Entries 1-2: high confidence (over 0.75), auto-accepted
+- Entries 3-5: lower confidence, routed to review
 
 ## Step 4, after extraction
 
 ```text
-(1, 'Hydraulic line...', 'hydraulic', 'line_leak', 0.92, 'auto_accepted')
-(2, 'L MLG tire...', 'landing_gear', 'tire_worn', 0.89, 'auto_accepted')
-(3, 'Cabin ka-band...', 'communications', 'intermittent', 0.68, 'needs_review')
-(4, 'APU slow...', 'apu', 'slow_start', 0.71, 'needs_review')
-(5, 'Something off...', 'unknown', 'unknown', 0.38, 'needs_review')
+(1, 'Hydraulic line...', 'hydraulic line to bearing housing', 'leak', 0.90, 'auto_accepted')
+(2, 'CNC spindle...', 'CNC spindle cooling', 'overheating', 0.85, 'auto_accepted')
+(3, 'Tool changer...', 'CNC tool changer', 'intermittent', 0.60, 'needs_review')
+(4, 'Robot arm...', 'robot arm drive', 'slow response', 0.60, 'needs_review')
+(5, 'Something off...', 'hydraulics (uncertain)', 'vague', 0.25, 'needs_review')
 ```
 
 ## Step 5, after correction
 
-Entry 3 is updated:
+The script picks the lowest-confidence needs_review row dynamically and corrects it:
 
 ```text
-Before:  system=communications, defect=intermittent, status=needs_review
-After:   system=communications, defect=modem_failure, status=corrected
+Before:  system=hydraulics (uncertain), defect=vague, confidence=0.25, status=needs_review
+After:   system=hydraulics, defect=press_ram_seal_leak, confidence=0.25, status=corrected
 ```
 
 The row is atomically updated; no second table, no sync.
@@ -70,12 +70,12 @@ Total extractions: 5
 
 Confidence >= 0.75 (auto-accepted):
   count: 2
-  avg confidence: 0.905
+  avg confidence: about 0.87
   all were correct: yes
 
 Confidence < 0.75 (needs_review):
   count: 3
-  avg confidence: 0.59
+  avg confidence: about 0.5
   human corrected: 1 out of 3
 
 Accuracy: 2 auto-accepted, 0 errors → 100%
@@ -89,27 +89,27 @@ Running `python learning_loop.py` with no arguments prints the whole story:
 
 ```text
 1. Seeding maintenance write-ups (5 entries):
-  - M-204: Hydraulic line on leg B leaking...
-  - M-405: L MLG tire worn to indicator...
-  - M-301: Cabin ka-band intermittent...
-  - M-108: APU slow to start...
+  - M-204: Hydraulic line to the bearing housing leaking...
+  - M-421: CNC spindle running hot...
+  - M-311: Tool changer intermittent on the CNC...
+  - M-102: Robot arm slow to home...
   - M-204: Something off with the thing on the right side...
 
 2. Running AI extraction (Claude reads each write-up):
-  - Entry 1: system=hydraulic, confidence=0.92, status=auto_accepted
-  - Entry 2: system=landing_gear, confidence=0.89, status=auto_accepted
-  - Entry 3: system=communications, confidence=0.68, status=needs_review
-  - Entry 4: system=apu, confidence=0.71, status=needs_review
-  - Entry 5: system=unknown, confidence=0.38, status=needs_review
+  - Entry 1: system=hydraulic line to bearing housing, confidence~0.90, status=auto_accepted
+  - Entry 2: system=CNC spindle cooling, confidence~0.85, status=auto_accepted
+  - Entry 3: system=CNC tool changer, confidence~0.60, status=needs_review
+  - Entry 4: system=robot arm drive, confidence~0.60, status=needs_review
+  - Entry 5: system=hydraulics (uncertain), confidence~0.25, status=needs_review
 
 3. Human correction (engineer reviews uncertain entries):
-  - Entry 3: modem_failure (corrected from intermittent)
+  - Entry 5 (lowest confidence): press_ram_seal_leak (corrected from vague)
   - Status updated to 'corrected'
 
 4. Analytics (accuracy measurement):
   Total: 5
-  Auto-accepted: 2 (conf >= 0.75)
-  Needs review: 3
+  Auto-accepted: 2 (confidence >= 0.75)
+  Needs review: 3 (then 2 after correction)
   Corrected: 1
   Accuracy of auto-accepted: 100%
 

@@ -118,7 +118,7 @@ and transaction isolation.
 
 ## Why does the operation table have an auto-generated ID (op_id)?
 
-The `operation` table tracks routing steps of a work order. Each operation is one step: WO-1001
-might have operations on M-204 (stamping), M-405 (trimming), and M-108 (inspection). The op_id
-is unique per operation; a single work order can have multiple operation rows. The script
+The `operation` table tracks routing steps of a work order. Each operation is one step. WO-1001
+might have operations on M-204 (press), M-205 (another press), and M-311 (CNC). The op_id
+is unique per operation. A single work order can have multiple operation rows. The script
 generates one operation per release.

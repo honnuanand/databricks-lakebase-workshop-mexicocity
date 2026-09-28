@@ -54,11 +54,11 @@ python learning_loop.py --step seed
 ```
 
 The script inserts 5 write-ups:
-1. "Hydraulic line on leg B leaking...", clear.
-2. "L MLG tire worn to indicator...", clear, standard pattern.
-3. "Cabin ka-band intermittent...", somewhat unclear ("swap modem?").
-4. "APU slow to start...", clear problem, unclear cause.
-5. "Something off with the thing on the right side...", very vague.
+1. "Hydraulic line to the bearing housing leaking...", clear and specific.
+2. "CNC spindle running hot...", clear, standard maintenance pattern.
+3. "Tool changer intermittent...", somewhat unclear with a question mark.
+4. "Robot arm slow to home...", clear problem, unclear root cause.
+5. "Something off with the thing on the right side...", very vague and uncertain.
 
 Read them back:
 
@@ -87,11 +87,11 @@ You should see output like:
 
 ```text
 Extracted 5 maintenance write-ups:
-  1. system=hydraulic, defect=line_leak, confidence=0.95, status=auto_accepted
-  2. system=landing_gear, defect=tire_worn, confidence=0.92, status=auto_accepted
-  3. system=communications, defect=intermittent, confidence=0.65, status=needs_review
-  4. system=apu, defect=slow_start, confidence=0.72, status=needs_review
-  5. system=?, defect=?, confidence=0.35, status=needs_review
+  1. system=hydraulic line to bearing housing, confidence~0.90, status=auto_accepted
+  2. system=CNC spindle cooling, confidence~0.85, status=auto_accepted
+  3. system=CNC tool changer, confidence~0.60, status=needs_review
+  4. system=robot arm drive, confidence~0.60, status=needs_review
+  5. system=hydraulics (uncertain), confidence~0.25, status=needs_review
 ```
 
 ### Step 4, see the auto-accept/review split
@@ -109,22 +109,22 @@ three should show `status = 'needs_review'` with lower confidence.
 
 ### Step 5, simulate a human correction
 
-An engineer reviews the uncertain entries and corrects one. Run:
+An engineer reviews the uncertain entries and corrects the lowest-confidence one. Run:
 
 ```bash
 python learning_loop.py --step correct
 ```
 
-The script simulates an engineer correcting entry #3 ("Cabin ka-band intermittent"):
-- AI said: system=communications, defect=intermittent
-- Human changes to: system=communications, defect=modem_failure (more specific)
+The script identifies the lowest-confidence needs_review row and corrects it:
+- AI said: system=hydraulics (uncertain), defect=vague
+- Human clarifies: system=hydraulics, defect=press_ram_seal_leak (more specific)
 - Updates the row with `status = 'corrected'` and a timestamp.
 
 Check the update:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT log_id, system, defect, status FROM factory.maintenance_log WHERE log_id=3"
+  "SELECT log_id, system, defect, status FROM factory.maintenance_log WHERE status='corrected'"
 ```
 
 ### Step 6, run analytics
@@ -147,11 +147,11 @@ You should see a summary like:
 Analytics:
   Total: 5 extractions
   Auto-accepted: 2 (confidence >= 0.75)
-  Needs review: 3
+  Needs review: 3 initially, 2 after correction
   Corrected by human: 1
   Accuracy of auto-accepted: 100% (2 out of 2 were correct)
-  Confidence >= 0.75: avg 0.93
-  Confidence < 0.75: avg 0.57
+  Confidence >= 0.75: average about 0.87
+  Confidence < 0.75: average about 0.5
 ```
 
 ## What you just did

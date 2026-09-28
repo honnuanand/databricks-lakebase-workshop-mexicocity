@@ -63,13 +63,13 @@ may be too vague. You can:
 
 ## A correction didn't stick (the status didn't change to 'corrected')
 
-The script simulates a human correction on entry 3. If you see the row unchanged, check:
+The script simulates a human correction on the lowest-confidence row. If you see the row unchanged, check:
 
 1. **Is the row being updated at all?** Query the table before and after the correction step:
    ```bash
-   python lakebase.py --sql "SELECT log_id, status FROM factory.maintenance_log WHERE log_id=3"
+   python lakebase.py --sql "SELECT log_id, status FROM factory.maintenance_log WHERE status='corrected'"
    ```
-   If the status is still `needs_review`, the UPDATE didn't run.
+   If no rows appear with status 'corrected', the UPDATE didn't run.
 
 2. **Are you on the right branch?** If you're on a different branch than where the extraction
    happened, the data would be diverged. Confirm: `echo $LB_BRANCH`.
@@ -107,7 +107,7 @@ The analytics step counts by status and computes accuracy. If the numbers don't 
    python lakebase.py --sql \
      "SELECT status, COUNT(*) FROM factory.maintenance_log GROUP BY status"
    ```
-2. **Check for missing corrections**: The script only simulates one correction (on entry 3). If
+2. **Check for missing corrections**: The script simulates one correction on the lowest-confidence row. If
    you want to correct more entries, edit the script's `correct()` function.
 3. **Check confidence values**: Accuracy is computed over high-confidence (>= 0.75) entries.
    If none were auto-accepted, accuracy will be undefined. This is expected if the write-ups
@@ -124,9 +124,9 @@ self-scored confidence directly. You can also post-process it: `confidence = min
 ## Why does the table have both `defect` and `action` columns?
 
 The schema separates:
-- **system**: which subsystem (hydraulic, landing_gear, apu, etc.)
-- **defect**: the specific problem (line_leak, tire_worn, slow_start, etc.)
-- **action**: what was done (isolated_line, replace_at_check, investigate, etc.)
+- **system**: which subsystem (hydraulic, CNC spindle, tool changer, robot arm, etc.)
+- **defect**: the specific problem (leak, overheating, intermittent, slow response, etc.)
+- **action**: what was done (isolated, replace, investigate, etc.)
 
 This separates concerns: the operational team cares about the defect; the maintenance team cares
 about the action; analytics wants to correlate system + defect to see failure patterns.
