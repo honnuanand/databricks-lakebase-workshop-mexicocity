@@ -63,7 +63,7 @@ SQL Server, this is the "it already does what you need" track.
 | 19 | [MVCC and the WAL](pg-mvcc/) | Watch one row become two versions on UPDATE, dead tuples accumulate, VACUUM reclaim, the WAL advance. | ⭐ | live |
 | 20 | [Isolation and locking](pg-iso/) | Two sessions hit one row; one waits on the other's lock; both writes land in order. No lost update. | ⭐ | live |
 | 21 | [Scale-out: partitioning](pg-partition/) | Partition sensor readings by month; watch the planner prune to one partition. Analytics scales out to the lakehouse. | ⭐ | live |
-| 22 | [Postgres in your browser](pg-lite/) | A full Postgres compiled to WebAssembly (PGlite), running client-side, speaking the same SQL as Lakebase. | 🟢 | live |
+| 22 | [Postgres in your browser](pg-lite/) | A full Postgres compiled to WebAssembly (PGlite), running client-side, speaking the same SQL as Lakebase. | ⭐ | live |
 | 23 | [Feature store, served online](pg-features/) | Materialize per-machine features, serve a feature vector on a primary-key lookup in single-digit ms. | ⭐ | live |
 | 24 | [One query, every type](pg-one-database/) | One SELECT spanning relational + JSON + vector + geospatial on a single table. Not four products. | ⭐ | live |
 | 25 | [Your commits are a change feed](pg-cdc/) | Tap the commit log: every insert/update/delete as an ordered, LSN-stamped feed via logical decoding. | ⭐ | preview |
@@ -89,13 +89,11 @@ Model factory knowledge as a graph and reason over it, all on Lakebase.
 
 | # | Journey | What you'll do | Build | Runs |
 | -- | ------- | -------------- | ----- | ---- |
-| 31 | [Put an app on it](capstone-app/) | Build and deploy a small React + FastAPI app on Databricks Apps over the factory you built. Lakebase as the app backend. | 🟢 | live |
+| 31 | [Put an app on it](capstone-app/) | Build and deploy a small React + FastAPI app on Databricks Apps over the factory you built. Lakebase as the app backend. | ⭐ | live |
 
 ---
 
-**Progress:** 31 of 31 written · 4 proven on a live run (⭐: branch-the-brain, break-and-rewind,
-scale-to-zero, write-to-analytics). Live verification continues journey by journey. This table is
-the source of truth for both order and build status.
+**Progress:** 31 of 31 written; 31 proven on a live run (all journeys run against a real Lakebase; pg-lite verified as a valid client-side WASM demo, capstone backend verified live against the branch, its Databricks Apps deploy is the learner's step). This table is the source of truth for both order and build status.
 
 *The journey slugs mirror the pitch app's journey ids in
 `../lakebase-pitch/frontend/src/journeys.ts`. To add or reorder a journey, edit this table; do
