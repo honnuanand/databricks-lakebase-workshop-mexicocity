@@ -30,6 +30,32 @@ print(f"Work order: {WO_ID}, Machine: {MACHINE_ID}")
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Step 0 - Setup: create work order
+
+# COMMAND ----------
+
+with connect() as conn:
+    with conn.cursor() as cur:
+        # Get a product from the factory
+        cur.execute("SELECT product_id FROM factory.product ORDER BY product_id LIMIT 1")
+        product = cur.fetchone()[0]
+        
+        # Clear prior operations for this work order
+        cur.execute("DELETE FROM factory.operation WHERE wo_id = %s", [WO_ID])
+        
+        # Create or ensure the work order exists
+        cur.execute(
+            '''INSERT INTO factory.work_order (wo_id, plant_id, product_id, qty, status, due_ts)
+               VALUES (%s, 'PL-DETROIT', %s, 20, 'released', now() + interval '1 day')
+               ON CONFLICT (wo_id) DO UPDATE SET status = 'released' ''',
+            [WO_ID, product]
+        )
+
+print(f"Prepared: {WO_ID} ready for assignment")
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Step 1 - Show initial state
 # MAGIC
 # MAGIC Check the machine status and work order status. The SQL:
@@ -98,9 +124,12 @@ if any(m[0] == MACHINE_ID for m in available):
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(
-            f"INSERT INTO {TABLE_OPERATION} (op_id, wo_id, machine_id, seq, status) "
-            f"VALUES ('OP-' || gen_random_uuid()::text, %s, %s, 1, 'pending')",
-            [WO_ID, MACHINE_ID]
+            f"""INSERT INTO {TABLE_OPERATION}
+                    (op_id, wo_id, machine_id, seq, status, starts_at, ends_at)
+               VALUES (%s, %s, %s, 1, 'pending',
+                       now() + interval '7 days', now() + interval '7 days' + interval '2 hours')
+               ON CONFLICT (op_id) DO NOTHING""",
+            [f"OP-{WO_ID}", WO_ID, MACHINE_ID]
         )
 
 print(f"Assigned {WO_ID} to {MACHINE_ID}")

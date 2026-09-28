@@ -107,7 +107,7 @@ for row in results:
 # MAGIC %md
 # MAGIC ## Step 3, Multi-hop SPARQL query
 # MAGIC
-# MAGIC Now a harder question: "which finished products contain a part supplied by S-ACME?"
+# MAGIC Now a harder question: "which finished products contain a part supplied by SUP-FASTENALL?"
 # MAGIC
 # MAGIC This traverses three relationships: product contains part, part supplied by supplier.
 # MAGIC
@@ -117,7 +117,7 @@ for row in results:
 # MAGIC SELECT DISTINCT ?product WHERE {
 # MAGIC   ?product <http://factory.local/contains> ?part .
 # MAGIC   ?part <http://factory.local/supplied_by> ?supplier .
-# MAGIC   FILTER (?supplier = <http://factory.local/S-ACME>)
+# MAGIC   FILTER (?supplier = <http://factory.local/SUP-FASTENALL>)
 # MAGIC }
 # MAGIC ```
 
@@ -127,14 +127,14 @@ query_multihop = """
 SELECT DISTINCT ?product WHERE {
   ?product <http://factory.local/contains> ?part .
   ?part <http://factory.local/supplied_by> ?supplier .
-  FILTER (?supplier = <http://factory.local/S-ACME>)
+  FILTER (?supplier = <http://factory.local/SUP-FASTENALL>)
 }
 """
 
 results = g.query(query_multihop)
 products = [str(row["product"]).split("/")[-1] for row in results]
 
-print("Multi-hop query result (products with S-ACME parts):")
+print("Multi-hop query result (products with SUP-FASTENALL parts):")
 if products:
     for product in sorted(products):
         print(f"  {product}")
@@ -155,7 +155,7 @@ else:
 # MAGIC   JOIN part pt ON b.child_part = pt.part_id
 # MAGIC   JOIN part_supplier ps ON pt.part_id = ps.part_id
 # MAGIC   JOIN supplier s ON ps.supplier_id = s.supplier_id
-# MAGIC  WHERE s.supplier_id = 'S-ACME'
+# MAGIC  WHERE s.supplier_id = 'SUP-FASTENALL'
 # MAGIC ```
 # MAGIC
 # MAGIC Let's run it and compare.
@@ -169,7 +169,7 @@ SELECT DISTINCT p.product_id
   JOIN part pt ON b.child_part = pt.part_id
   JOIN part_supplier ps ON pt.part_id = ps.part_id
   JOIN supplier s ON ps.supplier_id = s.supplier_id
- WHERE s.supplier_id = 'S-ACME'
+ WHERE s.supplier_id = 'SUP-FASTENALL'
 """
 
 with connect() as conn:

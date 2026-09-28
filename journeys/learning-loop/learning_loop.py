@@ -156,17 +156,27 @@ def extract():
 
 
 def correct():
-    """Simulate a human correction on an uncertain entry."""
+    """Simulate a human correction on an uncertain (needs_review) entry."""
     print(f"Human correction (engineer reviews uncertain entries):")
 
-    # Correct entry #3 (log_id=3): make it more specific
+    # Pick the lowest-confidence needs_review row and make its extraction specific.
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"""UPDATE {TABLE} SET system=%s, defect=%s, status=%s WHERE log_id=%s""",
-                ["communications", "modem_failure", "corrected", 3],
+                f"""SELECT log_id FROM {TABLE} WHERE status='needs_review'
+                    ORDER BY confidence ASC NULLS FIRST LIMIT 1"""
             )
-    print(f"  - Log 3: corrected defect to 'modem_failure' (from 'intermittent_reception')")
+            row = cur.fetchone()
+            if not row:
+                print("  (no needs_review entries to correct)")
+                print()
+                return
+            log_id = row[0]
+            cur.execute(
+                f"""UPDATE {TABLE} SET system=%s, defect=%s, status=%s WHERE log_id=%s""",
+                ["hydraulics", "press_ram_seal_leak", "corrected", log_id],
+            )
+    print(f"  - Log {log_id}: engineer set system=hydraulics, defect=press_ram_seal_leak (was uncertain)")
     print()
 
 

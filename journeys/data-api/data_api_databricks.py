@@ -16,16 +16,35 @@
 import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 
+# Use httpx if available, otherwise fall back to requests
 try:
     import httpx
 except ImportError:
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "httpx"])
-    import httpx
+    import requests
+    
+    class _RequestsClient:
+        def __init__(self, timeout=10):
+            self._s = requests.Session()
+            self._timeout = timeout
+        
+        def __enter__(self):
+            return self
+        
+        def __exit__(self, *a):
+            self._s.close()
+        
+        def get(self, url, headers=None, params=None):
+            return self._s.get(url, headers=headers, params=params, timeout=self._timeout)
+        
+        def post(self, url, headers=None, json=None):
+            return self._s.post(url, headers=headers, json=json, timeout=self._timeout)
+    
+    class httpx:
+        Client = _RequestsClient
 
 from lakebase import client, branch_endpoint, _env
 
-print("httpx ready.")
+print("HTTP client ready (httpx or requests shim).")
 
 # COMMAND ----------
 

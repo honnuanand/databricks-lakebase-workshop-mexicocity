@@ -59,7 +59,7 @@ You'll see a list of part IDs.
 
 ### Step 3, multi-hop SPARQL query
 
-Now ask a harder question: "which finished products contain a part supplied by S-ACME?"
+Now ask a harder question: "which finished products contain a part supplied by SUP-FASTENALL?"
 
 ```bash
 python kg_sparql.py --step multi-hop
@@ -71,11 +71,11 @@ The [SPARQL](../../docs/glossary.md) query traverses three relationships:
 SELECT DISTINCT ?product WHERE {
   ?product <http://factory.local/contains> ?part .
   ?part <http://factory.local/supplied_by> ?supplier .
-  FILTER (?supplier = <http://factory.local/S-ACME>)
+  FILTER (?supplier = <http://factory.local/SUP-FASTENALL>)
 }
 ```
 
-This reads like a chain: find products that contain parts that are supplied by S-ACME. The
+This reads like a chain: find products that contain parts that are supplied by SUP-FASTENALL. The
 query runs in milliseconds because the graph is in memory and indexed.
 
 ### Step 4, equivalent SQL
@@ -93,7 +93,7 @@ SELECT DISTINCT p.product_id
   JOIN part pt ON b.child_part = pt.part_id
   JOIN part_supplier ps ON pt.part_id = ps.part_id
   JOIN supplier s ON ps.supplier_id = s.supplier_id
- WHERE s.supplier_id = 'S-ACME'
+ WHERE s.supplier_id = 'SUP-FASTENALL'
 ```
 
 And runs it against Lakebase, returning the same product IDs.

@@ -132,14 +132,36 @@ print(f"Products affected (before inference): {affected_before}")
 
 triples_before = len(g)
 
-# Find all products that contain the recalled part
-for product_uri in g.subjects(URIRef(FACTORY.contains), URIRef(FACTORY[recalled_part])):
-    g.add((product_uri, URIRef(FACTORY.affected_by_recall), Literal(True)))
+# Collect all recalled parts (subjects of recalled = true)
+recalled_parts = {s for s, o in g.subject_objects(URIRef(FACTORY.recalled))
+                  if o == Literal(True)}
+
+print(f"Found {len(recalled_parts)} recalled parts: {[str(p).split('/')[-1] for p in recalled_parts]}")
+
+# For each product, walk contains* and mark it affected if it reaches a recalled part
+def reaches(node, targets, seen=None):
+    seen = seen or set()
+    for child in g.objects(node, URIRef(FACTORY.contains)):
+        if child in targets:
+            return True
+        if child not in seen:
+            seen.add(child)
+            if reaches(child, targets, seen):
+                return True
+    return False
+
+# Iterate over all products and mark affected ones
+product_count = 0
+for product in g.subjects(URIRef(FACTORY.type), URIRef(FACTORY.Product)):
+    product_count += 1
+    if reaches(product, recalled_parts):
+        g.add((product, URIRef(FACTORY.affected_by_recall), Literal(True)))
 
 triples_after = len(g)
 derived = triples_after - triples_before
 
 print(f"Inference applied.")
+print(f"  Checked {product_count} products")
 print(f"  Derived {derived} new triples.")
 print(f"  Graph now has {triples_after} triples (was {triples_before}).")
 

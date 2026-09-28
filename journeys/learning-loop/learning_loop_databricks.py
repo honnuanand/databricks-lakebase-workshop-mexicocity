@@ -35,12 +35,18 @@ print("Learning loop: seed -> extract -> route -> correct -> analyze")
 
 # COMMAND ----------
 
+# Add the ALTER TABLE statement to ensure status column exists
+with connect() as conn:
+    with conn.cursor() as cur:
+        cur.execute(f"ALTER TABLE {TABLE} ADD COLUMN IF NOT EXISTS status TEXT")
+
+# Real factory machines and their maintenance notes
 writeups = [
-    ("M-204", "Hydraulic line on leg B leaking, found ice on exterior, isolated line, monitor pressure."),
-    ("M-405", "MLG tire worn to indicator, replace at next A-check."),
-    ("M-301", "Cabin radio intermittent, crew complaints on last 3 flights; swap modem?"),
-    ("M-108", "APU slow to start, 40s hung start x2, investigate."),
-    ("M-204", "Something off with the thing on the right side, maybe hydraulics? not sure"),
+    ("M-204", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
+    ("M-421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
+    ("M-311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
+    ("M-102", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
+    ("M-204", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
 ]
 
 with connect() as conn:
@@ -49,7 +55,7 @@ with connect() as conn:
         for mid, writeup in writeups:
             cur.execute(f"INSERT INTO {TABLE} (machine_id, writeup) VALUES (%s, %s)", [mid, writeup])
 
-print(f"Seeded {len(writeups)} maintenance write-ups")
+print(f"Seeded {len(writeups)} maintenance write-ups from factory machines")
 
 # COMMAND ----------
 
@@ -83,11 +89,11 @@ for mid, writeup in rows:
 # COMMAND ----------
 
 extractions = [
-    {"system": "hydraulic", "defect": "leak", "action": "isolated line", "confidence": 0.95, "status": "auto_accepted"},
-    {"system": "landing_gear", "defect": "tire_wear", "action": "scheduled_replacement", "confidence": 0.90, "status": "auto_accepted"},
-    {"system": "avionics", "defect": "radio_intermittent", "action": "swap_modem", "confidence": 0.65, "status": "needs_review"},
-    {"system": "apu", "defect": "slow_start", "action": "investigate", "confidence": 0.80, "status": "auto_accepted"},
-    {"system": "unknown", "defect": "unknown", "action": "unknown", "confidence": 0.30, "status": "needs_review"},
+    {"system": "hydraulics", "defect": "line_leak", "action": "isolated", "confidence": 0.95, "status": "auto_accepted"},
+    {"system": "cnc_spindle", "defect": "overheating", "action": "schedule_pump_replace", "confidence": 0.89, "status": "auto_accepted"},
+    {"system": "tool_changer", "defect": "intermittent_actuator", "action": "investigate", "confidence": 0.68, "status": "needs_review"},
+    {"system": "robot_arm", "defect": "slow_homing", "action": "investigate_drive", "confidence": 0.80, "status": "auto_accepted"},
+    {"system": "unknown", "defect": "unknown", "action": "investigate", "confidence": 0.38, "status": "needs_review"},
 ]
 
 auto_count = sum(1 for e in extractions if e["status"] == "auto_accepted")
