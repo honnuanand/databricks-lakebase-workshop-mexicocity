@@ -1,27 +1,29 @@
 #!/usr/bin/env python3
 """One copy, both directions: operational writes and analytics on the same data.
 
-The Lakebase LTAP idea (live data flow, no pipeline): your operational rows are the
-same rows analytics reads. There is no change-data-capture job copying data from an
-OLTP store to an analytics store; there is one copy, reachable from both sides.
+The Lakebase idea (live data flow, no pipeline): your operational rows are the same
+rows analytics reads. There is no change-data-capture job copying from an OLTP store
+to an analytics store; there is one copy, reachable from both sides.
 
-WHAT THIS SCRIPT RUNS LIVE (real, on your branch):
-  - write a new sensor reading through Postgres (a millisecond OLTP write)
-  - compute a failure-risk score from it
-  - write that score back onto the row (a failure_risk column)
-  - read it back, so the operational side now serves an analytics-derived value
+Banking scenario: a card transaction lands, you score its fraud risk, and write the
+score back onto the row, so the operational side (the authorization path) serves an
+analytics-derived value at OLTP latency.
+
+WHAT RUNS LIVE (real, on your branch):
+  - write a new transaction through Lakebase (a millisecond OLTP write)
+  - compute a fraud-risk score from it
+  - write that score back onto the row (a fraud_risk column)
+  - read it back
 
 WHAT IS AN EXPLAINER (clearly labeled, NOT run here):
   - reading the same rows from the lakehouse through a Unity Catalog foreign table
-    on a SQL warehouse. That requires registering the Lakebase database as a UC
-    catalog, which is a metastore-admin action (CREATE CATALOG on the metastore).
-    We show the exact query you would run once that catalog exists; we do not fake
-    its output.
+    on a SQL warehouse. That needs the Lakebase database registered as a UC catalog,
+    a metastore-admin action. We show the query you would run; we do not fake output.
 
 Usage:
     python write_to_analytics.py                # the live half + the explainer
     python write_to_analytics.py --step write   # just the OLTP write
-    python write_to_analytics.py --step score    # compute + write back the risk
+    python write_to_analytics.py --step score    # compute + write back the fraud score
 
 Env: LB_PROFILE, LB_PROJECT, LB_BRANCH, LB_SCHEMA (see 00-setup/).
 """
@@ -35,30 +37,30 @@ from lakebase import run_sql
 
 
 def ensure_column():
-    """Add a failure_risk column to sensor_reading if it is not there yet (idempotent)."""
-    run_sql("ALTER TABLE bank.txn ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1)")
+    """Add a fraud_risk column to txn if it is not there yet (idempotent)."""
+    run_sql("ALTER TABLE bank.txn ADD COLUMN IF NOT EXISTS fraud_risk NUMERIC(5,1)")
 
 
-def write_reading():
-    """Write a new sensor reading through Postgres (OLTP). Returns its txn_id."""
+def write_txn():
+    """Write a new transaction through Lakebase (OLTP). Returns its txn_id."""
     r = run_sql(
-        "INSERT INTO bank.txn (account_id, ts, temp_c, anomaly_score, rpm, util_pct) "
-        "VALUES ('ACCT-100240', now(), 67.3, 4.2, 1165, 81.0) "
-        "RETURNING txn_id, temp_c, anomaly_score")
-    rid, temp, vib = r[0]
-    print(f"  inserted txn_id={rid}: temp_c={temp}, anomaly_score={vib}")
-    return rid
+        "INSERT INTO bank.txn (account_id, ts, amount_usd, anomaly_score, mcc, util_pct) "
+        "VALUES ('ACCT-100240', now(), 2200.00, 8.7, 6011, 92.0) "
+        "RETURNING txn_id, amount_usd, anomaly_score")
+    tid, amt, anom = r[0]
+    print(f"  inserted txn_id={tid}: amount_usd={amt}, anomaly_score={anom}")
+    return tid
 
 
-def score_and_write_back(rid):
-    """Compute a failure-risk score and write it back onto the row."""
+def score_and_write_back(tid):
+    """Compute a fraud-risk score and write it back onto the row."""
     run_sql(
         "UPDATE bank.txn "
-        "SET failure_risk = ROUND(100 * (anomaly_score / 10.0 + temp_c / 100.0), 1) "
-        f"WHERE txn_id = {rid}")
+        "SET fraud_risk = ROUND(100 * (anomaly_score / 10.0 + util_pct / 100.0), 1) "
+        f"WHERE txn_id = {tid}")
     row = run_sql(
-        "SELECT txn_id, account_id, temp_c, anomaly_score, failure_risk "
-        f"FROM bank.txn WHERE txn_id = {rid}")[0]
+        "SELECT txn_id, account_id, amount_usd, anomaly_score, util_pct, fraud_risk "
+        f"FROM bank.txn WHERE txn_id = {tid}")[0]
     print(f"  scored + wrote back: {row}")
     return row
 
@@ -70,15 +72,14 @@ def lakehouse_explainer():
     print("  the operational rows are visible to a SQL warehouse with no pipeline and no copy:")
     print()
     print("    -- on a SQL warehouse, against the UC foreign catalog for this database:")
-    print("    SELECT account_id, ts, temp_c, anomaly_score, failure_risk")
+    print("    SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk")
     print("    FROM <catalog>.bank.txn")
     print("    WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;")
     print()
-    print("  The row you just wrote through Postgres appears there immediately: it is the same")
-    print("  copy, not a synced one. Registering the catalog needs CREATE CATALOG on the")
-    print("  metastore (a workspace/metastore-admin action), so this workshop shows the query")
-    print("  rather than running it for you. Nothing here is simulated: the write and score above")
-    print("  are real on your branch; this step is the one that needs admin setup.")
+    print("  The transaction you just wrote through Lakebase appears there immediately: same copy,")
+    print("  not a synced one. Registering the catalog needs CREATE CATALOG on the metastore (a")
+    print("  workspace/metastore-admin action), so this workshop shows the query rather than running")
+    print("  it for you. Nothing here is simulated: the write and the fraud score above are real.")
 
 
 def main():
@@ -89,25 +90,25 @@ def main():
     ensure_column()
 
     if args.step == "write":
-        write_reading()
+        write_txn()
         return
     if args.step == "score":
-        rid = write_reading()
-        score_and_write_back(rid)
+        tid = write_txn()
+        score_and_write_back(tid)
         return
 
     # full story
-    print("1. Write a new sensor reading through Postgres (OLTP), a millisecond write:")
-    rid = write_reading()
+    print("1. Write a new transaction through Lakebase (OLTP), a millisecond write:")
+    tid = write_txn()
 
-    print("\n2. Compute a failure-risk score and write it back onto the row (reverse step):")
-    score_and_write_back(rid)
+    print("\n2. Compute a fraud-risk score and write it back onto the row (reverse step):")
+    score_and_write_back(tid)
 
     print("\n3. The operational side now serves an analytics-derived value at OLTP latency.")
-    print("   Read it straight back from Postgres:")
+    print("   Read it straight back from Lakebase:")
     row = run_sql(
-        "SELECT account_id, temp_c, anomaly_score, failure_risk "
-        f"FROM bank.txn WHERE txn_id = {rid}")[0]
+        "SELECT account_id, amount_usd, anomaly_score, fraud_risk "
+        f"FROM bank.txn WHERE txn_id = {tid}")[0]
     print(f"  {row}")
 
     print("\n4. The lakehouse side (same copy, no pipeline):")
