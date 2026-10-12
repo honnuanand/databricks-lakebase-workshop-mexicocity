@@ -22,8 +22,8 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), '..', '..', 'common', 'scripts'))
 from lakebase import connect, _env
 
-DEMO_TABLE = 'machine_cdc_demo'
-SCHEMA = _env('LB_SCHEMA', 'factory')
+DEMO_TABLE = 'account_cdc_demo'
+SCHEMA = _env('LB_SCHEMA', 'bank')
 SLOT_NAME = 'workshop_slot'
 
 print('Ready.')
@@ -34,14 +34,14 @@ print('Note: This is a preview. Logical decoding is on the Lakebase roadmap.')
 # MAGIC ## Step 1, Create demo table
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE TABLE machine_cdc_demo (
-# MAGIC     machine_id TEXT PRIMARY KEY,
+# MAGIC CREATE TABLE account_cdc_demo (
+# MAGIC     account_id TEXT PRIMARY KEY,
 # MAGIC     status TEXT NOT NULL,
 # MAGIC     health_pct NUMERIC(5,2)
 # MAGIC );
-# MAGIC INSERT INTO machine_cdc_demo VALUES ('M-001', 'operational', 98.0),
-# MAGIC     ('M-002', 'healthy', 94.5), ('M-003', 'maintenance', 50.0),
-# MAGIC     ('M-004', 'derated', 75.0), ('M-005', 'operational', 99.0);
+# MAGIC INSERT INTO account_cdc_demo VALUES ('ACCT-001', 'good_standing', 95.5),
+# MAGIC     ('ACCT-002', 'good_standing', 92.0), ('ACCT-003', 'frozen', 50.0),
+# MAGIC     ('ACCT-004', 'good_standing', 98.2), ('ACCT-005', 'watch', 87.3);
 # MAGIC ```
 # COMMAND ----------
 
@@ -50,20 +50,20 @@ with connect() as conn:
         cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.{DEMO_TABLE}")
         cur.execute(f"""
             CREATE TABLE {SCHEMA}.{DEMO_TABLE} (
-                machine_id TEXT PRIMARY KEY,
+                account_id TEXT PRIMARY KEY,
                 status TEXT NOT NULL,
                 health_pct NUMERIC(5,2)
             )
         """)
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES
-            ('M-001', 'operational', 98.0),
-            ('M-002', 'healthy', 94.5),
-            ('M-003', 'maintenance', 50.0),
-            ('M-004', 'derated', 75.0),
-            ('M-005', 'operational', 99.0)
+            ('ACCT-001', 'good_standing', 95.5),
+            ('ACCT-002', 'good_standing', 92.0),
+            ('ACCT-003', 'frozen', 50.0),
+            ('ACCT-004', 'good_standing', 98.2),
+            ('ACCT-005', 'watch', 87.3)
         """)
-        print(f'✓ Created demo table with 5 machines')
+        print(f'✓ Created demo table with 5 accounts')
 
 # COMMAND ----------
 
@@ -97,10 +97,10 @@ with connect() as conn:
 # MAGIC INSERT INTO machine_cdc_demo VALUES ('M-100', 'operational', 99.5);
 # MAGIC COMMIT;
 # MAGIC
-# MAGIC UPDATE machine_cdc_demo SET status = 'maintenance' WHERE machine_id = 'M-001';
+# MAGIC UPDATE machine_cdc_demo SET status = 'maintenance' WHERE account_id = 'M-001';
 # MAGIC COMMIT;
 # MAGIC
-# MAGIC DELETE FROM machine_cdc_demo WHERE machine_id = 'M-003';
+# MAGIC DELETE FROM machine_cdc_demo WHERE account_id = 'M-003';
 # MAGIC COMMIT;
 # MAGIC ```
 # COMMAND ----------
@@ -111,10 +111,10 @@ with connect() as conn:
         cur.execute(f"INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES ('M-100', 'operational', 99.5)")
         print(f'✓ INSERT committed')
         
-        cur.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET status = 'maintenance' WHERE machine_id = 'M-001'")
+        cur.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET status = 'maintenance' WHERE account_id = 'M-001'")
         print(f'✓ UPDATE committed')
         
-        cur.execute(f"DELETE FROM {SCHEMA}.{DEMO_TABLE} WHERE machine_id = 'M-003'")
+        cur.execute(f"DELETE FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'M-003'")
         print(f'✓ DELETE committed')
         print(f'\n  Each COMMIT flushes a record to the slot')
 

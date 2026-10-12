@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -19,7 +19,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
-SCHEMA = os.environ.get("LB_SCHEMA", "factory")
+SCHEMA = os.environ.get("LB_SCHEMA", "bank")
 print("connected; schema:", SCHEMA)
 
 # COMMAND ----------
@@ -27,7 +27,7 @@ print("connected; schema:", SCHEMA)
 # MAGIC %md
 # MAGIC ## Step 1, enable PostGIS and add geography columns
 # MAGIC
-# MAGIC PostGIS is a spatial extension for Postgres. Enable it, then add geography columns (POINT type) to plant, warehouse, and supplier tables. The SQL:
+# MAGIC PostGIS is a spatial extension for Postgres. Enable it, then add geography columns (POINT type) to branch, custodian, and counterparty tables. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE EXTENSION IF NOT EXISTS postgis CASCADE
@@ -43,11 +43,11 @@ with connect() as conn:
         except Exception as e:
             print(f"Warning: PostGIS may not be available: {e}")
 
-# Add geography columns to plant, warehouse, supplier if missing
+# Add geography columns to branch, custodian, counterparty if missing
 tables = [
-    ("factory.plant", "geo"),
-    ("factory.warehouse", "geo"),
-    ("factory.supplier", "geo")
+    ("bank.branch", "geo"),
+    ("bank.custodian", "geo"),
+    ("bank.counterparty", "geo")
 ]
 
 with connect() as conn:
@@ -70,14 +70,14 @@ with connect() as conn:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2, query warehouses within 100 km of a plant
+# MAGIC ## Step 2, query custodians within 100 km of a branch
 # MAGIC
-# MAGIC Use ST_DWithin() to find all warehouses within a distance (in meters) of a plant. The SQL:
+# MAGIC Use ST_DWithin() to find all custodians within a distance (in meters) of a branch. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT warehouse_id, plant_id,
+# MAGIC SELECT custodian_id, branch_id,
 # MAGIC        ROUND((ST_Distance(geo, geography(POINT(lon, lat))) / 1000.0)::NUMERIC, 2) as distance_km
-# MAGIC   FROM factory.warehouse
+# MAGIC   FROM bank.custodian
 # MAGIC  WHERE ST_DWithin(geo, geography(POINT(lon, lat)), 100000)
 # MAGIC  ORDER BY distance_km
 # MAGIC  LIMIT 10
@@ -85,59 +85,59 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# Get a sample plant
-plants = run_sql("SELECT plant_id, lat, lon FROM factory.plant LIMIT 1")
-if not plants:
-    print("No plants found")
+# Get a sample branch
+branches = run_sql("SELECT branch_id, lat, lon FROM bank.branch LIMIT 1")
+if not branches:
+    print("No branches found")
 else:
-    plant_id, plant_lat, plant_lon = plants[0]
+    branch_id, branch_lat, branch_lon = branches[0]
 
     sql = f"""
-    SELECT warehouse_id, plant_id,
-           ROUND((ST_Distance(geo, ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography) / 1000.0)::NUMERIC, 2) as distance_km
-      FROM factory.warehouse
-     WHERE ST_DWithin(geo, ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography, 100000)
+    SELECT custodian_id, branch_id,
+           ROUND((ST_Distance(geo, ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography) / 1000.0)::NUMERIC, 2) as distance_km
+      FROM bank.custodian
+     WHERE ST_DWithin(geo, ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography, 100000)
      ORDER BY distance_km
      LIMIT 10
     """
     rows = run_sql(sql)
-    print(f"Warehouses within 100 km of {plant_id}:")
+    print(f"Custodians within 100 km of {branch_id}:")
     for row in rows:
         print(f"  {row[0]} (distance: {row[2]} km)")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, find nearest suppliers to a plant
+# MAGIC ## Step 3, find nearest counterparties to a branch
 # MAGIC
 # MAGIC Use the `<->` operator for nearest-neighbor queries (without a distance limit). The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT supplier_id, name,
+# MAGIC SELECT counterparty_id, name,
 # MAGIC        ROUND((geo <-> geography(POINT(lon, lat)))::NUMERIC, 0) as distance_meters
-# MAGIC   FROM factory.supplier
+# MAGIC   FROM bank.counterparty
 # MAGIC  ORDER BY geo <-> geography(POINT(lon, lat))
 # MAGIC  LIMIT 3
 # MAGIC ```
 
 # COMMAND ----------
 
-# Get a sample plant
-plants = run_sql("SELECT plant_id, lat, lon FROM factory.plant LIMIT 1")
-if not plants:
-    print("No plants found")
+# Get a sample branch
+branches = run_sql("SELECT branch_id, lat, lon FROM bank.branch LIMIT 1")
+if not branches:
+    print("No branches found")
 else:
-    plant_id, plant_lat, plant_lon = plants[0]
+    branch_id, branch_lat, branch_lon = branches[0]
 
     sql = f"""
-    SELECT supplier_id, name,
-           ROUND((geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography)::NUMERIC, 0) as distance_meters
-      FROM factory.supplier
-     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography
+    SELECT counterparty_id, name,
+           ROUND((geo <-> ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography)::NUMERIC, 0) as distance_meters
+      FROM bank.counterparty
+     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography
      LIMIT 3
     """
     rows = run_sql(sql)
-    print(f"3 nearest suppliers to {plant_id}:")
+    print(f"3 nearest counterparties to {branch_id}:")
     for row in rows:
         print(f"  {row[0]}: {row[1]} ({row[2]} meters)")
 
@@ -149,17 +149,17 @@ else:
 # MAGIC GiST (Generalized Search Tree) indexes accelerate spatial queries. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE INDEX IF NOT EXISTS idx_plant_geo ON factory.plant USING gist(geo);
-# MAGIC CREATE INDEX IF NOT EXISTS idx_warehouse_geo ON factory.warehouse USING gist(geo);
-# MAGIC CREATE INDEX IF NOT EXISTS idx_supplier_geo ON factory.supplier USING gist(geo);
+# MAGIC CREATE INDEX IF NOT EXISTS idx_branch_geo ON bank.branch USING gist(geo);
+# MAGIC CREATE INDEX IF NOT EXISTS idx_custodian_geo ON bank.custodian USING gist(geo);
+# MAGIC CREATE INDEX IF NOT EXISTS idx_counterparty_geo ON bank.counterparty USING gist(geo);
 # MAGIC ```
 
 # COMMAND ----------
 
 sqls = [
-    "CREATE INDEX IF NOT EXISTS idx_plant_geo ON factory.plant USING gist(geo)",
-    "CREATE INDEX IF NOT EXISTS idx_warehouse_geo ON factory.warehouse USING gist(geo)",
-    "CREATE INDEX IF NOT EXISTS idx_supplier_geo ON factory.supplier USING gist(geo)"
+    "CREATE INDEX IF NOT EXISTS idx_branch_geo ON bank.branch USING gist(geo)",
+    "CREATE INDEX IF NOT EXISTS idx_custodian_geo ON bank.custodian USING gist(geo)",
+    "CREATE INDEX IF NOT EXISTS idx_counterparty_geo ON bank.counterparty USING gist(geo)"
 ]
 
 with connect() as conn:
@@ -167,7 +167,7 @@ with connect() as conn:
         for sql in sqls:
             cur.execute(sql)
 
-print("GiST indexes created on plant, warehouse, supplier")
+print("GiST indexes created on branch, custodian, counterparty")
 
 # COMMAND ----------
 
@@ -178,23 +178,23 @@ print("GiST indexes created on plant, warehouse, supplier")
 # MAGIC
 # MAGIC ```sql
 # MAGIC EXPLAIN (ANALYZE, BUFFERS)
-# MAGIC SELECT supplier_id FROM factory.supplier
+# MAGIC SELECT counterparty_id FROM bank.counterparty
 # MAGIC  ORDER BY geo <-> geography(POINT(lon, lat))
 # MAGIC  LIMIT 3
 # MAGIC ```
 
 # COMMAND ----------
 
-plants = run_sql("SELECT plant_id, lat, lon FROM factory.plant LIMIT 1")
-if not plants:
-    print("No plants found")
+branches = run_sql("SELECT branch_id, lat, lon FROM bank.branch LIMIT 1")
+if not branches:
+    print("No branches found")
 else:
-    plant_lat, plant_lon = plants[0][1], plants[0][2]
+    branch_lat, branch_lon = branches[0][1], branches[0][2]
 
     sql = f"""
     EXPLAIN (ANALYZE, BUFFERS)
-    SELECT supplier_id FROM factory.supplier
-     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography
+    SELECT counterparty_id FROM bank.counterparty
+     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography
      LIMIT 3
     """
     rows = run_sql(sql)
@@ -207,6 +207,6 @@ else:
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You enabled PostGIS and mastered spatial queries: ST_DWithin() for radius searches, the `<->` operator for nearest neighbors, and GiST indexes for performance. Supply chain locations are now queryable by distance.
+# MAGIC You enabled PostGIS and mastered spatial queries: ST_DWithin() for radius searches, the `<->` operator for nearest neighbors, and GiST indexes for performance. Financial network locations are now queryable by distance.
 # MAGIC
 # MAGIC Next: **Search, three ways** uses full-text search, fuzzy matching, and hybrid ranking.

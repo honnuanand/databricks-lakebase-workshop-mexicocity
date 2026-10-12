@@ -36,7 +36,7 @@ For large result sets, the HTML demo may not format nicely; it's a simple demo, 
 Yes, but only if persistence is enabled (IndexedDB). By default, the demo uses IndexedDB, so your tables
 persist until you clear browser data.
 
-To verify: create a table, reload the page, and try `SELECT * FROM machines;`, it should still be there.
+To verify: create a table, reload the page, and try `SELECT * FROM accounts;`, it should still be there.
 
 ## Can I download my data or export it?
 

@@ -34,7 +34,7 @@ bash app/run_local.sh
 
 That installs the backend's dependencies (first run only), then starts the app on
 `http://localhost:8000`, serving your branch. Open that URL. You should see the Machines list,
-switch tabs to explode `PRD-GEARBOX-X1`'s bill of materials, and search the maintenance write-ups.
+switch tabs to explode `FUND-GROWTH-A`'s fund holdings tree, and search the maintenance write-ups.
 
 The header shows which branch and identity it is serving, proof it is reading your live Lakebase
 branch, not a mock. Stop it with Ctrl-C when you are done.

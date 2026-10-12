@@ -25,8 +25,8 @@ Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 The table is part of the factory schema, loaded during setup. If it's missing:
 
 1. Check that you're on the right branch: `echo $LB_BRANCH`.
-2. Check the schema loaded: `python lakebase.py --sql "SELECT count(*) FROM factory.machine"`.
-3. If factory.machine exists but maintenance_log doesn't, run the schema loader:
+2. Check the schema loaded: `python lakebase.py --sql "SELECT count(*) FROM bank.account"`.
+3. If bank.account exists but maintenance_log doesn't, run the schema loader:
    ```bash
    python load_factory.py
    ```
@@ -67,7 +67,7 @@ The script simulates a human correction on the lowest-confidence row. If you see
 
 1. **Is the row being updated at all?** Query the table before and after the correction step:
    ```bash
-   python lakebase.py --sql "SELECT log_id, status FROM factory.maintenance_log WHERE status='corrected'"
+   python lakebase.py --sql "SELECT note_id, status FROM bank.case_note WHERE status='corrected'"
    ```
    If no rows appear with status 'corrected', the UPDATE didn't run.
 
@@ -76,10 +76,10 @@ The script simulates a human correction on the lowest-confidence row. If you see
 
 3. **Check the script logic**: The correction step uses:
    ```python
-   cur.execute(f"UPDATE factory.maintenance_log SET system=%s, defect=%s, status=%s WHERE log_id=%s",
+   cur.execute(f"UPDATE bank.case_note SET system=%s, defect=%s, status=%s WHERE note_id=%s",
                [..., 'corrected', ...])
    ```
-   If that's failing, check the log_id and column names.
+   If that's failing, check the note_id and column names.
 
 ## I want to run extraction on my own write-ups
 
@@ -105,7 +105,7 @@ The analytics step counts by status and computes accuracy. If the numbers don't 
 1. **Check the row counts**: Query the table manually:
    ```bash
    python lakebase.py --sql \
-     "SELECT status, COUNT(*) FROM factory.maintenance_log GROUP BY status"
+     "SELECT status, COUNT(*) FROM bank.case_note GROUP BY status"
    ```
 2. **Check for missing corrections**: The script simulates one correction on the lowest-confidence row. If
    you want to correct more entries, edit the script's `correct()` function.

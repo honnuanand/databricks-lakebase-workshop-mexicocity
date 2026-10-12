@@ -65,7 +65,7 @@ def get_oauth_token(profile: str) -> str:
 
 def check_data_api(host: str, token: str) -> tuple[bool, str]:
     """Check if the Data API is enabled on the instance."""
-    url = f"https://{host}/api/v1/factory.machine"
+    url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
@@ -83,7 +83,7 @@ def check_data_api(host: str, token: str) -> tuple[bool, str]:
 
 def get_machines(host: str, token: str) -> list[dict]:
     """Fetch all machines via REST."""
-    url = f"https://{host}/api/v1/factory.machine"
+    url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
 
     with httpx.Client(timeout=10) as http:
@@ -94,9 +94,9 @@ def get_machines(host: str, token: str) -> list[dict]:
 
 def get_filtered_machines(host: str, token: str) -> list[dict]:
     """Fetch only healthy machines via REST."""
-    url = f"https://{host}/api/v1/factory.machine"
+    url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
-    params = {"select": "machine_id,status", "status": "eq.healthy"}
+    params = {"select": "account_id,status", "status": "eq.healthy"}
 
     with httpx.Client(timeout=10) as http:
         response = http.get(url, headers=headers, params=params)
@@ -126,7 +126,7 @@ def main() -> None:
     if args.step == "check" or not args.step:
         print(f"Data API check:")
         print(f"  Host: https://{host}")
-        print(f"  Endpoint: /api/v1/factory.machine")
+        print(f"  Endpoint: /api/v1/bank.account")
 
         try:
             token = get_oauth_token(profile)
@@ -163,8 +163,8 @@ def main() -> None:
             print("This journey makes real HTTPS calls when it is enabled; it does not mock them.")
             print("To enable it: Databricks console -> Lakebase -> your instance -> Settings ->")
             print("turn on the Data API, then re-run. The calls below are what you would run:")
-            print("  GET  https://<host>/api/v1/factory.machine")
-            print("  GET  https://<host>/api/v1/factory.machine?select=machine_id,status&status=eq.healthy")
+            print("  GET  https://<host>/api/v1/bank.account")
+            print("  GET  https://<host>/api/v1/bank.account?select=account_id,status&status=eq.healthy")
             print("\nEverything up to here is real: the OAuth token above is live. The REST reads")
             print("just need the Data API switched on, which is an instance setting, not a script step.")
             return
@@ -201,7 +201,7 @@ def main() -> None:
 
             with connect() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT machine_id, status FROM factory.machine WHERE status = 'healthy'")
+                    cur.execute("SELECT account_id, status FROM bank.account WHERE status = 'healthy'")
                     sql_rows = cur.fetchall()
                     print(f"  SQL result: {len(sql_rows)} machines")
                     print(f"  Results match: {'✓' if len(machines) == len(sql_rows) else '✗'}")
@@ -210,11 +210,11 @@ def main() -> None:
 
     if args.step == "post-read-only":
         print(f"\nTesting POST (insert) via REST (may be read-only)...")
-        url = f"https://{host}/api/v1/factory.machine"
+        url = f"https://{host}/api/v1/bank.account"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         data = {
-            "machine_id": "M-TEST-999",
-            "plant_id": "PL-TEST",
+            "account_id": "M-TEST-999",
+            "branch_id": "PL-TEST",
             "line": "Test",
             "type": "test",
             "status": "healthy",

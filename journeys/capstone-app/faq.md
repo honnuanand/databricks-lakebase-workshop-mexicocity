@@ -80,7 +80,7 @@ Then start the backend again.
 
 Possible causes:
 
-1. The factory schema isn't loaded. Run `python ../../lakebase.py --sql "SELECT COUNT(*) FROM factory.machine"` to check.
+1. The factory schema isn't loaded. Run `python ../../lakebase.py --sql "SELECT COUNT(*) FROM bank.account"` to check.
 2. Your branch has RLS that hides all rows. Try as a different user or check RLS policies.
 3. The backend query is wrong. Check `backend/main.py` for the machines endpoint.
 
@@ -188,7 +188,7 @@ permissions, you'd need to:
    ```
 
 For the capstone, read-only is fine (the dashboard is read-heavy). Consider write access if you
-add features that modify data (e.g., mark machine as maintenance, create maintenance logs).
+add features that modify data (e.g., mark machine as maintenance, create case notes).
 
 ## Architecture and design questions
 
@@ -222,7 +222,7 @@ Add a new route to `backend/main.py`:
 def get_suppliers():
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT supplier_id, name FROM factory.supplier")
+            cur.execute("SELECT counterparty_id, name FROM bank.counterparty")
             return cur.fetchall()
 ```
 

@@ -33,9 +33,9 @@ If the slot is old and WAL has been cleaned up, the slot becomes invalid. Create
 ## Can I have multiple slots?
 
 Yes. Each slot has its own cursor into the WAL. Useful for multiple consumers:
-- Slot A feeds a cache invalidation system.
-- Slot B feeds an analytics pipeline.
-- Slot C feeds an outbox processor.
+- Slot A feeds a fraud risk scoring system.
+- Slot B feeds an AML compliance pipeline.
+- Slot C feeds a ledger sync processor.
 
 Each advances independently. An idle slot may hold WAL (preventing cleanup), so monitor and drop unused slots.
 
@@ -80,7 +80,7 @@ LSNs are:
 - **Durable**: tied to the WAL; survive server restart.
 - **Precise**: no clock-skew issues; exact position in the log.
 
-Timestamps can be imprecise (clock adjustments, multiple inserts in the same millisecond). LSNs are the right primitive
+Timestamps can be imprecise (clock adjustments, multiple updates in the same millisecond). LSNs are the right primitive
 for a durable, ordered change feed.
 
 ## Can I decode specific tables only?

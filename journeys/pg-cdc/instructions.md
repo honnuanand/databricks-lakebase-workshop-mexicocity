@@ -44,14 +44,14 @@ python pg_cdc.py --step setup
 Creates a simple table:
 
 ```sql
-CREATE TABLE machine_cdc_demo (
-    machine_id TEXT PRIMARY KEY,
+CREATE TABLE account_cdc_demo (
+    account_id TEXT PRIMARY KEY,
     status TEXT NOT NULL,
     health_pct NUMERIC(5,2)
 )
 ```
 
-Seed it with 5 machines.
+Seed it with 5 accounts.
 
 ### Step 2, create logical replication slot
 
@@ -76,9 +76,9 @@ python pg_cdc.py --step changes
 Makes three committed writes:
 
 ```sql
-INSERT INTO machine_cdc_demo VALUES ('M-100', 'operational', 99.5)
-UPDATE machine_cdc_demo SET status='maintenance' WHERE machine_id='M-001'
-DELETE FROM machine_cdc_demo WHERE machine_id='M-003'
+INSERT INTO account_cdc_demo VALUES ('ACCT-100', 'good_standing', 99.5)
+UPDATE account_cdc_demo SET status='frozen' WHERE account_id='ACCT-001'
+DELETE FROM account_cdc_demo WHERE account_id='ACCT-003'
 ```
 
 Each COMMIT flushes a record to the slot. Then decodes:

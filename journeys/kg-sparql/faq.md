@@ -10,11 +10,8 @@ Install rdflib:
 pip install rdflib
 ```
 
-Or on a Databricks-managed laptop:
-
-```bash
-pip install rdflib
-```
+If you're on a Databricks-managed laptop and the default PyPI is blocked, use your organization's
+internal proxy index for the install.
 
 ### `Missing required env var LB_PROFILE`
 
@@ -24,44 +21,39 @@ Set your environment variables (see [`../../00-setup/auth.md`](../../00-setup/au
 export LB_PROFILE=<your-profile>
 export LB_PROJECT=<project-id>
 export LB_BRANCH=<branch-id>
-export LB_SCHEMA=factory
+export LB_SCHEMA=bank
 ```
 
 ### SPARQL query returns empty results
 
-Check that the supplier you're querying actually exists in the graph:
+Check that the counterparty you're querying actually exists in the graph:
 
 ```bash
-python kg_sparql.py --step list-suppliers
+python kg_sparql.py --step list-counterparties
 ```
 
-This lists all suppliers in the graph. Pick one that has parts, then retry.
+This lists all counterparties in the graph. Pick one that trades instruments, then retry.
 
-If no suppliers have parts, the bom_edge or part_supplier relationship might not have been loaded
-correctly. See [Build a knowledge graph](../kg-build/) FAQ for troubleshooting.
+If no counterparties trade instruments, the holding or trade_counterparty relationship might not
+have been loaded correctly. See [Build a knowledge graph](../kg-build/) FAQ for troubleshooting.
+
+## Concept clarifications
 
 ### Why does SPARQL read backward?
 
 [SPARQL](../../docs/glossary.md) patterns use [RDF](../../docs/glossary.md)'s subject-predicate-object triple notation, which can feel backward
 compared to SQL. A SPARQL pattern:
 
-## Concept clarifications
-
-### Why does SPARQL read backward?
-
-SPARQL patterns use RDF's subject-predicate-object triple notation, which can feel backward
-compared to SQL. A SPARQL pattern:
-
 ```sparql
-?product contains ?part
+?fund holds ?instrument
 ```
 
-means "bind ?product to a subject, ?part to an object, where the predicate is contains." In
-subject-verb-object English, this is "(subject) contains (object)," which is natural.
+means "bind ?fund to a subject, ?instrument to an object, where the predicate is holds." In
+subject-verb-object English, this is "(subject) holds (object)," which is natural.
 
 Sometimes the vocabulary in the graph follows the object-subject convention (e.g.
-`?part supplied_by ?supplier`), which also reads naturally in English. The important thing is
-consistency: define your predicates (relationship names) to be readable.
+`?instrument traded_by ?counterparty`), which also reads naturally in English. The important thing
+is consistency: define your predicates (relationship names) to be readable.
 
 ### How is SPARQL performance on large graphs?
 
@@ -76,6 +68,7 @@ Almost. [SPARQL](../../docs/glossary.md) supports:
 - Filtering (WHERE clauses)
 - Aggregation (GROUP BY, COUNT, SUM)
 - Sorting (ORDER BY)
+- Transitive property paths (the `+` and `*` operators, like a recursive CTE)
 - Optional relationships (OPTIONAL keyword, like LEFT JOIN)
 - Union (UNION keyword)
 
@@ -86,16 +79,17 @@ expressive as SQL.
 ### When should I use SPARQL instead of SQL?
 
 Use SPARQL when:
-- Your domain is naturally a graph of relationships (supply chains, knowledge bases, genealogies).
-- You have multi-hop queries that would require many self-joins in SQL.
+- Your domain is naturally a graph of relationships (holdings trees, counterparty networks, ownership chains).
+- You have multi-hop queries that would require recursion or many self-joins in SQL.
 - You want to add inference rules that derive new facts (next journey).
 
 Use SQL when:
-- Your data is naturally tabular (transactions, time-series, financial records).
+- Your data is naturally tabular (transactions, time-series, ledgers).
 - You need complex aggregations, analytics, or statistical functions.
 - Your team is already expert in SQL.
 
-For the factory, BOM and supply-chain questions are natural graphs; sensor telemetry and work-order scheduling are better handled with SQL. Use the right tool for the domain.
+For the bank, holdings and counterparty-exposure questions are natural graphs; transaction
+telemetry and settlement scheduling are better handled with SQL. Use the right tool for the domain.
 
 ## Tracing and debugging
 

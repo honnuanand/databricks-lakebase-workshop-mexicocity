@@ -60,17 +60,17 @@ async function machines() {
     const rows = await api("/api/machines");
     view.innerHTML = `<div class="card"><table>
       <tr><th>Machine</th><th>Plant</th><th>Line</th><th>Type</th><th>Status</th><th>Health</th></tr>
-      ${rows.map(m => `<tr><td><code>${m.machine_id}</code></td><td>${m.plant_id}</td>
+      ${rows.map(m => `<tr><td><code>${m.account_id}</code></td><td>${m.branch_id}</td>
         <td>${m.line}</td><td>${m.type}</td><td>${pill(m.status)}</td>
         <td>${m.health_pct}%</td></tr>`).join("")}
     </table></div>
-    <p class="muted">Fetched with a direct SQL query on Lakebase (<code>SELECT ... FROM machine</code>).</p>`;
+    <p class="muted">Fetched with a direct SQL query on Lakebase (<code>SELECT ... FROM account</code>).</p>`;
   } catch (e) { view.innerHTML = `<p class="err">${e.detail || e}</p>`; }
 }
 
 async function bom() {
   view.innerHTML = `<div class="card"><label class="muted">Product id </label>
-    <input type="text" id="pid" value="PRD-GEARBOX-X1"> <button id="go">Explode</button></div>
+    <input type="text" id="pid" value="FUND-GROWTH-A"> <button id="go">Explode</button></div>
     <div id="bomout"></div>`;
   const run = async () => {
     const pid = document.getElementById("pid").value.trim();
@@ -81,7 +81,7 @@ async function bom() {
       out.innerHTML = rows.length ? `<div class="card"><table>
         <tr><th>Depth</th><th>Part</th><th>Name</th><th>Qty</th></tr>
         ${rows.map(r => `<tr><td>${r.depth}</td>
-          <td style="padding-left:${8 + r.depth*16}px"><code>${r.child_part}</code></td>
+          <td style="padding-left:${8 + r.depth*16}px"><code>${r.instrument_id}</code></td>
           <td>${r.name || ""}</td><td>${r.qty}</td></tr>`).join("")}
       </table></div><p class="muted">A recursive CTE walked the bill-of-materials tree.</p>`
       : `<p class="muted">No parts for <code>${pid}</code>.</p>`;
@@ -102,7 +102,7 @@ async function maint() {
       const rows = await api("/api/maintenance?q=" + encodeURIComponent(q));
       out.innerHTML = `<div class="card"><table>
         <tr><th>Log</th><th>Machine</th><th>Write-up</th></tr>
-        ${rows.map(r => `<tr><td>${r.log_id}</td><td><code>${r.machine_id}</code></td>
+        ${rows.map(r => `<tr><td>${r.note_id}</td><td><code>${r.account_id}</code></td>
           <td>${r.writeup}</td></tr>`).join("")}
       </table></div><p class="muted">${q ? "Full-text search" : "Most recent"} over <code>maintenance_log</code>.</p>`;
     } catch (e) { out.innerHTML = `<p class="err">${e.detail || e}</p>`; }

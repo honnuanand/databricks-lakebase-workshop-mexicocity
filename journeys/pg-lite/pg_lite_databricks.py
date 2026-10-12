@@ -41,8 +41,8 @@
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO machines VALUES
-# MAGIC     ('M-204', 'healthy', 91.5),
-# MAGIC     ('M-205', 'derated', 72.0),
+# MAGIC     ('ACCT-100240', 'healthy', 91.5),
+# MAGIC     ('ACCT-100241', 'derated', 72.0),
 # MAGIC     ('M-206', 'maintenance', 45.0);
 # MAGIC ```
 # COMMAND ----------
@@ -83,7 +83,7 @@
 # MAGIC ## Step 7 — Try upsert (ON CONFLICT)
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO machines VALUES ('M-204', 'operational', 99.0)
+# MAGIC INSERT INTO machines VALUES ('ACCT-100240', 'operational', 99.0)
 # MAGIC ON CONFLICT (id) DO UPDATE SET health = 99.0;
 # MAGIC ```
 # COMMAND ----------

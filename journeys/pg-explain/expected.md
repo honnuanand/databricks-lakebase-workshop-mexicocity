@@ -5,19 +5,19 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 ## Step 1, table seeded
 
 ```text
-CREATE TABLE sensor_readings (id BIGSERIAL PRIMARY KEY, machine_id TEXT, ts TIMESTAMPTZ, value NUMERIC);
-INSERT INTO sensor_readings (machine_id, ts, value) SELECT ... FROM generate_series(...);
+CREATE TABLE bank.txn_history (id BIGSERIAL PRIMARY KEY, account_id TEXT, ts TIMESTAMPTZ, amount_usd NUMERIC);
+INSERT INTO bank.txn_history (account_id, amount_usd) SELECT ... FROM generate_series(...);
 ```
 
-Table is created with 50,000 rows. machine_id is unindexed.
+Table is created with 50,000 rows. account_id is unindexed.
 
 ## Step 2, EXPLAIN ANALYZE (before index)
 
 ```text
-Seq Scan on sensor_readings (cost=0.00..1225.00 rows=56 width=8)
-  Filter: (machine_id = 'M-204'::text)
+Seq Scan on txn_history (cost=0.00..1225.00 rows=500 width=8)
+  Filter: (account_id = 'ACCT-100010'::text)
   Actual Time: 45.234..48.123 ms
-  Actual Rows: 56
+  Actual Rows: 500
   Buffers: Shared Hit=500
 
 Planning Time: 0.123 ms
@@ -26,18 +26,18 @@ Execution Time: 48.456 ms
 
 The plan is:
 - **Seq Scan**: reads all 50,000 rows sequentially
-- **Filter**: keeps only machine_id = 'M-204' (56 rows)
+- **Filter**: keeps only account_id = 'ACCT-100010' (500 rows)
 - **Actual Time**: ~50 milliseconds to read and filter
 - **Buffers**: ~500 pages accessed
 - **Total Execution Time**: ~50 ms
 
-This is expensive because the planner has no index to help it find the 56 matching rows.
+This is expensive because the planner has no index to help it find the 500 matching rows.
 
 ## Step 3, index created
 
 ```text
-CREATE INDEX idx_sensor_machine_id ON sensor_readings (machine_id);
-ANALYZE sensor_readings;
+CREATE INDEX idx_txn_history_account ON bank.txn_history (account_id);
+ANALYZE bank.txn_history;
 ```
 
 Index is created. Statistics are updated so the planner knows the index will help.
@@ -45,10 +45,10 @@ Index is created. Statistics are updated so the planner knows the index will hel
 ## Step 4, EXPLAIN ANALYZE (after index)
 
 ```text
-Index Scan using idx_sensor_machine_id on sensor_readings (cost=0.29..10.05 rows=56 width=8)
-  Index Cond: (machine_id = 'M-204'::text)
+Index Scan using idx_txn_history_account on txn_history (cost=0.29..50.05 rows=500 width=8)
+  Index Cond: (account_id = 'ACCT-100010'::text)
   Actual Time: 0.456..1.234 ms
-  Actual Rows: 56
+  Actual Rows: 500
   Buffers: Shared Hit=5
 
 Planning Time: 0.234 ms
@@ -56,7 +56,7 @@ Execution Time: 1.567 ms
 ```
 
 The plan is:
-- **Index Scan**: uses the index to find rows directly (56 lookups)
+- **Index Scan**: uses the index to find rows directly (500 lookups)
 - **Actual Time**: ~1 millisecond to find and return rows
 - **Buffers**: ~5 pages accessed (just the index leaf pages)
 - **Total Execution Time**: ~1 ms
@@ -67,11 +67,11 @@ The planner flipped from Seq Scan to Index Scan. The time improved 50x.
 
 ```text
 Metric                    Before      After       Speedup
-Planning Estimate (rows)  56          56          -
-Actual Rows Scanned       50,000      56          892x
+Planning Estimate (rows)  500         500         -
+Actual Rows Scanned       50,000      500         100x
 Actual Time (ms)          48.5        1.6         30x
 Buffers Hit               500         5           100x
-Cost (planner units)      1225        10          122x
+Cost (planner units)      1225        50          24x
 ```
 
 All the numbers improve when the index is used. The actual time improvement (30x) is smaller than the theoretical improvement (all rows vs matching rows) because of disk I/O and CPU overhead. But 30x is still a massive win.

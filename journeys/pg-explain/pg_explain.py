@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Watch the planner—EXPLAIN ANALYZE, seq scan -> index scan.
 
-Create a 50k-row table, query unindexed, then indexed, and measure the difference.
+Create a 50k-row table of bank transactions, query unindexed, then indexed, and measure the difference.
 """
 import argparse
 import os, sys
@@ -17,28 +17,28 @@ def run_seed():
     with connect() as conn:
         with conn.cursor() as cur:
             # Drop if exists
-            cur.execute("DROP TABLE IF EXISTS factory.sensor_readings")
+            cur.execute("DROP TABLE IF EXISTS bank.txn_history")
 
             # Create table
             cur.execute("""
-            CREATE TABLE factory.sensor_readings (
+            CREATE TABLE bank.txn_history (
               id BIGSERIAL PRIMARY KEY,
-              machine_id TEXT,
+              account_id TEXT,
               ts TIMESTAMPTZ DEFAULT now(),
-              value NUMERIC
+              amount_usd NUMERIC
             )
             """)
 
             # Seed 50k rows
             cur.execute("""
-            INSERT INTO factory.sensor_readings (machine_id, value)
-            SELECT 'M-' || (1 + (g % 100))::TEXT,
+            INSERT INTO bank.txn_history (account_id, amount_usd)
+            SELECT 'ACCT-' || (100000 + (g % 100))::TEXT,
                    (g % 1000)::NUMERIC
               FROM generate_series(1, 50000) g
             """)
 
             # ANALYZE so planner has stats
-            cur.execute("ANALYZE factory.sensor_readings")
+            cur.execute("ANALYZE bank.txn_history")
             print("  Created and seeded 50,000 rows")
             print("  No index yet (seq scan will be expensive)")
 
@@ -48,7 +48,7 @@ def run_explain_before():
 
     sql = """
     EXPLAIN (ANALYZE, BUFFERS)
-    SELECT COUNT(*) FROM factory.sensor_readings WHERE machine_id = 'M-10'
+    SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010'
     """
 
     with connect() as conn:
@@ -66,11 +66,11 @@ def run_index():
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-            CREATE INDEX idx_sensor_machine_id
-              ON factory.sensor_readings (machine_id)
+            CREATE INDEX idx_txn_history_account
+              ON bank.txn_history (account_id)
             """)
-            cur.execute("ANALYZE factory.sensor_readings")
-            print("  Index created on machine_id")
+            cur.execute("ANALYZE bank.txn_history")
+            print("  Index created on account_id")
             print("  Statistics updated")
 
 def run_explain_after():
@@ -79,7 +79,7 @@ def run_explain_after():
 
     sql = """
     EXPLAIN (ANALYZE, BUFFERS)
-    SELECT COUNT(*) FROM factory.sensor_readings WHERE machine_id = 'M-10'
+    SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010'
     """
 
     with connect() as conn:

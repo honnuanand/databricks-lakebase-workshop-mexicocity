@@ -40,7 +40,7 @@ python ../../common/scripts/lakebase.py --sql \
    WHERE table_name='maintenance_log' ORDER BY ordinal_position"
 ```
 
-You should see columns: `log_id`, `machine_id`, `ts`, `writeup`, `system`, `defect`, `action`,
+You should see columns: `note_id`, `account_id`, `ts`, `writeup`, `system`, `defect`, `action`,
 `confidence`. The first three are the raw input; the last four are where the AI extraction
 lands.
 
@@ -64,7 +64,7 @@ Read them back:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT log_id, machine_id, writeup FROM factory.maintenance_log ORDER BY log_id"
+  "SELECT note_id, account_id, writeup FROM bank.case_note ORDER BY note_id"
 ```
 
 ### Step 3, run AI extraction
@@ -100,8 +100,8 @@ Query the maintenance_log to see which extracted cleanly and which need human re
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT log_id, writeup, system, defect, ROUND(confidence::numeric, 2), status \
-   FROM factory.maintenance_log ORDER BY log_id"
+  "SELECT note_id, writeup, system, defect, ROUND(confidence::numeric, 2), status \
+   FROM bank.case_note ORDER BY note_id"
 ```
 
 The first two should show `status = 'auto_accepted'` with high confidence (> 0.75). The last
@@ -124,7 +124,7 @@ Check the update:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT log_id, system, defect, status FROM factory.maintenance_log WHERE status='corrected'"
+  "SELECT note_id, system, defect, status FROM bank.case_note WHERE status='corrected'"
 ```
 
 ### Step 6, run analytics

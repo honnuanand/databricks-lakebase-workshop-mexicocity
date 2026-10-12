@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, _env, client
 
 CONF_THRESHOLD = 0.75
-TABLE = "factory.maintenance_log"
+TABLE = "bank.case_note"
 print("Learning loop: seed -> extract -> route -> correct -> analyze")
 
 # COMMAND ----------
@@ -29,8 +29,8 @@ print("Learning loop: seed -> extract -> route -> correct -> analyze")
 # MAGIC Load real-world messy maintenance notes. Some clear, some ambiguous. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO factory.maintenance_log (machine_id, writeup)
-# MAGIC VALUES ('M-204', 'Hydraulic line on leg B leaking, found ice on exterior, isolated line, monitor pressure.');
+# MAGIC INSERT INTO bank.case_note (account_id, writeup)
+# MAGIC VALUES ('ACCT-100240', 'Hydraulic line on leg B leaking, found ice on exterior, isolated line, monitor pressure.');
 # MAGIC ```
 
 # COMMAND ----------
@@ -42,18 +42,18 @@ with connect() as conn:
 
 # Real factory machines and their maintenance notes
 writeups = [
-    ("M-204", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
-    ("M-421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
-    ("M-311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
-    ("M-102", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
-    ("M-204", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
+    ("ACCT-100240", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
+    ("ACCT-300421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
+    ("ACCT-200311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
+    ("ACCT-100235", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
+    ("ACCT-100240", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
 ]
 
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"DELETE FROM {TABLE}")
         for mid, writeup in writeups:
-            cur.execute(f"INSERT INTO {TABLE} (machine_id, writeup) VALUES (%s, %s)", [mid, writeup])
+            cur.execute(f"INSERT INTO {TABLE} (account_id, writeup) VALUES (%s, %s)", [mid, writeup])
 
 print(f"Seeded {len(writeups)} maintenance write-ups from factory machines")
 
@@ -65,14 +65,14 @@ print(f"Seeded {len(writeups)} maintenance write-ups from factory machines")
 # MAGIC Query the seeded data. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT machine_id, writeup FROM factory.maintenance_log ORDER BY log_id;
+# MAGIC SELECT account_id, writeup FROM bank.case_note ORDER BY note_id;
 # MAGIC ```
 
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute(f"SELECT machine_id, writeup FROM {TABLE} ORDER BY log_id")
+        cur.execute(f"SELECT account_id, writeup FROM {TABLE} ORDER BY note_id")
         rows = cur.fetchall()
 
 print(f"Maintenance write-ups ({len(rows)} total):")
@@ -123,13 +123,13 @@ for e in extractions:
 # COMMAND ----------
 
 corrections = [
-    {"log_id": 3, "correct_system": "avionics", "correct_defect": "radio_failure", "status": "human_corrected", "confidence": 0.95},
-    {"log_id": 5, "correct_system": "hydraulic", "correct_defect": "unknown_leak", "status": "human_corrected", "confidence": 0.65},
+    {"note_id": 3, "correct_system": "avionics", "correct_defect": "radio_failure", "status": "human_corrected", "confidence": 0.95},
+    {"note_id": 5, "correct_system": "hydraulic", "correct_defect": "unknown_leak", "status": "human_corrected", "confidence": 0.65},
 ]
 
 print(f"Human corrections applied ({len(corrections)} entries):")
 for corr in corrections:
-    print(f"  log_id={corr['log_id']}: {corr['correct_system']}/{corr['correct_defect']}, status={corr['status']}")
+    print(f"  note_id={corr['note_id']}: {corr['correct_system']}/{corr['correct_defect']}, status={corr['status']}")
 
 # COMMAND ----------
 

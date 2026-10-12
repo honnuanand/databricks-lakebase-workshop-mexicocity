@@ -14,11 +14,11 @@
 
 ## The scenario
 
-You're on a shop floor or in a plant where network is spotty. A maintenance engineer needs to look up a machine's history, check its spec, and update its status, all on their tablet, offline if needed.
+You're a relationship manager visiting a client, or a field agent in a branch where network is spotty. You need to look up an account's recent transactions, check its spec, and update its status, all on a tablet, offline if needed.
 
 Traditional setup: "I need to connect to the Lakebase instance in the cloud." But the network is slow or intermittent. The latency adds up; every query waits. The work grinds.
 
-Modern setup: **Postgres runs on the edge**, on the device itself, in the browser via WebAssembly. The engineer works offline. Queries run in milliseconds (no network). When connectivity returns, changes sync back to the central Lakebase instance.
+Modern setup: **Postgres runs on the edge**, on the device itself, in the browser via WebAssembly. The agent works offline. Queries run in milliseconds (no network). When connectivity returns, changes sync back to the central Lakebase instance.
 
 This is PGlite: the same Postgres engine you run on Lakebase, now at the edge. Same SQL semantics, same data types (JSON, vectors, geography), zero network overhead while working locally.
 

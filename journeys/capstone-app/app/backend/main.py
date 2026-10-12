@@ -10,7 +10,7 @@ the factory on Lakebase. The teaching point is the WIRING, not the app framework
 Endpoints:
   GET /api/machines            list machines (direct SQL on Lakebase)
   GET /api/machines/{id}       one machine + its recent sensor readings
-  GET /api/bom/{product_id}    explode a product's bill of materials (recursive CTE)
+  GET /api/bom/{fund_id}    explode a product's fund holdings tree (recursive CTE)
   GET /api/maintenance?q=...   search maintenance write-ups (full-text search)
   GET /api/health              liveness + which identity/branch we're serving
 
@@ -102,50 +102,50 @@ def health():
 @app.get("/api/machines")
 def machines():
     return query(
-        "SELECT machine_id, plant_id, line, type, status, health_pct "
-        "FROM machine ORDER BY machine_id")
+        "SELECT account_id, branch_id, line, type, status, health_pct "
+        "FROM account ORDER BY account_id")
 
 
-@app.get("/api/machines/{machine_id}")
-def machine(machine_id: str):
-    rows = query("SELECT * FROM machine WHERE machine_id = %s", [machine_id])
+@app.get("/api/machines/{account_id}")
+def machine(account_id: str):
+    rows = query("SELECT * FROM account WHERE account_id = %s", [account_id])
     if not rows:
-        raise HTTPException(404, f"no machine {machine_id}")
+        raise HTTPException(404, f"no machine {account_id}")
     readings = query(
-        "SELECT ts, temp_c, vibration_mm_s, rpm, load_pct FROM sensor_reading "
-        "WHERE machine_id = %s ORDER BY ts DESC LIMIT 20", [machine_id])
+        "SELECT ts, temp_c, anomaly_score, rpm, util_pct FROM txn "
+        "WHERE account_id = %s ORDER BY ts DESC LIMIT 20", [account_id])
     return {"machine": rows[0], "recent_readings": readings}
 
 
-@app.get("/api/bom/{product_id}")
-def bom(product_id: str):
-    """Explode a product's bill of materials with a recursive CTE, the same
+@app.get("/api/bom/{fund_id}")
+def bom(fund_id: str):
+    """Explode a product's fund holdings tree with a recursive CTE, the same
     parts-explosion the pg-sql-parity journey teaches."""
     return query(
         """
-        WITH RECURSIVE explode(parent_id, child_part, qty, depth) AS (
-            SELECT parent_id, child_part, qty, 1 FROM bom_edge WHERE parent_id = %s
+        WITH RECURSIVE explode(parent_id, instrument_id, qty, depth) AS (
+            SELECT parent_id, instrument_id, qty, 1 FROM holding WHERE parent_id = %s
           UNION ALL
-            SELECT b.parent_id, b.child_part, b.qty, e.depth + 1
-            FROM bom_edge b JOIN explode e ON b.parent_id = e.child_part
+            SELECT b.parent_id, b.instrument_id, b.qty, e.depth + 1
+            FROM holding b JOIN explode e ON b.parent_id = e.instrument_id
         )
-        SELECT e.depth, e.child_part, p.name, e.qty
-        FROM explode e LEFT JOIN part p ON p.part_id = e.child_part
-        ORDER BY e.depth, e.child_part
-        """, [product_id])
+        SELECT e.depth, e.instrument_id, p.name, e.qty
+        FROM explode e LEFT JOIN instrument p ON p.instrument_id = e.instrument_id
+        ORDER BY e.depth, e.instrument_id
+        """, [fund_id])
 
 
 @app.get("/api/maintenance")
 def maintenance(q: str = Query("", description="full-text search over write-ups")):
     if q.strip():
         return query(
-            "SELECT log_id, machine_id, ts, writeup, "
+            "SELECT note_id, account_id, ts, writeup, "
             "ts_rank(to_tsvector('english', writeup), plainto_tsquery('english', %s)) AS rank "
-            "FROM maintenance_log "
+            "FROM case_note "
             "WHERE to_tsvector('english', writeup) @@ plainto_tsquery('english', %s) "
             "ORDER BY rank DESC LIMIT 25", [q, q])
     return query(
-        "SELECT log_id, machine_id, ts, writeup FROM maintenance_log "
+        "SELECT note_id, account_id, ts, writeup FROM case_note "
         "ORDER BY ts DESC LIMIT 25")
 
 

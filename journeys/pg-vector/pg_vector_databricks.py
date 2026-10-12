@@ -37,17 +37,17 @@ print("pgvector initialized")
 # MAGIC Query the part table to see what we're working with. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT count(*) FROM factory.part;
-# MAGIC SELECT part_id, name FROM factory.part LIMIT 5;
+# MAGIC SELECT count(*) FROM bank.instrument;
+# MAGIC SELECT instrument_id, name FROM bank.instrument LIMIT 5;
 # MAGIC ```
 
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute("SELECT count(*) FROM factory.part")
+        cur.execute("SELECT count(*) FROM bank.instrument")
         count = cur.fetchone()[0]
-        cur.execute("SELECT part_id, name FROM factory.part LIMIT 5")
+        cur.execute("SELECT instrument_id, name FROM bank.instrument LIMIT 5")
         parts = cur.fetchall()
 
 print(f"Checking part table:")
@@ -82,44 +82,44 @@ with connect() as conn:
 # MAGIC Add a 768-dimensional vector column. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC ALTER TABLE factory.part ADD COLUMN IF NOT EXISTS embedding vector(768);
+# MAGIC ALTER TABLE bank.instrument ADD COLUMN IF NOT EXISTS embedding vector(768);
 # MAGIC ```
 
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute("ALTER TABLE factory.part ADD COLUMN IF NOT EXISTS embedding vector(768)")
-        print(f"Embedding column added to factory.part")
+        cur.execute("ALTER TABLE bank.instrument ADD COLUMN IF NOT EXISTS embedding vector(768)")
+        print(f"Embedding column added to bank.instrument")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 4 - Populate embeddings
 # MAGIC
-# MAGIC Generate embeddings from part names and specs (deterministic hashing for reproducibility). Then update the table. The SQL:
+# MAGIC Generate embeddings from instrument names and specs (deterministic hashing for reproducibility). Then update the table. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC UPDATE factory.part SET embedding = CAST('<vector_value>' AS vector) WHERE part_id = '<id>';
+# MAGIC UPDATE bank.instrument SET embedding = CAST('<vector_value>' AS vector) WHERE instrument_id = '<id>';
 # MAGIC ```
 
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute("SELECT part_id, name, spec FROM factory.part ORDER BY part_id")
+        cur.execute("SELECT instrument_id, name, spec FROM bank.instrument ORDER BY instrument_id")
         parts = cur.fetchall()
 
 print(f"Populating {len(parts)} embeddings:")
 
 with connect() as conn:
     with conn.cursor() as cur:
-        for part_id, name, spec in parts:
+        for instrument_id, name, spec in parts:
             text_for_embedding = f"{name} {spec}"
             embedding_str = hash_to_embedding(text_for_embedding, 768)
             cur.execute(
-                f"UPDATE factory.part SET embedding = CAST(%s AS vector) WHERE part_id = %s",
-                [embedding_str, part_id]
+                f"UPDATE bank.instrument SET embedding = CAST(%s AS vector) WHERE instrument_id = %s",
+                [embedding_str, instrument_id]
             )
 
 print(f"  Updated {len(parts)} parts with embeddings")
@@ -132,9 +132,9 @@ print(f"  Updated {len(parts)} parts with embeddings")
 # MAGIC Find similar parts using cosine distance. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT part_id, name, embedding <-> embedding_query AS distance
-# MAGIC FROM factory.part
-# MAGIC WHERE part_id != 'P-001'
+# MAGIC SELECT instrument_id, name, embedding <-> embedding_query AS distance
+# MAGIC FROM bank.instrument
+# MAGIC WHERE instrument_id != 'P-001'
 # MAGIC ORDER BY embedding <-> embedding_query
 # MAGIC LIMIT 5;
 # MAGIC ```
@@ -143,7 +143,7 @@ print(f"  Updated {len(parts)} parts with embeddings")
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute("SELECT part_id, name FROM factory.part LIMIT 1")
+        cur.execute("SELECT instrument_id, name FROM bank.instrument LIMIT 1")
         query_part = cur.fetchone()
         query_part_id = query_part[0]
         query_part_name = query_part[1]
@@ -153,9 +153,9 @@ query_embedding = hash_to_embedding(query_part_name, 768)
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT part_id, name, embedding <-> CAST(%s AS vector) AS distance "
-            f"FROM factory.part "
-            f"WHERE part_id != %s "
+            f"SELECT instrument_id, name, embedding <-> CAST(%s AS vector) AS distance "
+            f"FROM bank.instrument "
+            f"WHERE instrument_id != %s "
             f"ORDER BY embedding <-> CAST(%s AS vector) "
             f"LIMIT 5",
             [query_embedding, query_part_id, query_embedding]
@@ -164,8 +164,8 @@ with connect() as conn:
 
 print(f"Query part: {query_part_id} ({query_part_name})")
 print(f"\nMost similar replacement parts:")
-for part_id, name, distance in similar_parts:
-    print(f"  {part_id}: {name} (distance: {distance:.4f})")
+for instrument_id, name, distance in similar_parts:
+    print(f"  {instrument_id}: {name} (distance: {distance:.4f})")
 
 # COMMAND ----------
 
@@ -176,7 +176,7 @@ for part_id, name, distance in similar_parts:
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE INDEX IF NOT EXISTS idx_part_embedding_hnsw
-# MAGIC ON factory.part USING hnsw (embedding vector_cosine_ops);
+# MAGIC ON bank.instrument USING hnsw (embedding vector_cosine_ops);
 # MAGIC ```
 
 # COMMAND ----------
@@ -185,9 +185,9 @@ with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(
             f"CREATE INDEX IF NOT EXISTS idx_part_embedding_hnsw "
-            f"ON factory.part USING hnsw (embedding vector_cosine_ops)"
+            f"ON bank.instrument USING hnsw (embedding vector_cosine_ops)"
         )
-        print(f"HNSW index created on factory.part.embedding")
+        print(f"HNSW index created on bank.instrument.embedding")
         print(f"\nIndex optimization: HNSW (Hierarchical Navigable Small World)")
         print(f"  Fast approximate nearest neighbor search")
         print(f"  O(log n) query time for millions of vectors")

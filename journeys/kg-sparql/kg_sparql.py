@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Query a knowledge graph with SPARQL.
 
-Builds the graph from factory schema, then runs SPARQL queries
+Builds the graph from the bank schema, then runs SPARQL queries
 and compares them to equivalent SQL.
 
 Usage:
@@ -27,43 +27,43 @@ except ImportError:
 
 
 def load_graph() -> Graph:
-    """Load factory schema into RDF graph."""
+    """Load the bank schema into an RDF graph."""
     g = Graph()
-    FACTORY = Namespace("http://factory.local/")
+    BANK = Namespace("http://bank.local/")
 
     with connect() as conn:
         with conn.cursor() as cur:
-            # Load products, parts
-            cur.execute("SELECT product_id, name FROM factory.product")
-            for product_id, name in cur.fetchall():
-                g.add((URIRef(FACTORY[product_id]), URIRef(FACTORY.name), Literal(name)))
+            # Load funds, instruments
+            cur.execute("SELECT fund_id, name FROM bank.fund")
+            for fund_id, name in cur.fetchall():
+                g.add((URIRef(BANK[fund_id]), URIRef(BANK.name), Literal(name)))
 
-            cur.execute("SELECT part_id, name FROM factory.part")
-            for part_id, name in cur.fetchall():
-                g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.name), Literal(name)))
+            cur.execute("SELECT instrument_id, name FROM bank.instrument")
+            for instrument_id, name in cur.fetchall():
+                g.add((URIRef(BANK[instrument_id]), URIRef(BANK.name), Literal(name)))
 
-            # Load BOM edges
-            cur.execute("SELECT parent_id, child_part FROM factory.bom_edge LIMIT 1000")
-            for parent_id, child_part in cur.fetchall():
+            # Load holdings edges (parent holds child instrument/sleeve)
+            cur.execute("SELECT parent_id, instrument_id FROM bank.holding LIMIT 1000")
+            for parent_id, instrument_id in cur.fetchall():
                 g.add((
-                    URIRef(FACTORY[parent_id]),
-                    URIRef(FACTORY.contains),
-                    URIRef(FACTORY[child_part])
+                    URIRef(BANK[parent_id]),
+                    URIRef(BANK.holds),
+                    URIRef(BANK[instrument_id])
                 ))
 
-            # Load suppliers
-            cur.execute("SELECT supplier_id, name FROM factory.supplier")
-            for supplier_id, name in cur.fetchall():
-                g.add((URIRef(FACTORY[supplier_id]), URIRef(FACTORY.name), Literal(name)))
+            # Load counterparties
+            cur.execute("SELECT counterparty_id, name FROM bank.counterparty")
+            for counterparty_id, name in cur.fetchall():
+                g.add((URIRef(BANK[counterparty_id]), URIRef(BANK.name), Literal(name)))
 
-            # Load supplier edges (if part_supplier exists)
+            # Load counterparty edges (if trade_counterparty exists)
             try:
-                cur.execute("SELECT part_id, supplier_id FROM factory.part_supplier LIMIT 1000")
-                for part_id, supplier_id in cur.fetchall():
+                cur.execute("SELECT instrument_id, counterparty_id FROM bank.trade_counterparty LIMIT 1000")
+                for instrument_id, counterparty_id in cur.fetchall():
                     g.add((
-                        URIRef(FACTORY[part_id]),
-                        URIRef(FACTORY.supplied_by),
-                        URIRef(FACTORY[supplier_id])
+                        URIRef(BANK[instrument_id]),
+                        URIRef(BANK.traded_by),
+                        URIRef(BANK[counterparty_id])
                     ))
             except Exception:
                 pass
@@ -72,57 +72,59 @@ def load_graph() -> Graph:
 
 
 def simple_query(g: Graph) -> list[str]:
-    """SPARQL query: which parts does PRD-GEARBOX-X1 contain?"""
+    """SPARQL query: which instruments does FUND-GROWTH-A hold directly?"""
     query_text = """
-        PREFIX factory: <http://factory.local/>
-        SELECT ?part WHERE {
-            ?product factory:contains ?part .
-            FILTER (?product = factory:PRD-GEARBOX-X1)
+        PREFIX bank: <http://bank.local/>
+        SELECT ?instrument WHERE {
+            ?fund bank:holds ?instrument .
+            FILTER (?fund = bank:FUND-GROWTH-A)
         }
     """
     results = g.query(query_text)
-    return [str(row[0]).split("/")[-1] for row in results]
+    return sorted(str(row[0]).split("/")[-1] for row in results)
 
 
 def multi_hop_query(g: Graph) -> list[str]:
-    """SPARQL: which products contain a part supplied by SUP-FASTENALL?
+    """SPARQL: which funds hold an instrument traded by CP-GOLDMAN?
 
-    `contains` chains parent->child, so `contains+` (one or more hops) walks the whole
-    bill-of-materials tree, catching parts nested under subassemblies too. That multi-hop
-    reachability is exactly what reads naturally as a graph and is painful as SQL joins."""
+    `holds` chains parent->child, so `holds+` (one or more hops) walks the whole
+    holdings tree, catching instruments nested under sub-sleeves too. That multi-hop
+    reachability is exactly what reads naturally as a graph and is painful as SQL joins.
+    In the seed, CP-GOLDMAN trades INS-AAPL, which sits under INS-SLEEVE-EQ, which
+    FUND-GROWTH-A holds, so FUND-GROWTH-A comes back."""
     query_text = """
-        PREFIX factory: <http://factory.local/>
-        SELECT DISTINCT ?product WHERE {
-            ?product factory:contains+ ?part .
-            ?part factory:supplied_by factory:SUP-FASTENALL .
+        PREFIX bank: <http://bank.local/>
+        SELECT DISTINCT ?fund WHERE {
+            ?fund bank:holds+ ?instrument .
+            ?instrument bank:traded_by bank:CP-GOLDMAN .
         }
     """
     results = g.query(query_text)
-    return sorted([str(row[0]).split("/")[-1] for row in results])
+    return sorted(str(row[0]).split("/")[-1] for row in results)
 
 
 def aggregate_query(g: Graph) -> dict[str, int]:
-    """SPARQL query: for each supplier, how many distinct parts do they supply?"""
+    """SPARQL query: for each counterparty, how many distinct instruments do they trade?"""
     query_text = """
-        PREFIX factory: <http://factory.local/>
-        SELECT ?supplier (COUNT(DISTINCT ?part) as ?part_count) WHERE {
-            ?part factory:supplied_by ?supplier .
+        PREFIX bank: <http://bank.local/>
+        SELECT ?counterparty (COUNT(DISTINCT ?instrument) as ?instrument_count) WHERE {
+            ?instrument bank:traded_by ?counterparty .
         }
-        GROUP BY ?supplier
+        GROUP BY ?counterparty
     """
     results = g.query(query_text)
     agg = {}
     for row in results:
-        supplier_id = str(row[0]).split("/")[-1]
+        counterparty_id = str(row[0]).split("/")[-1]
         count = int(row[1])
-        agg[supplier_id] = count
+        agg[counterparty_id] = count
     return agg
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Query a knowledge graph with SPARQL")
     ap.add_argument("--step", choices=["load", "simple-query", "multi-hop", "sql", "aggregate",
-                                       "list-suppliers"],
+                                       "list-counterparties"],
                     help="run a specific step")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
@@ -132,31 +134,35 @@ def main() -> None:
     print(f"  Loaded {len(g)} triples")
 
     if args.step == "simple-query" or not args.step:
-        print("\nSPARQL query: which parts are contained in PRD-GEARBOX-X1?")
-        parts = simple_query(g)
-        for part in parts:
-            print(f"  {part}")
+        print("\nSPARQL query: which instruments does FUND-GROWTH-A hold directly?")
+        instruments = simple_query(g)
+        for instrument in instruments:
+            print(f"  {instrument}")
         if args.step:
             return
 
     if args.step == "multi-hop" or not args.step:
-        print("\nSPARQL multi-hop query: which products contain a part from SUP-FASTENALL?")
-        products = multi_hop_query(g)
-        for product in products:
-            print(f"  {product}")
+        print("\nSPARQL multi-hop query: which funds hold an instrument traded by CP-GOLDMAN?")
+        funds = multi_hop_query(g)
+        for fund in funds:
+            print(f"  {fund}")
         if args.step:
             return
 
     if args.step == "sql" or not args.step:
         print("\nEquivalent SQL query:")
         sql = """
-        SELECT DISTINCT p.product_id
-        FROM factory.product p
-        JOIN factory.bom_edge b ON p.product_id = b.parent_id
-        JOIN factory.part pt ON b.child_part = pt.part_id
-        LEFT JOIN factory.part_supplier ps ON pt.part_id = ps.part_id
-        LEFT JOIN factory.supplier s ON ps.supplier_id = s.supplier_id
-        WHERE s.supplier_id = 'SUP-FASTENALL'
+        WITH RECURSIVE tree(root_fund, node) AS (
+            SELECT f.fund_id, f.fund_id FROM bank.fund f
+          UNION ALL
+            SELECT t.root_fund, h.instrument_id
+            FROM tree t JOIN bank.holding h ON h.parent_id = t.node
+        )
+        SELECT DISTINCT t.root_fund
+        FROM tree t
+        JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
+        WHERE tc.counterparty_id = 'CP-GOLDMAN'
+          AND t.root_fund LIKE 'FUND-%'
         """
         print(sql)
 
@@ -164,36 +170,40 @@ def main() -> None:
             with conn.cursor() as cur:
                 try:
                     cur.execute("""
-                        SELECT DISTINCT p.product_id
-                        FROM factory.product p
-                        JOIN factory.bom_edge b ON p.product_id = b.parent_id
-                        JOIN factory.part pt ON b.child_part = pt.part_id
-                        LEFT JOIN factory.part_supplier ps ON pt.part_id = ps.part_id
-                        LEFT JOIN factory.supplier s ON ps.supplier_id = s.supplier_id
-                        WHERE s.supplier_id = 'SUP-FASTENALL'
+                        WITH RECURSIVE tree(root_fund, node) AS (
+                            SELECT f.fund_id, f.fund_id FROM bank.fund f
+                          UNION ALL
+                            SELECT t.root_fund, h.instrument_id
+                            FROM tree t JOIN bank.holding h ON h.parent_id = t.node
+                        )
+                        SELECT DISTINCT t.root_fund
+                        FROM tree t
+                        JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
+                        WHERE tc.counterparty_id = 'CP-GOLDMAN'
+                          AND t.root_fund LIKE 'FUND-%'
                     """)
                     rows = cur.fetchall()
                     print(f"  SQL Result: {rows}")
                 except Exception as e:
-                    print(f"  SQL query failed (may be missing part_supplier table): {e}")
+                    print(f"  SQL query failed (may be missing trade_counterparty table): {e}")
         if args.step:
             return
 
     if args.step == "aggregate":
-        print("\nSPARQL aggregation: parts per supplier")
+        print("\nSPARQL aggregation: instruments per counterparty")
         agg = aggregate_query(g)
-        for supplier, count in sorted(agg.items(), key=lambda x: x[0]):
-            print(f"  {supplier}: {count}")
+        for counterparty, count in sorted(agg.items(), key=lambda x: x[0]):
+            print(f"  {counterparty}: {count}")
 
-    if args.step == "list-suppliers":
-        print("Suppliers in graph:")
-        FACTORY = Namespace("http://factory.local/")
-        suppliers = set()
-        for obj in g.objects(None, URIRef(FACTORY.supplied_by)):
-            supplier_id = str(obj).split("/")[-1]
-            suppliers.add(supplier_id)
-        for supplier_id in sorted(suppliers):
-            print(f"  {supplier_id}")
+    if args.step == "list-counterparties":
+        print("Counterparties in graph:")
+        BANK = Namespace("http://bank.local/")
+        counterparties = set()
+        for obj in g.objects(None, URIRef(BANK.traded_by)):
+            counterparty_id = str(obj).split("/")[-1]
+            counterparties.add(counterparty_id)
+        for counterparty_id in sorted(counterparties):
+            print(f"  {counterparty_id}")
 
 
 if __name__ == "__main__":

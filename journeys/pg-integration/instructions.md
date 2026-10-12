@@ -66,7 +66,7 @@ For a few key tables, sample a row to confirm the data is real and matches the s
 python pg_integration.py --step sample-data
 ```
 
-You'll see rows from machine, work_order, and sensor_reading, all real data, all matching the schema inferred from information_schema.
+You'll see rows from account, work_order, and sensor_reading, all real data, all matching the schema inferred from information_schema.
 
 ### Step 5, check Unity Catalog governance
 

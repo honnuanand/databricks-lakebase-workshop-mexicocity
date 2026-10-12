@@ -9,7 +9,7 @@ There are a few ways to work through the steps. Pick one:
 - **By hand:** follow the numbered steps below, copying each command yourself.
 - **Just see it work:** run `python pg_geo.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
-Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
+Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank loaded.
 
 Everything here is a single script you can read: [`./pg_geo.py`](./pg_geo.py). You can run it end to end, or follow the steps by hand to see each piece.
 
@@ -32,18 +32,18 @@ This walks through the entire journey and prints results. Read on for what each 
 python ../../common/scripts/lakebase.py --sql "CREATE EXTENSION IF NOT EXISTS postgis CASCADE"
 ```
 
-This installs the PostGIS types and functions. Then add geography columns to plants, warehouses, and suppliers (if not already present):
+This installs the PostGIS types and functions. Then add geography columns to branches, custodians, and counterparties (if not already present):
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "ALTER TABLE factory.plant ADD COLUMN geo GEOGRAPHY(POINT) DEFAULT NULL"
+  "ALTER TABLE bank.branch ADD COLUMN geo GEOGRAPHY(POINT) DEFAULT NULL"
 ```
 
 (This is idempotent; if the column exists, it does nothing.)
 
 ### Step 2, query "within N km" using ST_DWithin
 
-Find all warehouses within 100 km of a plant:
+Find all custodians within 100 km of a branch:
 
 ```bash
 python pg_geo.py --step within
@@ -52,23 +52,23 @@ python pg_geo.py --step within
 The script runs:
 
 ```sql
-SELECT warehouse_id, plant_id, lat, lon,
+SELECT custodian_id, branch_id, lat, lon,
        ST_Distance(geography(POINT(lon, lat)), 
-                   geography(POINT(plant_lon, plant_lat))) / 1000.0 as distance_km
-  FROM factory.warehouse w, factory.plant p
- WHERE p.plant_id = 'PL-DETROIT'
-   AND ST_DWithin(geography(POINT(w.lon, w.lat)),
-                  geography(POINT(p.lon, p.lat)),
+                   geography(POINT(branch_lon, branch_lat))) / 1000.0 as distance_km
+  FROM bank.custodian c, bank.branch b
+ WHERE b.branch_id = 'BR-NYC'
+   AND ST_DWithin(geography(POINT(c.lon, c.lat)),
+                  geography(POINT(b.lon, b.lat)),
                   100000)  -- 100 km in meters
  ORDER BY distance_km
  LIMIT 10;
 ```
 
-The `geography(POINT(lon, lat))` constructor turns lat/lon numbers into geographic points. `ST_DWithin` returns rows within a distance (in meters). `ST_Distance` calculates the exact distance. Result: warehouses near Detroit.
+The `geography(POINT(lon, lat))` constructor turns lat/lon numbers into geographic points. `ST_DWithin` returns rows within a distance (in meters). `ST_Distance` calculates the exact distance. Result: custodians near New York.
 
 ### Step 3, query "nearest N" using the <-> operator
 
-Find the 3 nearest suppliers to a plant:
+Find the 3 nearest counterparties to a branch:
 
 ```bash
 python pg_geo.py --step nearest
@@ -77,10 +77,10 @@ python pg_geo.py --step nearest
 The script runs:
 
 ```sql
-SELECT supplier_id, name, lat, lon,
-       geography(POINT(lon, lat)) <-> geography(POINT(-83.0456, 42.3314)) as distance_meters
-  FROM factory.supplier
- ORDER BY geography(POINT(lon, lat)) <-> geography(POINT(-83.0456, 42.3314))
+SELECT counterparty_id, name, lat, lon,
+       geography(POINT(lon, lat)) <-> geography(POINT(-74.0060, 40.7128)) as distance_meters
+  FROM bank.counterparty
+ ORDER BY geography(POINT(lon, lat)) <-> geography(POINT(-74.0060, 40.7128))
  LIMIT 3;
 ```
 
@@ -97,12 +97,12 @@ python pg_geo.py --step index
 The script creates:
 
 ```sql
-CREATE INDEX IF NOT EXISTS idx_plant_geo ON factory.plant USING gist(geo);
-CREATE INDEX IF NOT EXISTS idx_warehouse_geo ON factory.warehouse USING gist(geo);
-CREATE INDEX IF NOT EXISTS idx_supplier_geo ON factory.supplier USING gist(geo);
+CREATE INDEX IF NOT EXISTS idx_branch_geo ON bank.branch USING gist(geo);
+CREATE INDEX IF NOT EXISTS idx_custodian_geo ON bank.custodian USING gist(geo);
+CREATE INDEX IF NOT EXISTS idx_counterparty_geo ON bank.counterparty USING gist(geo);
 ```
 
-These indexes accelerate spatial searches. Run a query before and after and compare; on the factory dataset (dozens of locations) the difference is subtle, but on a global supply chain (thousands of locations) the difference is dramatic.
+These indexes accelerate spatial searches. Run a query before and after and compare; on the bank dataset (dozens of locations) the difference is subtle, but on a global financial network (thousands of locations) the difference is dramatic.
 
 ### Step 5, verify the index is used
 
@@ -116,4 +116,4 @@ The script runs EXPLAIN on a spatial query and prints the plan. Look for "Index 
 
 ## What you just did
 
-You enabled PostGIS, stored plant, warehouse, and supplier locations as geographic points, and wrote spatial queries: "within N km" and "nearest N". Then you indexed with GiST and verified the index is being used. All of that is native Postgres, no separate GIS system to run or sync.
+You enabled PostGIS, stored branch, custodian, and counterparty locations as geographic points, and wrote spatial queries: "within N km" and "nearest N". Then you indexed with GiST and verified the index is being used. All of that is native Postgres, no separate GIS system to run or sync.

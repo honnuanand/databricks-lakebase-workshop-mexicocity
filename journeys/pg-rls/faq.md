@@ -18,7 +18,7 @@ You're in a terminal that didn't load your environment. Re-source it:
 source workshop.env
 ```
 
-## "table factory.machine does not exist"
+## "table bank.account does not exist"
 
 The factory schema was not loaded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-factory step.
 
@@ -27,22 +27,22 @@ The factory schema was not loaded. Go back to [`../../00-setup/`](../../00-setup
 Check that the session variable is set. If the script doesn't set `app.current_operator_plant`, the [row-level security](../../docs/glossary.md) policy reads NULL (or a default), and rows aren't filtered. The script must set the variable before running the query:
 
 ```sql
-SET app.current_operator_plant = 'PL-DETROIT';
-SELECT * FROM factory.machine;
+SET app.current_operator_plant = 'BR-NYC';
+SELECT * FROM bank.account;
 ```
 
 ## Can I use RLS with JOINS?
 
-Yes. The RLS policy applies to the table it's defined on. If you join machine and work_order, both tables must have compatible policies, or the policy on one table applies:
+Yes. The RLS policy applies to the table it's defined on. If you join account and work_order, both tables must have compatible policies, or the policy on one table applies:
 
 ```sql
-SELECT m.machine_id, w.wo_id
-  FROM factory.machine m
-  JOIN factory.work_order w ON m.plant_id = w.plant_id
- WHERE m.plant_id = current_setting('app.current_operator_plant');
+SELECT m.account_id, w.trade_id
+  FROM bank.account m
+  JOIN bank.trade w ON m.branch_id = w.branch_id
+ WHERE m.branch_id = current_setting('app.current_operator_plant');
 ```
 
-The filter on machine propagates (machine.plant_id restricted) but work_order rows are unfiltered unless work_order also has an RLS policy on plant_id.
+The filter on machine propagates (machine.branch_id restricted) but work_order rows are unfiltered unless work_order also has an RLS policy on branch_id.
 
 ## What if I want column-level masking, not just row-level?
 
@@ -50,9 +50,9 @@ RLS is row-level. For column-level masking (hiding a sensitive field from certai
 
 ```sql
 CREATE VIEW machine_for_operators AS
-SELECT machine_id, plant_id, status,
+SELECT account_id, branch_id, status,
        CASE WHEN current_user = 'admin' THEN health_pct ELSE NULL END as health_pct
-  FROM factory.machine;
+  FROM bank.account;
 ```
 
 Then grant SELECT on the view to operators, and revoke SELECT on the underlying table. This works but is less flexible than RLS. For stronger masking, use a view + RLS together.
@@ -67,10 +67,10 @@ Yes, use `SET ROLE` to switch identities within the same connection (if you're a
 
 ```sql
 SET ROLE operator_detroit;
-SELECT * FROM factory.machine;  -- sees only Detroit rows
+SELECT * FROM bank.account;  -- sees only Detroit rows
 
 SET ROLE operator_chicago;
-SELECT * FROM factory.machine;  -- sees only Chicago rows
+SELECT * FROM bank.account;  -- sees only Chicago rows
 
 RESET ROLE;
 ```
@@ -82,17 +82,17 @@ This is how the script tests row-level security without creating separate connec
 Drop and recreate:
 
 ```sql
-DROP POLICY machine_operator_isolation ON factory.machine;
-CREATE POLICY machine_operator_isolation ON factory.machine
+DROP POLICY machine_operator_isolation ON bank.account;
+CREATE POLICY machine_operator_isolation ON bank.account
   FOR SELECT
-  USING (plant_id = current_setting('app.current_operator_plant'));
+  USING (branch_id = current_setting('app.current_operator_plant'));
 ```
 
 Or modify the policy directly (Postgres 13+):
 
 ```sql
-ALTER POLICY machine_operator_isolation ON factory.machine
-  USING (plant_id = current_setting('app.current_operator_plant'));
+ALTER POLICY machine_operator_isolation ON bank.account
+  USING (branch_id = current_setting('app.current_operator_plant'));
 ```
 
 ## Can RLS prevent INSERT/UPDATE/DELETE, not just SELECT?
@@ -100,15 +100,15 @@ ALTER POLICY machine_operator_isolation ON factory.machine
 Yes. You can have separate policies for each operation:
 
 ```sql
-CREATE POLICY machine_select ON factory.machine FOR SELECT
-  USING (plant_id = current_setting('app.current_operator_plant'));
+CREATE POLICY machine_select ON bank.account FOR SELECT
+  USING (branch_id = current_setting('app.current_operator_plant'));
 
-CREATE POLICY machine_update ON factory.machine FOR UPDATE
-  USING (plant_id = current_setting('app.current_operator_plant'))
-  WITH CHECK (plant_id = current_setting('app.current_operator_plant'));
+CREATE POLICY machine_update ON bank.account FOR UPDATE
+  USING (branch_id = current_setting('app.current_operator_plant'))
+  WITH CHECK (branch_id = current_setting('app.current_operator_plant'));
 
-CREATE POLICY machine_delete ON factory.machine FOR DELETE
-  USING (plant_id = current_setting('app.current_operator_plant'));
+CREATE POLICY machine_delete ON bank.account FOR DELETE
+  USING (branch_id = current_setting('app.current_operator_plant'));
 ```
 
 The `WITH CHECK` clause on UPDATE and INSERT ensures the new row also satisfies the policy.

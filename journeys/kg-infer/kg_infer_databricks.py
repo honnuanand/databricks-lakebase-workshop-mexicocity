@@ -35,30 +35,30 @@ print("rdflib ready. Loading the graph...")
 # COMMAND ----------
 
 g = Graph()
-FACTORY = Namespace("http://factory.local/")
+FACTORY = Namespace("http://bank.local/")
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute("SELECT product_id, name FROM factory.product")
-        for product_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[product_id]), URIRef(FACTORY.name), Literal(name)))
+        cur.execute("SELECT fund_id, name FROM bank.fund")
+        for fund_id, name in cur.fetchall():
+            g.add((URIRef(FACTORY[fund_id]), URIRef(FACTORY.name), Literal(name)))
 
-        cur.execute("SELECT part_id, name FROM factory.part")
-        for part_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.name), Literal(name)))
+        cur.execute("SELECT instrument_id, name FROM bank.instrument")
+        for instrument_id, name in cur.fetchall():
+            g.add((URIRef(FACTORY[instrument_id]), URIRef(FACTORY.name), Literal(name)))
 
-        cur.execute("SELECT supplier_id, name FROM factory.supplier")
-        for supplier_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[supplier_id]), URIRef(FACTORY.name), Literal(name)))
+        cur.execute("SELECT counterparty_id, name FROM bank.counterparty")
+        for counterparty_id, name in cur.fetchall():
+            g.add((URIRef(FACTORY[counterparty_id]), URIRef(FACTORY.name), Literal(name)))
 
-        cur.execute("SELECT parent_id, child_part FROM factory.bom_edge LIMIT 1000")
-        for parent_id, child_part in cur.fetchall():
-            g.add((URIRef(FACTORY[parent_id]), URIRef(FACTORY.contains), URIRef(FACTORY[child_part])))
+        cur.execute("SELECT parent_id, instrument_id FROM bank.holding LIMIT 1000")
+        for parent_id, instrument_id in cur.fetchall():
+            g.add((URIRef(FACTORY[parent_id]), URIRef(FACTORY.contains), URIRef(FACTORY[instrument_id])))
 
         try:
-            cur.execute("SELECT part_id, supplier_id FROM factory.part_supplier LIMIT 1000")
-            for part_id, supplier_id in cur.fetchall():
-                g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.supplied_by), URIRef(FACTORY[supplier_id])))
+            cur.execute("SELECT instrument_id, counterparty_id FROM bank.trade_counterparty LIMIT 1000")
+            for instrument_id, counterparty_id in cur.fetchall():
+                g.add((URIRef(FACTORY[instrument_id]), URIRef(FACTORY.supplied_by), URIRef(FACTORY[counterparty_id])))
         except:
             pass
 
@@ -75,9 +75,9 @@ print(f"Graph loaded: {len(g)} triples")
 # "If a product contains a part, and that part is recalled, then the product is affected."
 
 rule_text = """
-(?product <http://factory.local/contains> ?part)
-(?part <http://factory.local/recalled> ?status)
--> (?product <http://factory.local/affected_by_recall> true)
+(?product <http://bank.local/contains> ?part)
+(?part <http://bank.local/recalled> ?status)
+-> (?product <http://bank.local/affected_by_recall> true)
 """
 
 print("Rule defined:")
@@ -112,7 +112,7 @@ print(f"Graph now has {len(g)} triples.")
 
 query = """
 SELECT ?product WHERE {
-  ?product <http://factory.local/affected_by_recall> ?status .
+  ?product <http://bank.local/affected_by_recall> ?status .
 }
 """
 

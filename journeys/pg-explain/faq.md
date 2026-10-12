@@ -23,7 +23,7 @@ source workshop.env
 Check that the index was created:
 
 ```sql
-SELECT indexname FROM pg_indexes WHERE tablename = 'sensor_readings';
+SELECT indexname FROM pg_indexes WHERE tablename = 'txn_history';
 ```
 
 If it's missing, the CREATE INDEX command may have failed. Try again.
@@ -31,20 +31,20 @@ If it's missing, the CREATE INDEX command may have failed. Try again.
 Also check that statistics were updated:
 
 ```sql
-ANALYZE sensor_readings;
+ANALYZE bank.txn_history;
 ```
 
 The planner makes decisions based on statistics (row counts, selectivity). If statistics are stale, the planner might still choose Seq Scan. After ANALYZE, re-run EXPLAIN.
 
 ## The query is still slow even with the index
 
-The planner might have chosen a different plan because the query selectivity is low. If the filter matches many rows (e.g., machine_id = 'M-204' matches 25% of all rows), a Seq Scan can be faster than an Index Scan + random I/O.
+The planner might have chosen a different plan because the query selectivity is low. If the filter matches many rows (e.g., account_id = 'ACCT-100010' matches 25% of all rows), a Seq Scan can be faster than an Index Scan + random I/O.
 
 Check EXPLAIN to see what the planner chose and why. If EXPLAIN shows the index is not being used, you can force it:
 
 ```sql
 SET enable_seqscan = off;
-SELECT COUNT(*) FROM sensor_readings WHERE machine_id = 'M-204';
+SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010';
 ```
 
 This disables sequential scans, forcing the planner to use the index. If the query is still slow, the index isn't helping (and you might not need it).
@@ -55,7 +55,7 @@ A query plan is a tree. Each node is an operation. Read from the bottom up (the 
 
 ```
 Seq Scan on sensor_readings
-  Filter: (machine_id = 'M-204')
+  Filter: (account_id = 'ACCT-100240')
 ```
 
 This means: "Seq Scan the entire table, then apply a Filter."
@@ -66,7 +66,7 @@ For a more complex plan with joins:
 Nested Loop
   -> Seq Scan on machine
   -> Index Scan on sensor_readings
-       Index Cond: (machine_id = ...)
+       Index Cond: (account_id = ...)
 ```
 
 This means: "For each row from the machine table, do an Index Scan on sensor_readings."
@@ -98,7 +98,7 @@ A plan with mostly "Hit" is good (data was cached). A plan with many "Read" mean
 Yes. Use FORMAT JSON:
 
 ```sql
-EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT COUNT(*) FROM sensor_readings WHERE machine_id = 'M-204';
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT COUNT(*) FROM sensor_readings WHERE account_id = 'ACCT-100240';
 ```
 
 This returns JSON, which you can pipe to a file or tool for later analysis. Tools like PEV (postgres explain visualizer) and depesz can parse and visualize the plan.

@@ -46,7 +46,7 @@ Running `python kg_infer.py --step query-after` shows:
 
 ```text
 Products affected (after inference):
-  PRD-GEARBOX-X1
+  FUND-GROWTH-A
   PRD-MOTOR-ASSEMBLY-2HP
   PRD-PUMP-SERIES-A
 ```
@@ -86,7 +86,7 @@ Applying entailment (rule 1)...
   Inferred 3 new triples.
 
 Products affected (after inference):
-  PRD-GEARBOX-X1
+  FUND-GROWTH-A
   PRD-MOTOR-ASSEMBLY-2HP
   PRD-PUMP-SERIES-A
 
@@ -97,7 +97,7 @@ Applying entailment (rule 2)...
   Inferred 2 new triples.
 
 Final affected products:
-  PRD-GEARBOX-X1
+  FUND-GROWTH-A
   PRD-MOTOR-ASSEMBLY-2HP
   PRD-PUMP-SERIES-A
   PRD-TOP-LEVEL-ASSEMBLY

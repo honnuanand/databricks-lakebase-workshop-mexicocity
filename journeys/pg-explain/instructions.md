@@ -32,11 +32,11 @@ Create a synthetic table to make the seq scan expensive:
 python pg_explain.py --step seed
 ```
 
-The script creates a table with 50,000 synthetic sensor readings, each with an unindexed `machine_id` column. The goal: a seq scan that reads all 50,000 rows will be visible in EXPLAIN.
+The script creates a table with 50,000 synthetic bank transactions, each with an unindexed `account_id` column. The goal: a seq scan that reads all 50,000 rows will be visible in EXPLAIN.
 
 ### Step 2, query unindexed column, run EXPLAIN ANALYZE
 
-Query the table filtering on machine_id (unindexed):
+Query the table filtering on account_id (unindexed):
 
 ```bash
 python pg_explain.py --step explain-before
@@ -45,11 +45,11 @@ python pg_explain.py --step explain-before
 The script runs:
 
 ```sql
-EXPLAIN (ANALYZE, BUFFERS) SELECT COUNT(*) FROM sensor_readings WHERE machine_id = 'M-204';
+EXPLAIN (ANALYZE, BUFFERS) SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010';
 ```
 
 Output shows:
-- Plan: `Seq Scan on sensor_readings`
+- Plan: `Seq Scan on txn_history`
 - Rows: all 50,000 are scanned
 - Actual Time: ~50 milliseconds
 - Buffers: ~500 pages hit
@@ -58,7 +58,7 @@ This is the baseline: unindexed, expensive.
 
 ### Step 3, create an index
 
-Create a btree index on machine_id:
+Create a btree index on account_id:
 
 ```bash
 python pg_explain.py --step index
@@ -67,8 +67,8 @@ python pg_explain.py --step index
 The script runs:
 
 ```sql
-CREATE INDEX idx_sensor_machine_id ON sensor_readings (machine_id);
-ANALYZE sensor_readings;
+CREATE INDEX idx_txn_history_account ON bank.txn_history (account_id);
+ANALYZE bank.txn_history;
 ```
 
 The ANALYZE updates planner statistics so the planner knows the index will help.
@@ -82,8 +82,8 @@ python pg_explain.py --step explain-after
 ```
 
 Output now shows:
-- Plan: `Index Scan using idx_sensor_machine_id`
-- Rows: only ~56 rows are scanned (the matching ones)
+- Plan: `Index Scan using idx_txn_history_account`
+- Rows: only 500 rows are scanned (the matching ones)
 - Actual Time: ~1 millisecond
 - Buffers: ~5 pages hit
 

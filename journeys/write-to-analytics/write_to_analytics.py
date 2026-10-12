@@ -36,29 +36,29 @@ from lakebase import run_sql
 
 def ensure_column():
     """Add a failure_risk column to sensor_reading if it is not there yet (idempotent)."""
-    run_sql("ALTER TABLE factory.sensor_reading ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1)")
+    run_sql("ALTER TABLE bank.txn ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1)")
 
 
 def write_reading():
-    """Write a new sensor reading through Postgres (OLTP). Returns its reading_id."""
+    """Write a new sensor reading through Postgres (OLTP). Returns its txn_id."""
     r = run_sql(
-        "INSERT INTO factory.sensor_reading (machine_id, ts, temp_c, vibration_mm_s, rpm, load_pct) "
-        "VALUES ('M-204', now(), 67.3, 4.2, 1165, 81.0) "
-        "RETURNING reading_id, temp_c, vibration_mm_s")
+        "INSERT INTO bank.txn (account_id, ts, temp_c, anomaly_score, rpm, util_pct) "
+        "VALUES ('ACCT-100240', now(), 67.3, 4.2, 1165, 81.0) "
+        "RETURNING txn_id, temp_c, anomaly_score")
     rid, temp, vib = r[0]
-    print(f"  inserted reading_id={rid}: temp_c={temp}, vibration_mm_s={vib}")
+    print(f"  inserted txn_id={rid}: temp_c={temp}, anomaly_score={vib}")
     return rid
 
 
 def score_and_write_back(rid):
     """Compute a failure-risk score and write it back onto the row."""
     run_sql(
-        "UPDATE factory.sensor_reading "
-        "SET failure_risk = ROUND(100 * (vibration_mm_s / 10.0 + temp_c / 100.0), 1) "
-        f"WHERE reading_id = {rid}")
+        "UPDATE bank.txn "
+        "SET failure_risk = ROUND(100 * (anomaly_score / 10.0 + temp_c / 100.0), 1) "
+        f"WHERE txn_id = {rid}")
     row = run_sql(
-        "SELECT reading_id, machine_id, temp_c, vibration_mm_s, failure_risk "
-        f"FROM factory.sensor_reading WHERE reading_id = {rid}")[0]
+        "SELECT txn_id, account_id, temp_c, anomaly_score, failure_risk "
+        f"FROM bank.txn WHERE txn_id = {rid}")[0]
     print(f"  scored + wrote back: {row}")
     return row
 
@@ -70,9 +70,9 @@ def lakehouse_explainer():
     print("  the operational rows are visible to a SQL warehouse with no pipeline and no copy:")
     print()
     print("    -- on a SQL warehouse, against the UC foreign catalog for this database:")
-    print("    SELECT machine_id, ts, temp_c, vibration_mm_s, failure_risk")
-    print("    FROM <catalog>.factory.sensor_reading")
-    print("    WHERE machine_id = 'M-204' ORDER BY ts DESC LIMIT 1;")
+    print("    SELECT account_id, ts, temp_c, anomaly_score, failure_risk")
+    print("    FROM <catalog>.bank.txn")
+    print("    WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;")
     print()
     print("  The row you just wrote through Postgres appears there immediately: it is the same")
     print("  copy, not a synced one. Registering the catalog needs CREATE CATALOG on the")
@@ -106,8 +106,8 @@ def main():
     print("\n3. The operational side now serves an analytics-derived value at OLTP latency.")
     print("   Read it straight back from Postgres:")
     row = run_sql(
-        "SELECT machine_id, temp_c, vibration_mm_s, failure_risk "
-        f"FROM factory.sensor_reading WHERE reading_id = {rid}")[0]
+        "SELECT account_id, temp_c, anomaly_score, failure_risk "
+        f"FROM bank.txn WHERE txn_id = {rid}")[0]
     print(f"  {row}")
 
     print("\n4. The lakehouse side (same copy, no pipeline):")

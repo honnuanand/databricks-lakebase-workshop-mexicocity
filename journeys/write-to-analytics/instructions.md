@@ -33,10 +33,10 @@ Confirm sensor_reading has a few baseline readings on Postgres:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT machine_id, ts, temp_c, vibration_mm_s FROM factory.sensor_reading WHERE machine_id='M-204' ORDER BY ts DESC LIMIT 3"
+  "SELECT account_id, ts, temp_c, anomaly_score FROM bank.txn WHERE account_id='ACCT-100240' ORDER BY ts DESC LIMIT 3"
 ```
 
-You'll see recent readings from M-204. This is your baseline.
+You'll see recent readings from ACCT-100240. This is your baseline.
 
 ### Step 2, write a new sensor reading through Postgres
 
@@ -49,8 +49,8 @@ python write_to_analytics.py --step write
 The script runs:
 
 ```sql
-INSERT INTO factory.sensor_reading (machine_id, ts, temp_c, vibration_mm_s, rpm, load_pct)
-VALUES ('M-204', now(), 67.3, 4.2, 1165, 81.0);
+INSERT INTO bank.txn (account_id, ts, temp_c, anomaly_score, rpm, util_pct)
+VALUES ('ACCT-100240', now(), 67.3, 4.2, 1165, 81.0);
 ```
 
 The script captures the insert timestamp.
@@ -79,10 +79,10 @@ python write_to_analytics.py --step compute-score
 The script runs (or shows) a query like:
 
 ```sql
-SELECT machine_id, 
-       ROUND(100 * (vibration_mm_s / 10.0 + temp_c / 100.0), 1) AS failure_risk_pct
-FROM sensor_reading
-WHERE machine_id = 'M-204' AND ts > now() - interval '1 hour'
+SELECT account_id, 
+       ROUND(100 * (anomaly_score / 10.0 + temp_c / 100.0), 1) AS failure_risk_pct
+FROM txn
+WHERE account_id = 'ACCT-100240' AND ts > now() - interval '1 hour'
 ```
 
 The result is a failure_risk_pct value.
@@ -103,7 +103,7 @@ Query Postgres to confirm the risk score is now there:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT machine_id, ts, temp_c, vibration_mm_s FROM factory.sensor_reading WHERE machine_id='M-204' ORDER BY ts DESC LIMIT 1"
+  "SELECT account_id, ts, temp_c, anomaly_score FROM bank.txn WHERE account_id='ACCT-100240' ORDER BY ts DESC LIMIT 1"
 ```
 
 The most recent reading now has the risk score, computed on the lakehouse, written back to Postgres.

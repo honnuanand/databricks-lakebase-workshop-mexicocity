@@ -34,7 +34,7 @@ The factory schema has a `part` table with specs in a JSONB column. Check it:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT part_id, name, part_type FROM factory.part LIMIT 5"
+  "SELECT instrument_id, name, part_type FROM bank.instrument LIMIT 5"
 ```
 
 You should see parts like `PT-BEARING-6204`, `PT-GEAR-220T`, etc.
@@ -61,7 +61,7 @@ Add a vector column to store 768-dimensional embeddings (matching typical embedd
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "ALTER TABLE factory.part ADD COLUMN IF NOT EXISTS embedding vector(768)"
+  "ALTER TABLE bank.instrument ADD COLUMN IF NOT EXISTS embedding vector(768)"
 ```
 
 Check the column was added:
@@ -101,7 +101,7 @@ Query to confirm:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT part_id, name, (embedding IS NOT NULL) as has_embedding FROM factory.part"
+  "SELECT instrument_id, name, (embedding IS NOT NULL) as has_embedding FROM bank.instrument"
 ```
 
 All rows should have embeddings now.
@@ -118,11 +118,11 @@ The script runs a query like:
 
 ```sql
 SELECT
-  p.part_id, p.name, p.part_type,
+  p.instrument_id, p.name, p.part_type,
   1 - (p.embedding <=> ref_embedding) AS similarity
-FROM factory.part p
+FROM bank.instrument p
 WHERE p.embedding IS NOT NULL
-  AND p.part_id != 'PT-BEARING-6204'  -- exclude the original
+  AND p.instrument_id != 'PT-BEARING-6204'  -- exclude the original
 ORDER BY similarity DESC
 LIMIT 5;
 ```
@@ -152,7 +152,7 @@ python pg_vector.py --step index
 This runs:
 
 ```sql
-CREATE INDEX ON factory.part USING hnsw (embedding vector_cosine_ops)
+CREATE INDEX ON bank.instrument USING hnsw (embedding vector_cosine_ops)
 ```
 
 The `vector_cosine_ops` index family uses cosine similarity (the `<=>` operator). [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) keeps queries fast even with millions of vectors.

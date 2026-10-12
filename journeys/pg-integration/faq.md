@@ -7,7 +7,7 @@ Make sure you're searching in the correct schema. The factory tables are in the 
 Also check that the factory schema was loaded during setup. Run:
 
 ```bash
-python lakebase.py --sql "SELECT * FROM factory.machine LIMIT 1"
+python lakebase.py --sql "SELECT * FROM bank.account LIMIT 1"
 ```
 
 If that fails with "relation not found," run the factory schema and seed load from [`../../00-setup/`](../../00-setup/).

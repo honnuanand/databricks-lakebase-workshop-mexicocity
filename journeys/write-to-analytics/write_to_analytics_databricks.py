@@ -11,7 +11,7 @@
 # MAGIC the same rows from the lakehouse through a Unity Catalog foreign table on a SQL warehouse. That
 # MAGIC needs a metastore-admin catalog registration, so we show the exact query rather than fake it.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/`. M-204 is a stamping press on your factory branch.
+# MAGIC **Before you start:** finish `00-setup/`. ACCT-100240 is a stamping press on your factory branch.
 
 # COMMAND ----------
 
@@ -34,20 +34,20 @@ print("ready")
 # MAGIC Postgres, a millisecond operational write.
 # MAGIC
 # MAGIC ```sql
-# MAGIC ALTER TABLE factory.sensor_reading ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1);
-# MAGIC INSERT INTO factory.sensor_reading (machine_id, ts, temp_c, vibration_mm_s, rpm, load_pct)
-# MAGIC VALUES ('M-204', now(), 67.3, 4.2, 1165, 81.0) RETURNING reading_id;
+# MAGIC ALTER TABLE bank.txn ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1);
+# MAGIC INSERT INTO bank.txn (account_id, ts, temp_c, anomaly_score, rpm, util_pct)
+# MAGIC VALUES ('ACCT-100240', now(), 67.3, 4.2, 1165, 81.0) RETURNING txn_id;
 # MAGIC ```
 
 # COMMAND ----------
 
-run_sql("ALTER TABLE factory.sensor_reading ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1)")
-r = run_sql("""INSERT INTO factory.sensor_reading
-  (machine_id, ts, temp_c, vibration_mm_s, rpm, load_pct)
-  VALUES ('M-204', now(), 67.3, 4.2, 1165, 81.0)
-  RETURNING reading_id, temp_c, vibration_mm_s""")
+run_sql("ALTER TABLE bank.txn ADD COLUMN IF NOT EXISTS failure_risk NUMERIC(5,1)")
+r = run_sql("""INSERT INTO bank.txn
+  (account_id, ts, temp_c, anomaly_score, rpm, util_pct)
+  VALUES ('ACCT-100240', now(), 67.3, 4.2, 1165, 81.0)
+  RETURNING txn_id, temp_c, anomaly_score""")
 rid = r[0][0]
-print("inserted reading_id", r[0])
+print("inserted txn_id", r[0])
 
 # COMMAND ----------
 
@@ -58,17 +58,17 @@ print("inserted reading_id", r[0])
 # MAGIC served at operational latency.
 # MAGIC
 # MAGIC ```sql
-# MAGIC UPDATE factory.sensor_reading
-# MAGIC SET failure_risk = ROUND(100 * (vibration_mm_s / 10.0 + temp_c / 100.0), 1)
-# MAGIC WHERE reading_id = <rid>;
+# MAGIC UPDATE bank.txn
+# MAGIC SET failure_risk = ROUND(100 * (anomaly_score / 10.0 + temp_c / 100.0), 1)
+# MAGIC WHERE txn_id = <rid>;
 # MAGIC ```
 
 # COMMAND ----------
 
-run_sql(f"UPDATE factory.sensor_reading SET failure_risk = "
-        f"ROUND(100*(vibration_mm_s/10.0 + temp_c/100.0),1) WHERE reading_id={rid}")
-row = run_sql(f"SELECT reading_id, machine_id, temp_c, vibration_mm_s, failure_risk "
-              f"FROM factory.sensor_reading WHERE reading_id={rid}")[0]
+run_sql(f"UPDATE bank.txn SET failure_risk = "
+        f"ROUND(100*(anomaly_score/10.0 + temp_c/100.0),1) WHERE txn_id={rid}")
+row = run_sql(f"SELECT txn_id, account_id, temp_c, anomaly_score, failure_risk "
+              f"FROM bank.txn WHERE txn_id={rid}")[0]
 print("scored + wrote back:", row)
 
 # COMMAND ----------
@@ -82,9 +82,9 @@ print("scored + wrote back:", row)
 # MAGIC
 # MAGIC ```sql
 # MAGIC -- on a SQL warehouse, against the UC foreign catalog for this database:
-# MAGIC SELECT machine_id, ts, temp_c, vibration_mm_s, failure_risk
-# MAGIC FROM <catalog>.factory.sensor_reading
-# MAGIC WHERE machine_id = 'M-204' ORDER BY ts DESC LIMIT 1;
+# MAGIC SELECT account_id, ts, temp_c, anomaly_score, failure_risk
+# MAGIC FROM <catalog>.bank.txn
+# MAGIC WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;
 # MAGIC ```
 # MAGIC
 # MAGIC The row you wrote in Step 1 appears there immediately, because it is the same copy. Nothing

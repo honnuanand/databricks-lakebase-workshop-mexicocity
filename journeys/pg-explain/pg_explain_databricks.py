@@ -19,7 +19,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
-SCHEMA = os.environ.get("LB_SCHEMA", "factory")
+SCHEMA = os.environ.get("LB_SCHEMA", "bank")
 print("connected; schema:", SCHEMA)
 
 # COMMAND ----------
@@ -30,16 +30,16 @@ print("connected; schema:", SCHEMA)
 # MAGIC Create and seed a large table with 50,000 rows. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE TABLE factory.sensor_readings (
+# MAGIC CREATE TABLE bank.txn (
 # MAGIC   id BIGSERIAL PRIMARY KEY,
-# MAGIC   machine_id TEXT,
+# MAGIC   account_id TEXT,
 # MAGIC   ts TIMESTAMPTZ DEFAULT now(),
 # MAGIC   value NUMERIC
 # MAGIC );
-# MAGIC INSERT INTO factory.sensor_readings (machine_id, value)
+# MAGIC INSERT INTO bank.txn (account_id, value)
 # MAGIC SELECT 'M-' || (1 + (g % 100))::TEXT, (g % 1000)::NUMERIC
 # MAGIC   FROM generate_series(1, 50000) g;
-# MAGIC ANALYZE factory.sensor_readings
+# MAGIC ANALYZE bank.txn
 # MAGIC ```
 
 # COMMAND ----------
@@ -47,13 +47,13 @@ print("connected; schema:", SCHEMA)
 with connect() as conn:
     with conn.cursor() as cur:
         # Drop if exists
-        cur.execute("DROP TABLE IF EXISTS factory.sensor_readings")
+        cur.execute("DROP TABLE IF EXISTS bank.txn")
 
         # Create table
         cur.execute("""
-        CREATE TABLE factory.sensor_readings (
+        CREATE TABLE bank.txn (
           id BIGSERIAL PRIMARY KEY,
-          machine_id TEXT,
+          account_id TEXT,
           ts TIMESTAMPTZ DEFAULT now(),
           value NUMERIC
         )
@@ -61,13 +61,13 @@ with connect() as conn:
 
         # Seed 50k rows
         cur.execute("""
-        INSERT INTO factory.sensor_readings (machine_id, value)
+        INSERT INTO bank.txn (account_id, value)
         SELECT 'M-' || (1 + (g % 100))::TEXT, (g % 1000)::NUMERIC
           FROM generate_series(1, 50000) g
         """)
 
         # ANALYZE so planner has stats
-        cur.execute("ANALYZE factory.sensor_readings")
+        cur.execute("ANALYZE bank.txn")
         print("Created and seeded 50,000 rows")
         print("No index yet (seq scan will be expensive)")
 
@@ -80,14 +80,14 @@ with connect() as conn:
 # MAGIC
 # MAGIC ```sql
 # MAGIC EXPLAIN (ANALYZE, BUFFERS)
-# MAGIC SELECT COUNT(*) FROM factory.sensor_readings WHERE machine_id = 'M-10'
+# MAGIC SELECT COUNT(*) FROM bank.txn WHERE account_id = 'M-10'
 # MAGIC ```
 
 # COMMAND ----------
 
 sql = """
 EXPLAIN (ANALYZE, BUFFERS)
-SELECT COUNT(*) FROM factory.sensor_readings WHERE machine_id = 'M-10'
+SELECT COUNT(*) FROM bank.txn WHERE account_id = 'M-10'
 """
 
 with connect() as conn:
@@ -103,11 +103,11 @@ with connect() as conn:
 # MAGIC %md
 # MAGIC ## Step 3, create an index
 # MAGIC
-# MAGIC Create a B-tree index on machine_id. The SQL:
+# MAGIC Create a B-tree index on account_id. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE INDEX idx_sensor_machine_id ON factory.sensor_readings (machine_id);
-# MAGIC ANALYZE factory.sensor_readings
+# MAGIC CREATE INDEX idx_sensor_machine_id ON bank.txn (account_id);
+# MAGIC ANALYZE bank.txn
 # MAGIC ```
 
 # COMMAND ----------
@@ -116,10 +116,10 @@ with connect() as conn:
     with conn.cursor() as cur:
         cur.execute("""
         CREATE INDEX idx_sensor_machine_id
-          ON factory.sensor_readings (machine_id)
+          ON bank.txn (account_id)
         """)
-        cur.execute("ANALYZE factory.sensor_readings")
-        print("Index created on machine_id")
+        cur.execute("ANALYZE bank.txn")
+        print("Index created on account_id")
         print("Statistics updated")
 
 # COMMAND ----------
@@ -131,14 +131,14 @@ with connect() as conn:
 # MAGIC
 # MAGIC ```sql
 # MAGIC EXPLAIN (ANALYZE, BUFFERS)
-# MAGIC SELECT COUNT(*) FROM factory.sensor_readings WHERE machine_id = 'M-10'
+# MAGIC SELECT COUNT(*) FROM bank.txn WHERE account_id = 'M-10'
 # MAGIC ```
 
 # COMMAND ----------
 
 sql = """
 EXPLAIN (ANALYZE, BUFFERS)
-SELECT COUNT(*) FROM factory.sensor_readings WHERE machine_id = 'M-10'
+SELECT COUNT(*) FROM bank.txn WHERE account_id = 'M-10'
 """
 
 with connect() as conn:

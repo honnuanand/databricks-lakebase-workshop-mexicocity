@@ -14,7 +14,7 @@
 
 ## The scenario
 
-The stamping plant runs live. Sensors on machine M-204 stream temperature, vibration, RPM, and load every few seconds. Right now those readings pile up in Postgres, and analysts run nightly queries to spot anomalies. By morning, a failing machine might have wrecked the night shift.
+The stamping plant runs live. Sensors on machine ACCT-100240 stream temperature, vibration, RPM, and load every few seconds. Right now those readings pile up in Postgres, and analysts run nightly queries to spot anomalies. By morning, a failing machine might have wrecked the night shift.
 
 What if the analytics ran live? The moment a sensor reading arrives at Postgres, it's visible to the lakehouse. Analytics computes a risk score, probability of failure in the next hour, and pushes that score back to Postgres so the MES system can route new work away from risky machines.
 
@@ -36,7 +36,7 @@ The beat worth watching: you INSERT a sensor reading in Postgres (one SQL statem
 
 ## What you'll do
 
-1. Establish a small sensor_reading table on Postgres (a few baseline readings for M-204).
+1. Establish a small sensor_reading table on Postgres (a few baseline readings for ACCT-100240).
 2. Write a new sensor reading through Postgres.
 3. Query the same table from the lakehouse and confirm the new row is visible immediately.
 4. Run an analytics query on the lakehouse to compute a failure-risk score (simulated; you may run pre-canned SQL if you don't have analytics workspace).

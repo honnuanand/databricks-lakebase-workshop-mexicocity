@@ -26,23 +26,23 @@ work_order
 ## Step 2, columns (sample)
 
 ```text
-(plant, plant_id, text)
+(plant, branch_id, text)
 (plant, name, text)
 (plant, region, text)
 (plant, operator, text)
 (plant, lat, double precision)
 (plant, lon, double precision)
 ...
-(machine, machine_id, text)
-(machine, plant_id, text)
+(machine, account_id, text)
+(machine, branch_id, text)
 (machine, line, text)
 (machine, type, text)
 (machine, status, text)
 (machine, health_pct, numeric)
 ...
-(work_order, wo_id, text)
-(work_order, plant_id, text)
-(work_order, product_id, text)
+(work_order, trade_id, text)
+(work_order, branch_id, text)
+(work_order, fund_id, text)
 (work_order, qty, integer)
 (work_order, status, text)
 (work_order, due_ts, timestamp with time zone)
@@ -59,7 +59,7 @@ Running `python pg_integration.py --step schema-map` shows the readable schema:
 === Factory Schema Map (discovered via information_schema) ===
 
 TABLE: plant
-  plant_id: text (PK)
+  branch_id: text (PK)
   name: text
   region: text
   operator: text
@@ -67,29 +67,29 @@ TABLE: plant
   lon: double precision
 
 TABLE: machine
-  machine_id: text (PK)
-  plant_id: text (FK → plant)
+  account_id: text (PK)
+  branch_id: text (FK → plant)
   line: text
   type: text
   status: text
   health_pct: numeric
 
 TABLE: work_order
-  wo_id: text (PK)
-  plant_id: text (FK → plant)
-  product_id: text (FK → product)
+  trade_id: text (PK)
+  branch_id: text (FK → plant)
+  fund_id: text (FK → product)
   qty: integer
   status: text
   due_ts: timestamp with time zone
 
 TABLE: sensor_reading
-  reading_id: bigserial (PK)
-  machine_id: text (FK → machine)
+  txn_id: bigserial (PK)
+  account_id: text (FK → machine)
   ts: timestamp with time zone
   temp_c: numeric
-  vibration_mm_s: numeric
+  anomaly_score: numeric
   rpm: integer
-  load_pct: numeric
+  util_pct: numeric
 
 ... (10 more tables)
 
@@ -102,17 +102,17 @@ Inferred PK/FK relationships: ~12
 ## Step 4, sample rows
 
 ```text
-Sample from machine:
-('M-101', 'PL-DETROIT', 'Stamping-A', 'press', 'healthy', Decimal('98.50'))
-('M-204', 'PL-DETROIT', 'Stamping-B', 'press', 'healthy', Decimal('91.00'))
+Sample from account:
+('ACCT-100234', 'BR-NYC', 'Stamping-A', 'press', 'healthy', Decimal('98.50'))
+('ACCT-100240', 'BR-NYC', 'Stamping-B', 'press', 'healthy', Decimal('91.00'))
 
-Sample from work_order:
-('WO-8821', 'PL-DETROIT', 'PRD-GEARBOX-X1', 50, 'released', datetime.datetime(...))
-('WO-8822', 'PL-AUSTIN', 'PRD-AXLE-A2', 120, 'in_progress', datetime.datetime(...))
+Sample from trade:
+('WO-8821', 'BR-NYC', 'FUND-GROWTH-A', 50, 'released', datetime.datetime(...))
+('WO-8822', 'BR-SFO', 'PRD-AXLE-A2', 120, 'in_progress', datetime.datetime(...))
 
-Sample from sensor_reading:
-(1, 'M-204', datetime.datetime(..., tzinfo=tzutc()), Decimal('62.50'), Decimal('2.10'), 1180, Decimal('74.00'))
-(2, 'M-204', datetime.datetime(..., tzinfo=tzutc()), Decimal('63.10'), Decimal('2.40'), 1180, Decimal('76.50'))
+Sample from txn:
+(1, 'ACCT-100240', datetime.datetime(..., tzinfo=tzutc()), Decimal('62.50'), Decimal('2.10'), 1180, Decimal('74.00'))
+(2, 'ACCT-100240', datetime.datetime(..., tzinfo=tzutc()), Decimal('63.10'), Decimal('2.40'), 1180, Decimal('76.50'))
 ```
 
 Real data, all columns present, all types matching the schema inferred from information_schema.

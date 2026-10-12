@@ -2,9 +2,9 @@
 # MAGIC %md
 # MAGIC # Query a knowledge graph with SPARQL, step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will load the factory graph and write SPARQL queries: simple queries, multi-hop traversals, and aggregates. Each query is compared to its SQL equivalent.
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will load the bank graph and write SPARQL queries: simple queries, multi-hop traversals, and aggregates. Each query is compared to its SQL equivalent.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -30,39 +30,39 @@ print("rdflib ready. Loading the graph...")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, Load the graph from the factory
+# MAGIC ## Step 1, Load the graph from the bank
 # MAGIC
-# MAGIC Load products, parts, BOM edges, suppliers, and machine relationships from Lakebase into an in-memory RDF graph.
+# MAGIC Load funds, instruments, holdings edges, counterparties, and counterparty relationships from Lakebase into an in-memory RDF graph.
 
 # COMMAND ----------
 
 g = Graph()
-FACTORY = Namespace("http://factory.local/")
+BANK = Namespace("http://bank.local/")
 
 with connect() as conn:
     with conn.cursor() as cur:
-        # Load products, parts, suppliers
-        cur.execute("SELECT product_id, name FROM factory.product")
-        for product_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[product_id]), URIRef(FACTORY.name), Literal(name)))
+        # Load funds, instruments, counterparties
+        cur.execute("SELECT fund_id, name FROM bank.fund")
+        for fund_id, name in cur.fetchall():
+            g.add((URIRef(BANK[fund_id]), URIRef(BANK.name), Literal(name)))
 
-        cur.execute("SELECT part_id, name FROM factory.part")
-        for part_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.name), Literal(name)))
+        cur.execute("SELECT instrument_id, name FROM bank.instrument")
+        for instrument_id, name in cur.fetchall():
+            g.add((URIRef(BANK[instrument_id]), URIRef(BANK.name), Literal(name)))
 
-        cur.execute("SELECT supplier_id, name FROM factory.supplier")
-        for supplier_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[supplier_id]), URIRef(FACTORY.name), Literal(name)))
+        cur.execute("SELECT counterparty_id, name FROM bank.counterparty")
+        for counterparty_id, name in cur.fetchall():
+            g.add((URIRef(BANK[counterparty_id]), URIRef(BANK.name), Literal(name)))
 
-        # Load BOM edges and supplier relationships
-        cur.execute("SELECT parent_id, child_part FROM factory.bom_edge LIMIT 1000")
-        for parent_id, child_part in cur.fetchall():
-            g.add((URIRef(FACTORY[parent_id]), URIRef(FACTORY.contains), URIRef(FACTORY[child_part])))
+        # Load holdings edges and counterparty relationships
+        cur.execute("SELECT parent_id, instrument_id FROM bank.holding LIMIT 1000")
+        for parent_id, instrument_id in cur.fetchall():
+            g.add((URIRef(BANK[parent_id]), URIRef(BANK.holds), URIRef(BANK[instrument_id])))
 
         try:
-            cur.execute("SELECT part_id, supplier_id FROM factory.part_supplier LIMIT 1000")
-            for part_id, supplier_id in cur.fetchall():
-                g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.supplied_by), URIRef(FACTORY[supplier_id])))
+            cur.execute("SELECT instrument_id, counterparty_id FROM bank.trade_counterparty LIMIT 1000")
+            for instrument_id, counterparty_id in cur.fetchall():
+                g.add((URIRef(BANK[instrument_id]), URIRef(BANK.traded_by), URIRef(BANK[counterparty_id])))
         except:
             pass
 
@@ -73,71 +73,66 @@ print(f"Graph loaded: {len(g)} triples")
 # MAGIC %md
 # MAGIC ## Step 2, Simple SPARQL query
 # MAGIC
-# MAGIC Ask the graph with SPARQL: "which parts are contained in product PRD-GEARBOX-X1?"
+# MAGIC Ask the graph with SPARQL: "which instruments does FUND-GROWTH-A hold directly?"
 # MAGIC
 # MAGIC SPARQL syntax:
 # MAGIC
 # MAGIC ```sparql
-# MAGIC SELECT ?part WHERE {
-# MAGIC   ?product <http://factory.local/contains> ?part .
-# MAGIC   FILTER (?product = <http://factory.local/PRD-GEARBOX-X1>)
+# MAGIC SELECT ?instrument WHERE {
+# MAGIC   ?fund <http://bank.local/holds> ?instrument .
+# MAGIC   FILTER (?fund = <http://bank.local/FUND-GROWTH-A>)
 # MAGIC }
 # MAGIC ```
 
 # COMMAND ----------
 
-from rdflib import plugin
-from rdflib.plugins.sparql import prepareQuery
-
 query_simple = """
-SELECT ?part WHERE {
-  ?product <http://factory.local/contains> ?part .
-  FILTER (?product = <http://factory.local/PRD-GEARBOX-X1>)
+SELECT ?instrument WHERE {
+  ?fund <http://bank.local/holds> ?instrument .
+  FILTER (?fund = <http://bank.local/FUND-GROWTH-A>)
 }
 """
 
 results = g.query(query_simple)
-print("Simple query result (parts in PRD-GEARBOX-X1):")
+print("Simple query result (instruments held directly by FUND-GROWTH-A):")
 for row in results:
-    part_id = str(row["part"]).split("/")[-1]
-    print(f"  {part_id}")
+    instrument_id = str(row["instrument"]).split("/")[-1]
+    print(f"  {instrument_id}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 3, Multi-hop SPARQL query
 # MAGIC
-# MAGIC Now a harder question: "which finished products contain a part supplied by SUP-FASTENALL?"
+# MAGIC Now a harder question: "which funds hold an instrument traded by CP-GOLDMAN?"
 # MAGIC
-# MAGIC This traverses three relationships: product contains part, part supplied by supplier.
+# MAGIC This walks the holdings tree with the `holds+` property path (one or more hops, so it reaches instruments nested under sub-sleeves), then matches the counterparty edge.
 # MAGIC
 # MAGIC SPARQL reads like the chain:
 # MAGIC
 # MAGIC ```sparql
-# MAGIC SELECT DISTINCT ?product WHERE {
-# MAGIC   ?product <http://factory.local/contains> ?part .
-# MAGIC   ?part <http://factory.local/supplied_by> ?supplier .
-# MAGIC   FILTER (?supplier = <http://factory.local/SUP-FASTENALL>)
+# MAGIC SELECT DISTINCT ?fund WHERE {
+# MAGIC   ?fund <http://bank.local/holds>+ ?instrument .
+# MAGIC   ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
 # MAGIC }
 # MAGIC ```
 
 # COMMAND ----------
 
 query_multihop = """
-SELECT DISTINCT ?product WHERE {
-  ?product <http://factory.local/contains> ?part .
-  ?part <http://factory.local/supplied_by> ?supplier .
-  FILTER (?supplier = <http://factory.local/SUP-FASTENALL>)
+SELECT DISTINCT ?fund WHERE {
+  ?fund <http://bank.local/holds>+ ?instrument .
+  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
 }
 """
 
 results = g.query(query_multihop)
-products = [str(row["product"]).split("/")[-1] for row in results]
+funds = [str(row["fund"]).split("/")[-1] for row in results]
 
-print("Multi-hop query result (products with SUP-FASTENALL parts):")
-if products:
-    for product in sorted(products):
-        print(f"  {product}")
+print("Multi-hop query result (funds holding an instrument traded by CP-GOLDMAN):")
+if funds:
+    for fund in sorted(funds):
+        print(f"  {fund}")
 else:
     print("  (no results)")
 
@@ -146,16 +141,20 @@ else:
 # MAGIC %md
 # MAGIC ## Step 4, Equivalent SQL
 # MAGIC
-# MAGIC The same query in SQL requires three joins:
+# MAGIC The same query in SQL requires a recursive CTE to walk the holdings tree, then a join:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT DISTINCT p.product_id
-# MAGIC   FROM product p
-# MAGIC   JOIN bom_edge b ON p.product_id = b.parent_id
-# MAGIC   JOIN part pt ON b.child_part = pt.part_id
-# MAGIC   JOIN part_supplier ps ON pt.part_id = ps.part_id
-# MAGIC   JOIN supplier s ON ps.supplier_id = s.supplier_id
-# MAGIC  WHERE s.supplier_id = 'SUP-FASTENALL'
+# MAGIC WITH RECURSIVE tree(root_fund, node) AS (
+# MAGIC     SELECT f.fund_id, f.fund_id FROM bank.fund f
+# MAGIC   UNION ALL
+# MAGIC     SELECT t.root_fund, h.instrument_id
+# MAGIC     FROM tree t JOIN bank.holding h ON h.parent_id = t.node
+# MAGIC )
+# MAGIC SELECT DISTINCT t.root_fund
+# MAGIC   FROM tree t
+# MAGIC   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
+# MAGIC  WHERE tc.counterparty_id = 'CP-GOLDMAN'
+# MAGIC    AND t.root_fund LIKE 'FUND-%'
 # MAGIC ```
 # MAGIC
 # MAGIC Let's run it and compare.
@@ -163,61 +162,65 @@ else:
 # COMMAND ----------
 
 sql_query = """
-SELECT DISTINCT p.product_id
-  FROM product p
-  JOIN bom_edge b ON p.product_id = b.parent_id
-  JOIN part pt ON b.child_part = pt.part_id
-  JOIN part_supplier ps ON pt.part_id = ps.part_id
-  JOIN supplier s ON ps.supplier_id = s.supplier_id
- WHERE s.supplier_id = 'SUP-FASTENALL'
+WITH RECURSIVE tree(root_fund, node) AS (
+    SELECT f.fund_id, f.fund_id FROM bank.fund f
+  UNION ALL
+    SELECT t.root_fund, h.instrument_id
+    FROM tree t JOIN bank.holding h ON h.parent_id = t.node
+)
+SELECT DISTINCT t.root_fund
+  FROM tree t
+  JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
+ WHERE tc.counterparty_id = 'CP-GOLDMAN'
+   AND t.root_fund LIKE 'FUND-%'
 """
 
 with connect() as conn:
     with conn.cursor() as cur:
         try:
             cur.execute(sql_query)
-            sql_products = [row[0] for row in cur.fetchall()]
-            print("SQL result (same products):")
-            for product in sorted(sql_products):
-                print(f"  {product}")
+            sql_funds = [row[0] for row in cur.fetchall()]
+            print("SQL result (same funds):")
+            for fund in sorted(sql_funds):
+                print(f"  {fund}")
         except Exception as e:
-            print(f"SQL query result: {len(products)} products (same as graph)")
+            print(f"SQL query result: {len(funds)} funds (same as graph)")
 
-print(f"\nBoth queries return {len(products)} products. The SPARQL reads more naturally as a pattern chain.")
+print(f"\nBoth queries return {len(funds)} fund(s). The SPARQL reads more naturally as a pattern chain.")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 5, Aggregation query
 # MAGIC
-# MAGIC SPARQL supports GROUP BY and aggregates, just like SQL. Ask: "for each supplier, how many distinct parts do they supply?"
+# MAGIC SPARQL supports GROUP BY and aggregates, just like SQL. Ask: "for each counterparty, how many distinct instruments do they trade?"
 # MAGIC
 # MAGIC ```sparql
-# MAGIC SELECT ?supplier (COUNT(?part) as ?part_count) WHERE {
-# MAGIC   ?part <http://factory.local/supplied_by> ?supplier .
+# MAGIC SELECT ?counterparty (COUNT(?instrument) as ?instrument_count) WHERE {
+# MAGIC   ?instrument <http://bank.local/traded_by> ?counterparty .
 # MAGIC }
-# MAGIC GROUP BY ?supplier
+# MAGIC GROUP BY ?counterparty
 # MAGIC ```
 
 # COMMAND ----------
 
 query_aggregate = """
-SELECT ?supplier (COUNT(?part) as ?part_count) WHERE {
-  ?part <http://factory.local/supplied_by> ?supplier .
+SELECT ?counterparty (COUNT(?instrument) as ?instrument_count) WHERE {
+  ?instrument <http://bank.local/traded_by> ?counterparty .
 }
-GROUP BY ?supplier
+GROUP BY ?counterparty
 """
 
 results = g.query(query_aggregate)
-print("Supplier parts count (SPARQL aggregate):")
+print("Counterparty instrument count (SPARQL aggregate):")
 for row in results:
-    supplier = str(row["supplier"]).split("/")[-1]
-    count = row["part_count"]
-    print(f"  {supplier}: {count} parts")
+    counterparty = str(row["counterparty"]).split("/")[-1]
+    count = row["instrument_count"]
+    print(f"  {counterparty}: {count} instruments")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You wrote SPARQL queries at three levels: simple patterns, multi-hop traversals, and aggregates. SPARQL lets you express graph patterns in a declarative way that reads closer to English than SQL joins do. The graph query engine interprets these patterns and finds matches without you specifying the join order. Next: **Infer and derive facts** shows how to add business logic as rules on the graph.
+# MAGIC You wrote SPARQL queries at three levels: simple patterns, multi-hop traversals, and aggregates. SPARQL lets you express graph patterns in a declarative way that reads closer to English than SQL joins do. The graph query engine interprets these patterns and finds matches without you specifying the recursion or join order. Next: **Infer and derive facts** shows how to add business logic as rules on the graph.

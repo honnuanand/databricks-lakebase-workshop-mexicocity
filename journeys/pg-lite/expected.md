@@ -21,18 +21,18 @@ This proves it: full Postgres 18.3 running on WASM inside your browser.
 ## Quick Example: CREATE TABLE + INSERT
 
 ```sql
-CREATE TABLE machines (
-  id TEXT PRIMARY KEY,
+CREATE TABLE accounts (
+  account_id TEXT PRIMARY KEY,
   status TEXT,
   health_pct NUMERIC(5,2)
 );
 
-INSERT INTO machines VALUES
-  ('M-204', 'healthy', 91.5),
-  ('M-205', 'derated', 72.0),
-  ('M-206', 'operational', 88.2);
+INSERT INTO accounts VALUES
+  ('ACCT-100234', 'good_standing', 98.5),
+  ('ACCT-100240', 'watch', 91.0),
+  ('ACCT-100241', 'good_standing', 99.1);
 
-SELECT * FROM machines;
+SELECT * FROM accounts;
 ```
 
 Output:
@@ -40,11 +40,11 @@ Output:
 ```text
 (0 rows affected)
 (3 rows affected)
-id | status | health_pct
-----|--------|----------
-M-204 | healthy | 91.5
-M-205 | derated | 72.0
-M-206 | operational | 88.2
+account_id | status | health_pct
+-----------|--------|----------
+ACCT-100234 | good_standing | 98.5
+ACCT-100240 | watch | 91.0
+ACCT-100241 | good_standing | 99.1
 ```
 
 CREATE and INSERT report row counts; SELECT shows the results as a table.
@@ -52,20 +52,20 @@ CREATE and INSERT report row counts; SELECT shows the results as a table.
 ## Quick Example: JSON aggregation
 
 ```sql
-CREATE TABLE specs (
-  machine_id TEXT PRIMARY KEY,
-  config JSONB
+CREATE TABLE instruments (
+  instrument_id TEXT PRIMARY KEY,
+  spec JSONB
 );
 
-INSERT INTO specs VALUES
-  ('M-100', '{"type": "CNC", "model": "X5"}'),
-  ('M-101', '{"type": "Press", "model": "P2"}');
+INSERT INTO instruments VALUES
+  ('INS-AAPL', '{"kind": "equity", "ticker": "AAPL"}'),
+  ('INS-UST-10Y', '{"kind": "bond", "tenor": "10Y"}');
 
 SELECT
-  machine_id,
-  config->>'type' as type,
-  config->>'model' as model
-FROM specs;
+  instrument_id,
+  spec->>'kind' as kind,
+  spec->>'ticker' as ticker
+FROM instruments;
 ```
 
 Output:
@@ -73,10 +73,10 @@ Output:
 ```text
 (0 rows affected)
 (2 rows affected)
-machine_id | type | model
------------|------|-------
-M-100 | CNC | X5
-M-101 | Press | P2
+instrument_id | kind | ticker
+--------------|------|-------
+INS-AAPL | equity | AAPL
+INS-UST-10Y | bond | null
 ```
 
 JSON extraction (->>) works in the browser the same way as on Lakebase.
@@ -84,21 +84,21 @@ JSON extraction (->>) works in the browser the same way as on Lakebase.
 ## Quick Example: Window functions
 
 ```sql
-CREATE TABLE events (
+CREATE TABLE txns (
   id SERIAL PRIMARY KEY,
-  machine_id TEXT,
-  value INT
+  account_id TEXT,
+  amount_usd INT
 );
 
-INSERT INTO events(machine_id, value) VALUES
-  ('M-1', 100), ('M-1', 95), ('M-2', 80), ('M-2', 85);
+INSERT INTO txns(account_id, amount_usd) VALUES
+  ('ACCT-1', 100), ('ACCT-1', 95), ('ACCT-2', 80), ('ACCT-2', 85);
 
 SELECT
-  machine_id,
-  value,
-  ROW_NUMBER() OVER (PARTITION BY machine_id ORDER BY value DESC) as rank
-FROM events
-ORDER BY machine_id, rank;
+  account_id,
+  amount_usd,
+  ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY amount_usd DESC) as rank
+FROM txns
+ORDER BY account_id, rank;
 ```
 
 Output:
@@ -106,12 +106,12 @@ Output:
 ```text
 (0 rows affected)
 (4 rows affected)
-machine_id | value | rank
------------|-------|-----
-M-1 | 100 | 1
-M-1 | 95 | 2
-M-2 | 85 | 1
-M-2 | 80 | 2
+account_id | amount_usd | rank
+-----------|------------|-----
+ACCT-1 | 100 | 1
+ACCT-1 | 95 | 2
+ACCT-2 | 85 | 1
+ACCT-2 | 80 | 2
 ```
 
 Window functions work identically in the browser Postgres.

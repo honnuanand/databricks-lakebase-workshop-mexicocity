@@ -10,7 +10,7 @@ Running `python data_api.py --step check` shows:
 ```text
 Data API check:
   Host: https://lb-workshop-instance.cloud.databricks.com
-  Endpoint: /api/v1/factory.machine
+  Endpoint: /api/v1/bank.account
   Status: Data API is ENABLED
 ```
 
@@ -40,9 +40,9 @@ Running `python data_api.py --step get-machines` shows:
 
 ```json
 [
-  {"machine_id": "M-204", "plant_id": "PL-DETROIT", "line": "Stamping-A", "type": "press", "status": "healthy", "health_pct": 91.0},
-  {"machine_id": "M-205", "plant_id": "PL-DETROIT", "line": "Stamping-A", "type": "press", "status": "derated", "health_pct": 70.0},
-  {"machine_id": "M-301", "plant_id": "PL-CHICAGO", "line": "Assembly-B", "type": "robot", "status": "down", "health_pct": 45.0},
+  {"account_id": "ACCT-100240", "branch_id": "BR-NYC", "line": "Stamping-A", "type": "press", "status": "healthy", "health_pct": 91.0},
+  {"account_id": "ACCT-100241", "branch_id": "BR-NYC", "line": "Stamping-A", "type": "press", "status": "derated", "health_pct": 70.0},
+  {"account_id": "M-301", "branch_id": "PL-CHICAGO", "line": "Assembly-B", "type": "robot", "status": "down", "health_pct": 45.0},
   ...
 ]
 ```
@@ -55,13 +55,13 @@ Running `python data_api.py --step get-filtered` shows:
 
 ```json
 [
-  {"machine_id": "M-204", "status": "healthy"},
-  {"machine_id": "M-201", "status": "healthy"},
-  {"machine_id": "M-202", "status": "healthy"}
+  {"account_id": "ACCT-100240", "status": "healthy"},
+  {"account_id": "M-201", "status": "healthy"},
+  {"account_id": "M-202", "status": "healthy"}
 ]
 ```
 
-Only machines with `status='healthy'` are returned. The `select=machine_id,status` parameter
+Only machines with `status='healthy'` are returned. The `select=account_id,status` parameter
 limits the columns.
 
 ## Step 5, REST vs SQL comparison
@@ -72,15 +72,15 @@ Running `python data_api.py --step compare-sql` shows:
 Same query, two ways:
 
 REST:
-  GET /api/v1/factory.machine?select=machine_id,status&status=eq.healthy
+  GET /api/v1/bank.account?select=account_id,status&status=eq.healthy
   Latency: ~45 ms
 
 SQL:
-  SELECT machine_id, status FROM factory.machine WHERE status = 'healthy'
+  SELECT account_id, status FROM bank.account WHERE status = 'healthy'
   Latency: ~15 ms
 
 Same result (12 rows):
-  [("M-204", "healthy"), ("M-201", "healthy"), ...]
+  [("ACCT-100240", "healthy"), ("M-201", "healthy"), ...]
 ```
 
 REST is slower due to HTTP overhead, but the difference is usually negligible for user-facing
@@ -92,12 +92,12 @@ Running `python data_api.py --step post-read-only` shows:
 
 ```text
 POST request (insert):
-  POST /api/v1/factory.machine
-  Body: {"machine_id": "M-999", "plant_id": "PL-TEST", ...}
+  POST /api/v1/bank.account
+  Body: {"account_id": "M-999", "branch_id": "PL-TEST", ...}
 
 Result:
   201 Created
-  {"machine_id": "M-999", "plant_id": "PL-TEST", ...}
+  {"account_id": "M-999", "branch_id": "PL-TEST", ...}
 ```
 
 If your RLS or permissions prevent writes, you'll see:

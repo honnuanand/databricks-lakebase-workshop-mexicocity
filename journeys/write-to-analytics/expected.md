@@ -7,18 +7,18 @@ no live output for that step; you see the query you would run.
 ## Step 1, write a reading through Postgres
 
 ```text
-  inserted reading_id=12: temp_c=67.3, vibration_mm_s=4.2
+  inserted txn_id=12: temp_c=67.3, anomaly_score=4.2
 ```
 
-Your `reading_id` will differ. The row is a real INSERT on your branch.
+Your `txn_id` will differ. The row is a real INSERT on your branch.
 
 ## Step 2, compute and write back the risk score
 
 ```text
-  scored + wrote back: (12, 'M-204', Decimal('67.30'), Decimal('4.20'), Decimal('109.3'))
+  scored + wrote back: (12, 'ACCT-100240', Decimal('67.30'), Decimal('4.20'), Decimal('109.3'))
 ```
 
-The failure_risk is `ROUND(100 * (vibration_mm_s/10 + temp_c/100), 1)` = `ROUND(100*(0.42+0.673),1)`
+The failure_risk is `ROUND(100 * (anomaly_score/10 + temp_c/100), 1)` = `ROUND(100*(0.42+0.673),1)`
 = `109.3`. It is computed and written back onto the same row, then read straight back.
 
 ## Step 3, the lakehouse explainer
@@ -27,9 +27,9 @@ There is no live output here on purpose. You see the query to run once the datab
 in Unity Catalog:
 
 ```sql
-SELECT machine_id, ts, temp_c, vibration_mm_s, failure_risk
-FROM <catalog>.factory.sensor_reading
-WHERE machine_id = 'M-204' ORDER BY ts DESC LIMIT 1;
+SELECT account_id, ts, temp_c, anomaly_score, failure_risk
+FROM <catalog>.bank.txn
+WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;
 ```
 
 ## The numbers that matter

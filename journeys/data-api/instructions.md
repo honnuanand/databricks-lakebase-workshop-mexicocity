@@ -66,7 +66,7 @@ python data_api.py --step get-machines
 The script makes an HTTP GET request:
 
 ```
-GET https://<lakebase-host>/api/v1/factory.machine
+GET https://<lakebase-host>/api/v1/bank.account
 Authorization: Bearer <token>
 ```
 
@@ -74,8 +74,8 @@ And prints the JSON response:
 
 ```json
 [
-  {"machine_id": "M-204", "status": "healthy", "health_pct": 91.0},
-  {"machine_id": "M-205", "status": "derated", "health_pct": 70.0},
+  {"account_id": "ACCT-100240", "status": "healthy", "health_pct": 91.0},
+  {"account_id": "ACCT-100241", "status": "derated", "health_pct": 70.0},
   ...
 ]
 ```
@@ -91,7 +91,7 @@ python data_api.py --step get-filtered
 The script makes a GET request with filters:
 
 ```
-GET https://<lakebase-host>/api/v1/factory.machine?select=machine_id,status&status=eq.healthy
+GET https://<lakebase-host>/api/v1/bank.account?select=account_id,status&status=eq.healthy
 Authorization: Bearer <token>
 ```
 

@@ -21,10 +21,10 @@
 
 ## The scenario
 
-You're on the factory floor. Machine M-204 has a bearing failure (bearing reference PT-BEARING-6204).
+You're on the factory floor. Machine ACCT-100240 has a bearing failure (bearing reference PT-BEARING-6204).
 The part is backordered from the regular supplier, but you have a warehouse with 50 compatible
 bearings that *feel* similar: same bore size, same load rating, but slightly different outer
-diameter. Instead of waiting, you want to find the best-fit replacement from inventory using
+diameter. Instead of waiting, you want to find the best-fit replacement from position using
 *similarity*, not an exact column match.
 
 On a traditional system, the answer is "query a Vector Search service" (network hop, out-of-process,
@@ -37,12 +37,12 @@ checks inventory**. Single transaction. No cache miss. The database is the vecto
 pgvector is a Postgres extension that adds a `vector` data type and operators:
 
 ```sql
-ALTER TABLE part ADD COLUMN embedding vector(1536);  -- 1536-dim embedding
+ALTER TABLE instrument ADD COLUMN embedding vector(1536);  -- 1536-dim embedding
 
-UPDATE part SET embedding = ... WHERE ...;  -- populate from a model
+UPDATE instrument SET embedding = ... WHERE ...;  -- populate from a model
 
-SELECT part_id, name, spec, embedding <-> query_vector AS distance
-FROM part WHERE embedding <=> query_vector WITHIN 0.3
+SELECT instrument_id, name, spec, embedding <-> query_vector AS distance
+FROM instrument WHERE embedding <=> query_vector WITHIN 0.3
 ORDER BY distance LIMIT 5;  -- find top-5 similar parts within 0.3 cosine distance
 ```
 

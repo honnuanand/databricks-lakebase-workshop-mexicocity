@@ -14,11 +14,11 @@
 
 ## The scenario
 
-Your factory runs a mobile app for supervisors to check machine status and maintenance logs. The app is iOS/Android; it can't easily use psycopg or the Lakebase SDK. You need an HTTP endpoint that returns JSON machine data.
+Your factory runs a mobile app for supervisors to check machine status and case notes. The app is iOS/Android; it can't easily use psycopg or the Lakebase SDK. You need an HTTP endpoint that returns JSON machine data.
 
 The Lakebase Data API provides exactly that: HTTP GET/POST endpoints that execute SQL and return
 JSON, authenticated with Databricks [OAuth](../../docs/glossary.md). Your app sends a bearer token, requests
-`GET /api/v1/factory.machine?select=machine_id,status`, and gets back JSON.
+`GET /api/v1/bank.account?select=account_id,status`, and gets back JSON.
 
 ## What the Data API is
 
@@ -41,7 +41,7 @@ DELETE /api/v1/{schema}.{table}
 Query parameters control filtering, ordering, and pagination:
 
 ```
-GET /api/v1/factory.machine?select=machine_id,status&status=eq.healthy
+GET /api/v1/bank.account?select=account_id,status&status=eq.healthy
 ```
 
 ### Authentication
@@ -61,8 +61,8 @@ Responses are JSON arrays or objects. A GET query returns an array of rows:
 
 ```json
 [
-  {"machine_id": "M-204", "status": "healthy", "health_pct": 91.0},
-  {"machine_id": "M-205", "status": "derated", "health_pct": 70.0}
+  {"account_id": "ACCT-100240", "status": "healthy", "health_pct": 91.0},
+  {"account_id": "ACCT-100241", "status": "derated", "health_pct": 70.0}
 ]
 ```
 

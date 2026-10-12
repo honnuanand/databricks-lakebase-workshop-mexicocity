@@ -7,7 +7,7 @@ atomically with confidence and status fields.
 ## Step 1, table structure
 
 ```text
-log_id | machine_id | ts | writeup | system | defect | action | confidence
+note_id | account_id | ts | writeup | system | defect | action | confidence
 ```
 
 The raw input (first 4 columns) and the AI extraction (last 4 columns).
@@ -15,11 +15,11 @@ The raw input (first 4 columns) and the AI extraction (last 4 columns).
 ## Step 2, seed
 
 ```text
-(1, 'M-204', ..., 'Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure.')
-(2, 'M-421', ..., 'CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM.')
-(3, 'M-311', ..., 'Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?')
-(4, 'M-102', ..., 'Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive.')
-(5, 'M-204', ..., 'Something off with the thing on the right side of the press, maybe hydraulics? not sure')
+(1, 'ACCT-100240', ..., 'Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure.')
+(2, 'ACCT-300421', ..., 'CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM.')
+(3, 'ACCT-200311', ..., 'Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?')
+(4, 'ACCT-100235', ..., 'Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive.')
+(5, 'ACCT-100240', ..., 'Something off with the thing on the right side of the press, maybe hydraulics? not sure')
 ```
 
 Five messy, real-world maintenance write-ups from the factory floor.
@@ -89,11 +89,11 @@ Running `python learning_loop.py` with no arguments prints the whole story:
 
 ```text
 1. Seeding maintenance write-ups (5 entries):
-  - M-204: Hydraulic line to the bearing housing leaking...
-  - M-421: CNC spindle running hot...
-  - M-311: Tool changer intermittent on the CNC...
-  - M-102: Robot arm slow to home...
-  - M-204: Something off with the thing on the right side...
+  - ACCT-100240: Hydraulic line to the bearing housing leaking...
+  - ACCT-300421: CNC spindle running hot...
+  - ACCT-200311: Tool changer intermittent on the CNC...
+  - ACCT-100235: Robot arm slow to home...
+  - ACCT-100240: Something off with the thing on the right side...
 
 2. Running AI extraction (Claude reads each write-up):
   - Entry 1: system=hydraulic line to bearing housing, confidence~0.90, status=auto_accepted

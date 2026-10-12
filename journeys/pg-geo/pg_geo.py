@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Geospatial, PostGIS for supply chain locations.
+"""Geospatial, PostGIS for financial network locations.
 
 ST_DWithin for "within N km", <-> for nearest-neighbor, GiST indexes.
-Enable PostGIS, store plants/warehouses/suppliers as geographic points,
+Enable PostGIS, store branches/custodians/counterparties as geographic points,
 query and index them.
 """
 import argparse
@@ -23,11 +23,11 @@ def enable_postgis():
                 print(f"  Warning: PostGIS may not be available: {e}")
 
 def add_geography_columns():
-    """Add geography columns to plant, warehouse, supplier if missing."""
+    """Add geography columns to branch, custodian, counterparty if missing."""
     tables = [
-        ("factory.plant", "geo"),
-        ("factory.warehouse", "geo"),
-        ("factory.supplier", "geo")
+        ("bank.branch", "geo"),
+        ("bank.custodian", "geo"),
+        ("bank.counterparty", "geo")
     ]
     with connect() as conn:
         with conn.cursor() as cur:
@@ -54,51 +54,51 @@ def add_geography_columns():
                     pass
 
 def run_within():
-    """Query: warehouses within 100 km of a plant."""
+    """Query: custodians within 100 km of a branch."""
     print("\n=== Step 2: ST_DWithin (Within N km) ===")
 
-    # Get a sample plant
-    plants = run_sql("SELECT plant_id, lat, lon FROM factory.plant LIMIT 1")
-    if not plants:
-        print("  No plants found")
+    # Get a sample branch
+    branches = run_sql("SELECT branch_id, lat, lon FROM bank.branch LIMIT 1")
+    if not branches:
+        print("  No branches found")
         return
 
-    plant_id, plant_lat, plant_lon = plants[0]
+    branch_id, branch_lat, branch_lon = branches[0]
 
     sql = f"""
-    SELECT warehouse_id, plant_id,
-           ROUND((ST_Distance(geo, ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography) / 1000.0)::NUMERIC, 2) as distance_km
-      FROM factory.warehouse
-     WHERE ST_DWithin(geo, ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography, 100000)
+    SELECT custodian_id, branch_id,
+           ROUND((ST_Distance(geo, ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography) / 1000.0)::NUMERIC, 2) as distance_km
+      FROM bank.custodian
+     WHERE ST_DWithin(geo, ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography, 100000)
      ORDER BY distance_km
      LIMIT 10
     """
     rows = run_sql(sql)
-    print(f"Warehouses within 100 km of {plant_id}:")
+    print(f"Custodians within 100 km of {branch_id}:")
     for row in rows:
         print(f"  {row[0]} (distance: {row[2]} km)")
 
 def run_nearest():
-    """Query: nearest N suppliers to a plant."""
+    """Query: nearest N counterparties to a branch."""
     print("\n=== Step 3: Nearest-Neighbor (<->) ===")
 
-    # Get a sample plant
-    plants = run_sql("SELECT plant_id, lat, lon FROM factory.plant LIMIT 1")
-    if not plants:
-        print("  No plants found")
+    # Get a sample branch
+    branches = run_sql("SELECT branch_id, lat, lon FROM bank.branch LIMIT 1")
+    if not branches:
+        print("  No branches found")
         return
 
-    plant_id, plant_lat, plant_lon = plants[0]
+    branch_id, branch_lat, branch_lon = branches[0]
 
     sql = f"""
-    SELECT supplier_id, name,
-           ROUND((geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography)::NUMERIC, 0) as distance_meters
-      FROM factory.supplier
-     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography
+    SELECT counterparty_id, name,
+           ROUND((geo <-> ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography)::NUMERIC, 0) as distance_meters
+      FROM bank.counterparty
+     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography
      LIMIT 3
     """
     rows = run_sql(sql)
-    print(f"3 nearest suppliers to {plant_id}:")
+    print(f"3 nearest counterparties to {branch_id}:")
     for row in rows:
         print(f"  {row[0]}: {row[1]} ({row[2]} meters)")
 
@@ -106,31 +106,31 @@ def run_index():
     """Create GiST indexes on geography columns."""
     print("\n=== Step 4: GiST Index ===")
     sqls = [
-        "CREATE INDEX IF NOT EXISTS idx_plant_geo ON factory.plant USING gist(geo);",
-        "CREATE INDEX IF NOT EXISTS idx_warehouse_geo ON factory.warehouse USING gist(geo);",
-        "CREATE INDEX IF NOT EXISTS idx_supplier_geo ON factory.supplier USING gist(geo);"
+        "CREATE INDEX IF NOT EXISTS idx_branch_geo ON bank.branch USING gist(geo);",
+        "CREATE INDEX IF NOT EXISTS idx_custodian_geo ON bank.custodian USING gist(geo);",
+        "CREATE INDEX IF NOT EXISTS idx_counterparty_geo ON bank.counterparty USING gist(geo);"
     ]
     with connect() as conn:
         with conn.cursor() as cur:
             for sql in sqls:
                 cur.execute(sql)
-    print("  GiST indexes created on plant, warehouse, supplier")
+    print("  GiST indexes created on branch, custodian, counterparty")
 
 def run_explain():
     """EXPLAIN a spatial query to show index usage."""
     print("\n=== Step 5: EXPLAIN (Index Usage) ===")
 
-    plants = run_sql("SELECT plant_id, lat, lon FROM factory.plant LIMIT 1")
-    if not plants:
-        print("  No plants found")
+    branches = run_sql("SELECT branch_id, lat, lon FROM bank.branch LIMIT 1")
+    if not branches:
+        print("  No branches found")
         return
 
-    plant_lat, plant_lon = plants[0][1], plants[0][2]
+    branch_lat, branch_lon = branches[0][1], branches[0][2]
 
     sql = f"""
     EXPLAIN (ANALYZE, BUFFERS)
-    SELECT supplier_id FROM factory.supplier
-     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({plant_lon}, {plant_lat}), 4326)::geography
+    SELECT counterparty_id FROM bank.counterparty
+     ORDER BY geo <-> ST_SetSRID(ST_MakePoint({branch_lon}, {branch_lat}), 4326)::geography
      LIMIT 3
     """
     rows = run_sql(sql)
@@ -141,7 +141,7 @@ def run_explain():
 def run_end_to_end():
     """Run all steps end to end."""
     print("\n" + "="*60)
-    print("GEOSPATIAL, POSTGIS SUPPLY CHAIN LOCATIONS")
+    print("GEOSPATIAL, POSTGIS FINANCIAL NETWORK LOCATIONS")
     print("="*60)
 
     print("\n=== Step 1: Enable PostGIS ===")
@@ -158,7 +158,7 @@ def run_end_to_end():
     print("="*60)
 
 def main():
-    ap = argparse.ArgumentParser(description="PostGIS: spatial queries for supply chain")
+    ap = argparse.ArgumentParser(description="PostGIS: spatial queries for financial networks")
     ap.add_argument("--step", choices=["within", "nearest", "index", "explain"],
                     help="Run a specific step (default: all)")
     args = ap.parse_args()

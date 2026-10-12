@@ -15,11 +15,11 @@
 ## The scenario
 
 A part, PT-BEARING-6204, is recalled due to a defect. Your system stored: "PT-BEARING-6204 is
-in bom_edge as child of PRD-GEARBOX-X1." But nobody explicitly stored "PRD-GEARBOX-X1 is
+in bom_edge as child of FUND-GROWTH-A." But nobody explicitly stored "FUND-GROWTH-A is
 affected by the recall."
 
-That's an inference: if PRD-GEARBOX-X1 contains PT-BEARING-6204, and PT-BEARING-6204 is recalled,
-then PRD-GEARBOX-X1 must be affected. A knowledge graph with rules lets you state this logic
+That's an inference: if FUND-GROWTH-A contains PT-BEARING-6204, and PT-BEARING-6204 is recalled,
+then FUND-GROWTH-A must be affected. A knowledge graph with rules lets you state this logic
 once, then apply it automatically to all products.
 
 This is the difference between a static fact database and a reasoning system. You store the
@@ -38,7 +38,7 @@ if (X contains Y) and (Y is_recalled) then (X is_affected_by_recall)
 ```
 
 When you add this rule to the graph and assert that PT-BEARING-6204 is_recalled, the graph
-automatically infers that PRD-GEARBOX-X1 is_affected_by_recall, without you explicitly inserting
+automatically infers that FUND-GROWTH-A is_affected_by_recall, without you explicitly inserting
 that triple.
 
 This is particularly powerful for supply-chain analysis, compliance, and impact assessment. You

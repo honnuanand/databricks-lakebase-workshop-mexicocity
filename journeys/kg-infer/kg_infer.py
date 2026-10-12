@@ -29,27 +29,27 @@ except ImportError:
 def load_graph() -> Graph:
     """Load factory schema into RDF graph."""
     g = Graph()
-    FACTORY = Namespace("http://factory.local/")
+    FACTORY = Namespace("http://bank.local/")
 
     with connect() as conn:
         with conn.cursor() as cur:
             # Load products
-            cur.execute("SELECT product_id FROM factory.product LIMIT 100")
-            for (product_id,) in cur.fetchall():
-                g.add((URIRef(FACTORY[product_id]), URIRef(FACTORY.type), URIRef(FACTORY.Product)))
+            cur.execute("SELECT fund_id FROM bank.fund LIMIT 100")
+            for (fund_id,) in cur.fetchall():
+                g.add((URIRef(FACTORY[fund_id]), URIRef(FACTORY.type), URIRef(FACTORY.Product)))
 
             # Load parts
-            cur.execute("SELECT part_id FROM factory.part LIMIT 100")
-            for (part_id,) in cur.fetchall():
-                g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.type), URIRef(FACTORY.Part)))
+            cur.execute("SELECT instrument_id FROM bank.instrument LIMIT 100")
+            for (instrument_id,) in cur.fetchall():
+                g.add((URIRef(FACTORY[instrument_id]), URIRef(FACTORY.type), URIRef(FACTORY.Part)))
 
             # Load BOM edges
-            cur.execute("SELECT parent_id, child_part FROM factory.bom_edge LIMIT 500")
-            for parent_id, child_part in cur.fetchall():
+            cur.execute("SELECT parent_id, instrument_id FROM bank.holding LIMIT 500")
+            for parent_id, instrument_id in cur.fetchall():
                 g.add((
                     URIRef(FACTORY[parent_id]),
                     URIRef(FACTORY.contains),
-                    URIRef(FACTORY[child_part])
+                    URIRef(FACTORY[instrument_id])
                 ))
 
     return g
@@ -90,7 +90,7 @@ def main() -> None:
             return
 
     if args.step == "recall-part" or not args.step:
-        FACTORY = Namespace("http://factory.local/")
+        FACTORY = Namespace("http://bank.local/")
         print("\nMarking PT-BEARING-6204 as recalled...")
         g.add((
             URIRef(FACTORY["PT-BEARING-6204"]),
@@ -103,18 +103,18 @@ def main() -> None:
 
     if args.step == "query-before" or not args.step:
         print("\nQuery (before inference): which products are affected?")
-        FACTORY = Namespace("http://factory.local/")
+        FACTORY = Namespace("http://bank.local/")
         affected = []
         for subj in g.subjects(URIRef(FACTORY.affected_by_recall), Literal(True)):
-            product_id = str(subj).split("/")[-1]
-            affected.append(product_id)
+            fund_id = str(subj).split("/")[-1]
+            affected.append(fund_id)
         print(f"  Products affected: {affected if affected else '[]'}")
         if args.step:
             return
 
     if args.step == "entail" or not args.step:
         print("\nApplying entailment...")
-        FACTORY = Namespace("http://factory.local/")
+        FACTORY = Namespace("http://bank.local/")
 
         # Forward-chaining for the rule: a product is affected if it contains a recalled
         # part ANYWHERE in its bill-of-materials tree (directly or via subassemblies).
@@ -150,12 +150,12 @@ def main() -> None:
 
     if args.step == "query-after" or not args.step:
         print("\nQuery (after inference): which products are affected?")
-        FACTORY = Namespace("http://factory.local/")
+        FACTORY = Namespace("http://bank.local/")
         affected = []
         for subj in g.subjects(URIRef(FACTORY.affected_by_recall), Literal(True)):
-            product_id = str(subj).split("/")[-1]
-            if product_id.startswith("PRD-"):
-                affected.append(product_id)
+            fund_id = str(subj).split("/")[-1]
+            if fund_id.startswith("PRD-"):
+                affected.append(fund_id)
         print(f"  Products affected:")
         for product in sorted(affected):
             print(f"    {product}")
@@ -168,13 +168,13 @@ def main() -> None:
 
     if args.step == "list-parts":
         print("Parts in graph:")
-        FACTORY = Namespace("http://factory.local/")
+        FACTORY = Namespace("http://bank.local/")
         parts = set()
         for subj in g.subjects(URIRef(FACTORY.type), URIRef(FACTORY.Part)):
-            part_id = str(subj).split("/")[-1]
-            parts.add(part_id)
-        for part_id in sorted(parts)[:20]:  # Show first 20
-            print(f"  {part_id}")
+            instrument_id = str(subj).split("/")[-1]
+            parts.add(instrument_id)
+        for instrument_id in sorted(parts)[:20]:  # Show first 20
+            print(f"  {instrument_id}")
         if len(parts) > 20:
             print(f"  ... and {len(parts) - 20} more")
 

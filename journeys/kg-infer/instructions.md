@@ -109,7 +109,7 @@ Output:
 
 ```text
 Products affected (after inference):
-  PRD-GEARBOX-X1
+  FUND-GROWTH-A
   PRD-MOTOR-ASSEMBLY-2HP
 ```
 

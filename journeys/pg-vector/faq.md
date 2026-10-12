@@ -41,7 +41,7 @@ If that fails with a permission error, the extension must be pre-installed by an
 If `ALTER TABLE` failed, check:
 
 1. **Are you on the right branch?** Confirm: `echo $LB_BRANCH`.
-2. **Does the part table exist?** `python lakebase.py --sql "SELECT count(*) FROM factory.part"`.
+2. **Does the part table exist?** `python lakebase.py --sql "SELECT count(*) FROM bank.instrument"`.
 3. **Do you have ALTER permissions?** If you're on a shared instance/project with restricted
    permissions, you may not be able to alter the table. Check with your instructor.
 
@@ -53,12 +53,12 @@ If the script hangs or takes several seconds, check:
    latency could add up. The script uses deterministic hashes to avoid this.
 2. **Batch size**: The script updates one part at a time. For 1000+ parts, consider batching:
    ```sql
-   UPDATE factory.part SET embedding = ... WHERE ...;  -- all at once
+   UPDATE bank.instrument SET embedding = ... WHERE ...;  -- all at once
    ```
 3. **Is there a large table scan?** If the part table is huge, the UPDATE could take time. Limit
    the scope:
    ```sql
-   UPDATE factory.part SET embedding = ... WHERE embedding IS NULL;  -- only missing
+   UPDATE bank.instrument SET embedding = ... WHERE embedding IS NULL;  -- only missing
    ```
 
 ## The similarity search returned no results
@@ -67,25 +67,25 @@ If the query returned zero rows, check:
 
 1. **Are there embeddings?** Verify at least one part has an embedding:
    ```bash
-   python lakebase.py --sql "SELECT count(*) FROM factory.part WHERE embedding IS NOT NULL"
+   python lakebase.py --sql "SELECT count(*) FROM bank.instrument WHERE embedding IS NOT NULL"
    ```
    Should be > 0.
 
 2. **Is the query syntax correct?** Check that you're using the `<=>` operator (cosine distance):
    ```bash
    python lakebase.py --sql \
-     "SELECT 1 - (embedding <=> embedding) FROM factory.part LIMIT 1"
+     "SELECT 1 - (embedding <=> embedding) FROM bank.instrument LIMIT 1"
    ```
    Should return a value close to 1 (exact match with itself).
 
 3. **Is the reference part in the table?** The query filters out the reference part
-   (`WHERE part_id != 'PT-BEARING-6204'`). Make sure that part exists and has an embedding.
+   (`WHERE instrument_id != 'PT-BEARING-6204'`). Make sure that part exists and has an embedding.
 
 ## The similarity scores don't make sense (all 0.5, or all the same)
 
 If all scores are identical or suspiciously similar, the embeddings may not be diverse:
 
-1. **Check an embedding**: `python lakebase.py --sql "SELECT embedding FROM factory.part LIMIT 1"`.
+1. **Check an embedding**: `python lakebase.py --sql "SELECT embedding FROM bank.instrument LIMIT 1"`.
    You should see a vector of floating-point numbers, e.g., `[-0.1, 0.5, ..., 0.02]`.
 
 2. **Are the embeddings reproducible?** The script uses deterministic hashes, so running twice
@@ -94,7 +94,7 @@ If all scores are identical or suspiciously similar, the embeddings may not be d
 3. **Is the cosine operator working?** Test it directly:
    ```bash
    python lakebase.py --sql \
-     "SELECT embedding <=> embedding FROM factory.part LIMIT 1"
+     "SELECT embedding <=> embedding FROM bank.instrument LIMIT 1"
    ```
    Should return 0 (identical vectors have distance 0).
 
@@ -115,7 +115,7 @@ The script uses deterministic hashes for reproducibility. To use real embeddings
 
 2. Store in the database:
    ```python
-   cur.execute("UPDATE factory.part SET embedding=%s WHERE part_id=%s", [embedding, part_id])
+   cur.execute("UPDATE bank.instrument SET embedding=%s WHERE instrument_id=%s", [embedding, instrument_id])
    ```
 
 The pattern is identical; only the embedding source changes.
@@ -127,8 +127,8 @@ it being a part in the table:
 
 ```bash
 python lakebase.py --sql \
-  "SELECT part_id, 1 - (embedding <=> ARRAY[0.1, 0.2, ..., 0.3]::vector(768)) AS similarity
-   FROM factory.part WHERE embedding IS NOT NULL
+  "SELECT instrument_id, 1 - (embedding <=> ARRAY[0.1, 0.2, ..., 0.3]::vector(768)) AS similarity
+   FROM bank.instrument WHERE embedding IS NOT NULL
    ORDER BY similarity DESC LIMIT 5"
 ```
 
@@ -161,13 +161,13 @@ pgvector with an HNSW index scales well:
 
 1. **Create the index** (Step 6 in instructions):
    ```sql
-   CREATE INDEX ON factory.part USING hnsw (embedding vector_cosine_ops)
+   CREATE INDEX ON bank.instrument USING hnsw (embedding vector_cosine_ops)
    ```
 
 2. **Tune [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) parameters** (optional): reduce `m` (max degree) or `ef_construction` for faster
    indexing on very large tables:
    ```sql
-   CREATE INDEX ON factory.part USING hnsw (embedding vector_cosine_ops)
+   CREATE INDEX ON bank.instrument USING hnsw (embedding vector_cosine_ops)
    WITH (m=16, ef_construction=64)
    ```
 

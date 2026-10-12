@@ -35,16 +35,16 @@ from lakebase import connect, _env, client
 
 FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 CONF_THRESHOLD = 0.75
-TABLE = "factory.maintenance_log"
+TABLE = "bank.case_note"
 
 # Real-world messy maintenance write-ups on real factory machines. Some clear, some
 # ambiguous, so the AI's confidence score varies and low-confidence ones route to a human.
 WRITEUPS = [
-    ("WU-001", "M-204", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
-    ("WU-002", "M-421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
-    ("WU-003", "M-311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
-    ("WU-004", "M-102", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
-    ("WU-005", "M-204", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
+    ("WU-001", "ACCT-100240", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
+    ("WU-002", "ACCT-300421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
+    ("WU-003", "ACCT-200311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
+    ("WU-004", "ACCT-100235", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
+    ("WU-005", "ACCT-100240", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
 ]
 
 
@@ -76,7 +76,7 @@ def seed():
             cur.execute(f"DELETE FROM {TABLE}")
             for wid, mid, writeup in WRITEUPS:
                 cur.execute(
-                    f"""INSERT INTO {TABLE} (machine_id, writeup) VALUES (%s, %s)""",
+                    f"""INSERT INTO {TABLE} (account_id, writeup) VALUES (%s, %s)""",
                     [mid, writeup],
                 )
     print(f"Seeding maintenance write-ups ({len(WRITEUPS)} entries):")
@@ -89,11 +89,11 @@ def extract():
     """Run Claude extraction on each write-up."""
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT log_id, writeup FROM {TABLE} ORDER BY log_id")
+            cur.execute(f"SELECT note_id, writeup FROM {TABLE} ORDER BY note_id")
             rows = cur.fetchall()
 
     print(f"Running AI extraction ({len(rows)} write-ups):")
-    for log_id, writeup in rows:
+    for note_id, writeup in rows:
         prompt = [
             {
                 "role": "system",
@@ -141,16 +141,16 @@ def extract():
             with conn.cursor() as cur:
                 cur.execute(
                     f"""UPDATE {TABLE} SET system=%s, defect=%s, action=%s, confidence=%s, status=%s
-                       WHERE log_id=%s""",
+                       WHERE note_id=%s""",
                     [extract_dict.get("system", "?"),
                      extract_dict.get("defect", "?"),
                      extract_dict.get("action", "?"),
                      conf,
                      status,
-                     log_id],
+                     note_id],
                 )
 
-        print(f"  - Log {log_id}: system={extract_dict.get('system', '?')}, "
+        print(f"  - Log {note_id}: system={extract_dict.get('system', '?')}, "
               f"confidence={conf:.2f}, status={status}")
     print()
 
@@ -163,7 +163,7 @@ def correct():
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"""SELECT log_id FROM {TABLE} WHERE status='needs_review'
+                f"""SELECT note_id FROM {TABLE} WHERE status='needs_review'
                     ORDER BY confidence ASC NULLS FIRST LIMIT 1"""
             )
             row = cur.fetchone()
@@ -171,12 +171,12 @@ def correct():
                 print("  (no needs_review entries to correct)")
                 print()
                 return
-            log_id = row[0]
+            note_id = row[0]
             cur.execute(
-                f"""UPDATE {TABLE} SET system=%s, defect=%s, status=%s WHERE log_id=%s""",
-                ["hydraulics", "press_ram_seal_leak", "corrected", log_id],
+                f"""UPDATE {TABLE} SET system=%s, defect=%s, status=%s WHERE note_id=%s""",
+                ["hydraulics", "press_ram_seal_leak", "corrected", note_id],
             )
-    print(f"  - Log {log_id}: engineer set system=hydraulics, defect=press_ram_seal_leak (was uncertain)")
+    print(f"  - Log {note_id}: engineer set system=hydraulics, defect=press_ram_seal_leak (was uncertain)")
     print()
 
 

@@ -16,8 +16,8 @@ Roles are created silently. No error means they exist.
 ## Step 2, row-level security policy enabled
 
 ```text
-ALTER TABLE factory.machine ENABLE ROW LEVEL SECURITY;
-CREATE POLICY machine_operator_isolation ON factory.machine ...
+ALTER TABLE bank.account ENABLE ROW LEVEL SECURITY;
+CREATE POLICY machine_operator_isolation ON bank.account ...
 ```
 
 The policy is created. Queries now apply the filter automatically.
@@ -26,26 +26,26 @@ The policy is created. Queries now apply the filter automatically.
 
 ```text
 === Connected as operator_detroit ===
-machine_id  plant_id  status  health_pct
-M-204       PL-DETROIT  healthy  91.00
-M-301       PL-DETROIT  derated   89.75
+account_id  branch_id  status  health_pct
+ACCT-100240       BR-NYC  healthy  91.00
+M-301       BR-NYC  derated   89.75
 
 === Connected as operator_chicago ===
-machine_id  plant_id  status  health_pct
+account_id  branch_id  status  health_pct
 M-401       PL-CHICAGO  healthy  95.50
 M-405       PL-CHICAGO  down     45.25
 ```
 
-Same query (`SELECT * FROM machine`), but different rows. Detroit operator sees only Detroit machines; Chicago operator sees only Chicago machines. The RLS policy is filtering automatically.
+Same query (`SELECT * FROM account`), but different rows. Detroit operator sees only Detroit machines; Chicago operator sees only Chicago machines. The RLS policy is filtering automatically.
 
 ## Step 4, query plan shows policy
 
 ```text
 Seq Scan on machine  (cost=0.00..23.50 rows=2 width=100)
-  Filter: (plant_id = 'PL-DETROIT'::text)
+  Filter: (branch_id = 'BR-NYC'::text)
 ```
 
-The plan includes `Filter: (plant_id = <value>)`, showing the RLS policy is applied. The filter is added automatically by Postgres.
+The plan includes `Filter: (branch_id = <value>)`, showing the RLS policy is applied. The filter is added automatically by Postgres.
 
 ## The numbers that matter
 

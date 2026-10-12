@@ -1,6 +1,6 @@
 # Query a knowledge graph with SPARQL, expected results
 
-Use this to check your run. Your product and supplier lists depend on the factory seed data you
+Use this to check your run. Your fund and counterparty lists depend on the bank seed data you
 loaded, but the structure of the queries and results should match.
 
 ## Step 2, simple SPARQL query
@@ -8,31 +8,31 @@ loaded, but the structure of the queries and results should match.
 Running `python kg_sparql.py --step simple-query` shows:
 
 ```text
-SPARQL query: which parts are contained in PRD-GEARBOX-X1?
-  PT-BEARING-6204
-  PT-GEAR-420
-  PT-SHAFT-110
-  PT-HOUSING-08
+SPARQL query: which instruments does FUND-GROWTH-A hold directly?
+  INS-CASH-USD
+  INS-MSFT
+  INS-SLEEVE-EQ
 ```
 
-These are the direct child parts of PRD-GEARBOX-X1 in the BOM.
+These are the direct children of FUND-GROWTH-A in the holdings tree. `INS-SLEEVE-EQ` is itself a
+sub-sleeve; the simple query stops at the first level.
 
 ## Step 3, multi-hop SPARQL query
 
-Running `python kg_sparql.py --step multi-hop` shows the [SPARQL](../../docs/glossary.md) pattern:
+Running `python kg_sparql.py --step multi-hop` shows the [SPARQL](../../docs/glossary.md) pattern result:
 
 ```text
-SPARQL multi-hop query: which products contain a part from SUP-FASTENALL?
-  PRD-GEARBOX-X1
+SPARQL multi-hop query: which funds hold an instrument traded by CP-GOLDMAN?
+  FUND-GROWTH-A
 ```
 
-In the seed, SUP-FASTENALL supplies PT-BOLT-M8, which is in the PRD-GEARBOX-X1 bill of materials,
-so that product comes back. These are the finished products that, directly or indirectly, contain
-parts supplied by SUP-FASTENALL.
+In the seed, CP-GOLDMAN trades INS-AAPL. INS-AAPL sits under INS-SLEEVE-EQ, which FUND-GROWTH-A
+holds, so `holds+` reaches it and that fund comes back. FUND-INCOME-B holds nothing in the seed,
+so it is not exposed.
 The SPARQL pattern traverses:
-  product contains part
-  part supplied_by supplier
-  filter supplier = SUP-FASTENALL
+  fund holds+ instrument
+  instrument traded_by counterparty
+  filter counterparty = CP-GOLDMAN
 
 ## Step 4, equivalent SQL
 
@@ -40,34 +40,38 @@ Running `python kg_sparql.py --step sql` shows:
 
 ```text
 Equivalent SQL query:
-SELECT DISTINCT p.product_id
-  FROM product p
-  JOIN bom_edge b ON p.product_id = b.parent_id
-  JOIN part pt ON b.child_part = pt.part_id
-  JOIN part_supplier ps ON pt.part_id = ps.part_id
-  JOIN supplier s ON ps.supplier_id = s.supplier_id
- WHERE s.supplier_id = 'SUP-FASTENALL'
+WITH RECURSIVE tree(root_fund, node) AS (
+    SELECT f.fund_id, f.fund_id FROM bank.fund f
+  UNION ALL
+    SELECT t.root_fund, h.instrument_id
+    FROM tree t JOIN bank.holding h ON h.parent_id = t.node
+)
+SELECT DISTINCT t.root_fund
+  FROM tree t
+  JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
+ WHERE tc.counterparty_id = 'CP-GOLDMAN'
+   AND t.root_fund LIKE 'FUND-%'
 
-Results:
-  PRD-GEARBOX-X1
+  SQL Result: [('FUND-GROWTH-A',)]
 ```
 
-Both queries return the same product IDs. The SPARQL version reads as a description of the
-relationship chain; the SQL version is explicit about join order and table names.
+Both queries return the same fund ID. The SPARQL version reads as a description of the
+relationship chain; the SQL version is explicit about the recursion and the join.
 
 ## Step 5, aggregation query
 
 Running `python kg_sparql.py --step aggregate` shows:
 
 ```text
-SPARQL aggregation query: parts per supplier
-  SUP-BEARINGCO: 1
-  SUP-FASTENALL: 1
-  SUP-GEARWORKS: 1
+SPARQL aggregation query: instruments per counterparty
+  CP-BARCLAYS: 1
+  CP-CITADEL: 1
+  CP-GOLDMAN: 1
 ```
 
-The SPARQL GROUP BY aggregates across all triples, counting distinct parts per supplier. In the
-small seed each supplier supplies one part; with more `part_supplier` rows the counts grow.
+The SPARQL GROUP BY aggregates across all triples, counting distinct instruments per counterparty.
+In the small seed each counterparty trades one instrument; with more `trade_counterparty` rows the
+counts grow.
 
 ## Full run output
 
@@ -77,21 +81,16 @@ Running the script end to end (your triple count and ordering may vary slightly)
 Loading graph...
   Loaded 18 triples
 
-Simple query: parts in PRD-GEARBOX-X1?
-  PT-HOUSING-GX
-  PT-GEAR-ASSY
-  PT-BOLT-M8
+SPARQL query: which instruments does FUND-GROWTH-A hold directly?
+  INS-CASH-USD
+  INS-MSFT
+  INS-SLEEVE-EQ
 
-Multi-hop query: products with SUP-FASTENALL parts?
-  PRD-GEARBOX-X1
+SPARQL multi-hop query: which funds hold an instrument traded by CP-GOLDMAN?
+  FUND-GROWTH-A
 
-Equivalent SQL (from Lakebase):
-  PRD-GEARBOX-X1
-
-Aggregation: parts per supplier
-  SUP-BEARINGCO: 1
-  SUP-FASTENALL: 1
-  SUP-GEARWORKS: 1
+Equivalent SQL query:
+  SQL Result: [('FUND-GROWTH-A',)]
 
 Done. SPARQL queries complete.
 ```
@@ -101,11 +100,11 @@ Done. SPARQL queries complete.
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
 | simple query latency | <5 ms | graph is indexed; queries are fast |
-| multi-hop query latency | <10 ms | traversal across three relationships still sub-millisecond |
-| products affected by one supplier | 3-15 | typical supply-chain distribution; the more suppliers you have, the more products each typically serves |
-| result consistency | identical | SPARQL and SQL return the same product IDs, proving correctness |
+| multi-hop query latency | <10 ms | traversal across the holdings tree plus one edge is still sub-millisecond |
+| funds exposed to one counterparty | 1-5 | typical portfolio distribution; the more holdings you load, the more funds each counterparty touches |
+| result consistency | identical | SPARQL and SQL return the same fund IDs, proving correctness |
 
 > **Note**
-> SPARQL's power becomes evident with deeper graphs. A 10-hop question in SQL would be 10 joins.
-> In SPARQL, it's still a readable pattern. For production use, consider a dedicated triple store
-> optimized for deep traversals.
+> SPARQL's power becomes evident with deeper graphs. A 10-hop question in SQL would be a 10-level
+> recursion. In SPARQL, it's still a readable property path. For production use, consider a
+> dedicated triple store optimized for deep traversals.

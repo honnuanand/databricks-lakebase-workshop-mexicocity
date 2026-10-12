@@ -14,7 +14,7 @@
 
 ## The scenario
 
-You're running a digital-twin system. Machines go down, get repaired, come back online. Each state change (a booking, a status flip, a maintenance log entry) is a committed row change. Down the line, you have systems that need to know: "a machine just went into maintenance, update the cache, notify ops, update the search index, call the partner API."
+You're running an account operations system. Accounts open, change status (good standing to watch to frozen), and close. Each state change (a new account, a fraud hold, an account closure) is a committed row change. Down the line, you have systems that need to know: "an account just moved to frozen status, update the risk cache, notify compliance, refresh the anomaly detector, trigger AML review."
 
 The naive approach: poll the database every second or two and ask "what changed since last check?" At scale, polling breaks: you miss changes if you're slow, or you query too often and overload the database.
 
@@ -24,7 +24,7 @@ This is roadmap on Lakebase. This journey previews the capability against a Post
 
 ## The wow moment
 
-You create a logical replication slot. You make three committed writes (INSERT, UPDATE, DELETE). You decode the slot and see the exact stream: `BEGIN → INSERT(M-100, operational) → COMMIT`, then `BEGIN → UPDATE(M-100, maintenance) → COMMIT`, then `BEGIN → DELETE(M-100) → COMMIT`. Each record [LSN](../../docs/glossary.md)-stamped, orderable, durable.
+You create a logical replication slot. You make three committed writes (INSERT, UPDATE, DELETE). You decode the slot and see the exact stream: `BEGIN → INSERT(ACCT-100, good_standing) → COMMIT`, then `BEGIN → UPDATE(ACCT-100, frozen) → COMMIT`, then `BEGIN → DELETE(ACCT-003) → COMMIT`. Each record [LSN](../../docs/glossary.md)-stamped, orderable, durable.
 
 ## What you'll do
 

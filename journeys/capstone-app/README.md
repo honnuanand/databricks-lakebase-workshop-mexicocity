@@ -6,7 +6,7 @@
 >
 > - A Databricks App is a full-stack web app (React frontend + FastAPI backend) deployed as a managed service on Databricks. You write code locally, push to Databricks, and it runs with built-in auth and scaling.
 > - To connect to Lakebase from an app, the app's [Service Principal](../../docs/glossary.md) (SP) needs the full grant chain: a PostgreSQL role + databricks_auth security label + project CAN_MANAGE permission + a role on the production branch. This is the deepest grant story in the workshop.
-> - You'll build a real manufacturing dashboard: machine status, BOM search, maintenance logs. It uses both Direct SQL (for complex queries) and the Data API (for REST calls), showing when each is appropriate.
+> - You'll build a real manufacturing dashboard: machine status, BOM search, case notes. It uses both Direct SQL (for complex queries) and the Data API (for REST calls), showing when each is appropriate.
 >
 > **You'll be able to:** set up a Databricks App's [Service Principal](../../docs/glossary.md) to connect to Lakebase, deploy a working React + FastAPI dashboard on Databricks Apps, and understand the app authentication model.
 >
@@ -28,9 +28,9 @@ This is the real-world version of the grant chain you learned in setup.
 1. **Grant setup:** a Python script that grants your app's Service Principal access to the
    Lakebase project and database (reuses the pattern from 00-setup, but parameterized for your
    app).
-2. **FastAPI backend:** a small service with endpoints for machines, BOM, and maintenance logs.
+2. **FastAPI backend:** a small service with endpoints for machines, BOM, and case notes.
    Uses direct SQL for complex queries and the Data API for REST calls.
-3. **React frontend:** a dashboard showing machines, BOM search, and a maintenance log viewer.
+3. **React frontend:** a dashboard showing machines, BOM search, and a case note viewer.
 4. **Deploy script:** one command to deploy the whole stack to Databricks Apps.
 
 You'll run the full journey locally first (so you understand each part), then deploy and see it

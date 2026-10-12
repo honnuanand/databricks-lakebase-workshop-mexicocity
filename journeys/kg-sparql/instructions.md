@@ -36,11 +36,11 @@ If you already ran the kg-build journey, the graph is in memory. Otherwise, the 
 python kg_sparql.py --step load
 ```
 
-This loads the same BOM, supplier, and machine relationships from Lakebase.
+This loads the same holdings tree and counterparty relationships from Lakebase.
 
 ### Step 2, simple SPARQL query
 
-Ask the graph: "which parts are contained in product PRD-GEARBOX-X1?"
+Ask the graph: "which instruments are held directly by FUND-GROWTH-A?"
 
 ```bash
 python kg_sparql.py --step simple-query
@@ -49,34 +49,35 @@ python kg_sparql.py --step simple-query
 The [SPARQL](../../docs/glossary.md) query is:
 
 ```sparql
-SELECT ?part WHERE {
-  ?product <http://factory.local/contains> ?part .
-  FILTER (?product = <http://factory.local/PRD-GEARBOX-X1>)
+SELECT ?instrument WHERE {
+  ?fund <http://bank.local/holds> ?instrument .
+  FILTER (?fund = <http://bank.local/FUND-GROWTH-A>)
 }
 ```
 
-You'll see a list of part IDs.
+You'll see a list of instrument IDs.
 
 ### Step 3, multi-hop SPARQL query
 
-Now ask a harder question: "which finished products contain a part supplied by SUP-FASTENALL?"
+Now ask a harder question: "which funds hold an instrument traded by CP-GOLDMAN?"
 
 ```bash
 python kg_sparql.py --step multi-hop
 ```
 
-The [SPARQL](../../docs/glossary.md) query traverses three relationships:
+The [SPARQL](../../docs/glossary.md) query walks the holdings tree with the `holds+` property path, then
+matches the counterparty edge:
 
 ```sparql
-SELECT DISTINCT ?product WHERE {
-  ?product <http://factory.local/contains> ?part .
-  ?part <http://factory.local/supplied_by> ?supplier .
-  FILTER (?supplier = <http://factory.local/SUP-FASTENALL>)
+SELECT DISTINCT ?fund WHERE {
+  ?fund <http://bank.local/holds>+ ?instrument .
+  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
 }
 ```
 
-This reads like a chain: find products that contain parts that are supplied by SUP-FASTENALL. The
-query runs in milliseconds because the graph is in memory and indexed.
+This reads like a chain: find funds that hold instruments that are traded by CP-GOLDMAN. The
+`+` makes `holds` transitive, so it reaches instruments nested under sub-sleeves. The query runs
+in milliseconds because the graph is in memory and indexed.
 
 ### Step 4, equivalent SQL
 
@@ -84,24 +85,29 @@ query runs in milliseconds because the graph is in memory and indexed.
 python kg_sparql.py --step sql
 ```
 
-The script shows the SQL equivalent:
+The script shows the SQL equivalent, a recursive CTE that walks the holdings tree joined to the
+counterparty edge:
 
 ```sql
-SELECT DISTINCT p.product_id
-  FROM product p
-  JOIN bom_edge b ON p.product_id = b.parent_id
-  JOIN part pt ON b.child_part = pt.part_id
-  JOIN part_supplier ps ON pt.part_id = ps.part_id
-  JOIN supplier s ON ps.supplier_id = s.supplier_id
- WHERE s.supplier_id = 'SUP-FASTENALL'
+WITH RECURSIVE tree(root_fund, node) AS (
+    SELECT f.fund_id, f.fund_id FROM bank.fund f
+  UNION ALL
+    SELECT t.root_fund, h.instrument_id
+    FROM tree t JOIN bank.holding h ON h.parent_id = t.node
+)
+SELECT DISTINCT t.root_fund
+  FROM tree t
+  JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
+ WHERE tc.counterparty_id = 'CP-GOLDMAN'
+   AND t.root_fund LIKE 'FUND-%'
 ```
 
-And runs it against Lakebase, returning the same product IDs.
+And runs it against Lakebase, returning the same fund IDs.
 
 ### Step 5, aggregation query
 
-[SPARQL](../../docs/glossary.md) supports GROUP BY and aggregates like SQL. Ask: "for each supplier, how many distinct
-parts do they supply?"
+[SPARQL](../../docs/glossary.md) supports GROUP BY and aggregates like SQL. Ask: "for each counterparty, how many distinct
+instruments do they trade?"
 
 ```bash
 python kg_sparql.py --step aggregate
@@ -110,15 +116,15 @@ python kg_sparql.py --step aggregate
 The SPARQL query uses GROUP BY:
 
 ```sparql
-SELECT ?supplier (COUNT(?part) as ?part_count) WHERE {
-  ?part <http://factory.local/supplied_by> ?supplier .
+SELECT ?counterparty (COUNT(?instrument) as ?instrument_count) WHERE {
+  ?instrument <http://bank.local/traded_by> ?counterparty .
 }
-GROUP BY ?supplier
+GROUP BY ?counterparty
 ```
 
 ## What you just did
 
-You asked the same business question (products affected by a supplier disruption) in three ways:
-simple SPARQL, multi-hop SPARQL with patterns, and SQL with joins. The graph queries are more
-readable and closer to how you actually think about the relationships. Compare your output to
-[`expected.md`](expected.md), and if anything went wrong, check [`faq.md`](faq.md).
+You asked the same business question (funds exposed to a flagged counterparty) in three ways:
+simple SPARQL, multi-hop SPARQL with a property path, and SQL with a recursive CTE. The graph
+queries are more readable and closer to how you actually think about the relationships. Compare
+your output to [`expected.md`](expected.md), and if anything went wrong, check [`faq.md`](faq.md).

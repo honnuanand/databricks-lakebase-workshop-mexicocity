@@ -41,10 +41,10 @@ python data_api.py --step check-rls
 
 The table or schema doesn't exist, or the Data API endpoint path is wrong. Check:
 
-- Is the table name correct? (e.g., `factory.machine`, not `factory_machine`)
+- Is the table name correct? (e.g., `bank.account`, not `factory_machine`)
 - Does the table exist in your branch? Run:
   ```bash
-  python lakebase.py --sql "SELECT 1 FROM factory.machine LIMIT 1"
+  python lakebase.py --sql "SELECT 1 FROM bank.account LIMIT 1"
   ```
 - Is the schema `factory`? If you use a different schema, update the script.
 
@@ -87,9 +87,9 @@ from lakebase import connect
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT product_id, COUNT(*) as part_count
-            FROM factory.bom_edge
-            GROUP BY product_id
+            SELECT fund_id, COUNT(*) as part_count
+            FROM bank.holding
+            GROUP BY fund_id
         """)
 ```
 
@@ -115,7 +115,7 @@ in a browser. Example:
 ```javascript
 const token = "ya29.a0AfH6SMB...";
 const response = await fetch(
-  "https://lb-instance.cloud.databricks.com/api/v1/factory.machine",
+  "https://lb-instance.cloud.databricks.com/api/v1/bank.account",
   {
     headers: { "Authorization": `Bearer ${token}` }
   }
@@ -151,7 +151,7 @@ This prints the full HTTP request (method, URL, headers) and response (status, b
 ### Check RLS for a specific table
 
 ```bash
-python data_api.py --check-rls factory.machine
+python data_api.py --check-rls bank.account
 ```
 
 This shows what rows you have access to in the table.
@@ -171,13 +171,13 @@ This runs the same query via REST and SQL multiple times and shows average laten
 Instead of:
 
 ```
-GET /api/v1/factory.machine
+GET /api/v1/bank.account
 ```
 
 Use:
 
 ```
-GET /api/v1/factory.machine?select=machine_id,status
+GET /api/v1/bank.account?select=account_id,status
 ```
 
 This reduces JSON payload and network overhead.
@@ -187,7 +187,7 @@ This reduces JSON payload and network overhead.
 Instead of fetching all rows and filtering in your app, filter at the API:
 
 ```
-GET /api/v1/factory.machine?status=eq.healthy
+GET /api/v1/bank.account?status=eq.healthy
 ```
 
 This reduces the amount of data transferred.
@@ -197,8 +197,8 @@ This reduces the amount of data transferred.
 If a query returns thousands of rows, paginate:
 
 ```
-GET /api/v1/factory.machine?limit=100&offset=0
-GET /api/v1/factory.machine?limit=100&offset=100
+GET /api/v1/bank.account?limit=100&offset=0
+GET /api/v1/bank.account?limit=100&offset=100
 ...
 ```
 

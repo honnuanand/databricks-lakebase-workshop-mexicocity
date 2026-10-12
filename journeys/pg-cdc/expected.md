@@ -6,7 +6,7 @@ exact output depends on permissions and instance setup.
 ## Setup
 
 ```text
-Created machine_cdc_demo with 5 machines
+Created account_cdc_demo with 5 accounts
 ```
 
 ## Create logical replication slot
@@ -24,27 +24,27 @@ If you have the necessary permissions (REPLICATION role):
 Current LSN: 0/XXXXXXXX
 
 Making DML changes:
-  INSERT M-100 (new machine)
-  UPDATE M-001 (status changed to maintenance)
-  DELETE M-003 (machine removed)
+  INSERT ACCT-100 (new account)
+  UPDATE ACCT-001 (status changed to frozen)
+  DELETE ACCT-003 (account closed/removed)
 
 LSN after changes: 0/YYYYYYYY
 
 Decoding changes from slot workshop_slot:
   LSN=0/XXXXXXXX: BEGIN
-  LSN=0/XXXXXXXX: INSERT M-100 (operational)
+  LSN=0/XXXXXXXX: INSERT ACCT-100 (good_standing)
   LSN=0/XXXXXXXX: COMMIT
   LSN=0/YYYYYYYY: BEGIN
-  LSN=0/YYYYYYYY: UPDATE M-001 (status = maintenance)
+  LSN=0/YYYYYYYY: UPDATE ACCT-001 (status = frozen)
   LSN=0/YYYYYYYY: COMMIT
   LSN=0/ZZZZZZZZ: BEGIN
-  LSN=0/ZZZZZZZZ: DELETE M-003
+  LSN=0/ZZZZZZZZ: DELETE ACCT-003
   LSN=0/ZZZZZZZZ: COMMIT
 
 Dropped replication slot: workshop_slot
 
 ✓ Logical decoding is roadmap on Lakebase.
-  When GA: drive cache invalidation, outbox, downstream sync straight off the WAL.
+  When GA: drive cache invalidation, outbox, AML/fraud ledger sync straight off the WAL.
 ```
 
 ## Full run (permission granted)
@@ -53,7 +53,7 @@ Dropped replication slot: workshop_slot
 PREVIEW: Logical replication/decoding is on the Lakebase roadmap.
 
 1. Creating demo table:
-Created machine_cdc_demo with 5 machines
+Created account_cdc_demo with 5 accounts
 
 2. Creating logical replication slot:
 Created logical replication slot: workshop_slot
@@ -62,9 +62,9 @@ Created logical replication slot: workshop_slot
 Current LSN: 0/XXXXXXXX
 
 Making DML changes:
-  INSERT M-100 (new machine)
-  UPDATE M-001 (status changed to maintenance)
-  DELETE M-003 (machine removed)
+  INSERT ACCT-100 (new account)
+  UPDATE ACCT-001 (status changed to frozen)
+  DELETE ACCT-003 (account closed/removed)
 
 LSN after changes: 0/YYYYYYYY
 
@@ -75,7 +75,7 @@ Decoding changes from slot workshop_slot:
 Dropped replication slot: workshop_slot
 
 ✓ Logical decoding is roadmap on Lakebase.
-  When GA: drive cache invalidation, outbox, downstream sync straight off the WAL.
+  When GA: drive cache invalidation, outbox, AML/fraud ledger sync straight off the WAL.
 ```
 
 ## Full run (permission denied)
@@ -86,7 +86,7 @@ If you don't have REPLICATION role:
 PREVIEW: Logical replication/decoding is on the Lakebase roadmap.
 
 1. Creating demo table:
-Created machine_cdc_demo with 5 machines
+Created account_cdc_demo with 5 accounts
 
 2. Creating logical replication slot:
 ⚠ Could not create logical replication slot (may not have superuser perms): [error]
@@ -97,7 +97,7 @@ Created machine_cdc_demo with 5 machines
   Logical replication/decoding is on the Lakebase roadmap (not GA yet).
 
 ✓ Logical decoding is roadmap on Lakebase.
-  When GA: drive cache invalidation, outbox, downstream sync straight off the WAL.
+  When GA: drive cache invalidation, outbox, AML/fraud ledger sync straight off the WAL.
 ```
 
 ## The numbers that matter
@@ -113,4 +113,4 @@ Created machine_cdc_demo with 5 machines
 > Logical decoding is how change-data-capture (CDC) should work: native to the database, ordered,
 > durable, no external pipeline. Lakebase will offer this; until GA, you can see it here as a
 > Postgres capability. When available on Lakebase, this pattern powers cache invalidation, outbox
-> transactional outbox, and downstream microservice sync, all driven straight off the WAL.
+> processors, fraud detection updates, and downstream ledger sync, all driven straight off the WAL.

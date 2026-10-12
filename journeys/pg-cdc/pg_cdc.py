@@ -26,13 +26,13 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, _env
 
-DEMO_TABLE = "machine_cdc_demo"
+DEMO_TABLE = "account_cdc_demo"
 SLOT_NAME = "workshop_slot"
 
 
 def setup(conn):
     """Create a demo table."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     with conn.cursor() as cur:
         # Drop if exists
@@ -40,24 +40,24 @@ def setup(conn):
 
         cur.execute(f"""
             CREATE TABLE {schema}.{DEMO_TABLE} (
-                machine_id TEXT PRIMARY KEY,
+                account_id TEXT PRIMARY KEY,
                 status TEXT NOT NULL,
                 health_pct NUMERIC(5,2)
             )
         """)
 
-        # Seed with 10 machines
+        # Seed with 5 accounts
         cur.execute(f"""
-            INSERT INTO {schema}.{DEMO_TABLE}(machine_id, status, health_pct)
+            INSERT INTO {schema}.{DEMO_TABLE}(account_id, status, health_pct)
             VALUES
-                ('M-001', 'operational', 95.5),
-                ('M-002', 'operational', 92.0),
-                ('M-003', 'maintenance', 50.0),
-                ('M-004', 'operational', 98.2),
-                ('M-005', 'operational', 87.3)
+                ('ACCT-001', 'good_standing', 95.5),
+                ('ACCT-002', 'good_standing', 92.0),
+                ('ACCT-003', 'frozen', 50.0),
+                ('ACCT-004', 'good_standing', 98.2),
+                ('ACCT-005', 'watch', 87.3)
         """)
 
-        print(f"Created {schema}.{DEMO_TABLE} with 5 machines")
+        print(f"Created {schema}.{DEMO_TABLE} with 5 accounts")
 
 
 def create_slot(conn):
@@ -80,7 +80,7 @@ def create_slot(conn):
 
 def make_changes_and_decode(conn):
     """Make some writes (INSERT/UPDATE/DELETE) and decode them from the slot."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     with conn.cursor() as cur:
         try:
@@ -92,17 +92,17 @@ def make_changes_and_decode(conn):
             # Make some DML changes
             print(f"\nMaking DML changes:")
 
-            # Insert a new machine
-            cur.execute(f"INSERT INTO {schema}.{DEMO_TABLE} VALUES ('M-100', 'operational', 99.5)")
-            print(f"  INSERT M-100 (new machine)")
+            # Insert a new account
+            cur.execute(f"INSERT INTO {schema}.{DEMO_TABLE} VALUES ('ACCT-100', 'good_standing', 99.5)")
+            print(f"  INSERT ACCT-100 (new account)")
 
-            # Update an existing machine
-            cur.execute(f"UPDATE {schema}.{DEMO_TABLE} SET status='maintenance' WHERE machine_id='M-001'")
-            print(f"  UPDATE M-001 (status changed to maintenance)")
+            # Update an existing account
+            cur.execute(f"UPDATE {schema}.{DEMO_TABLE} SET status='frozen' WHERE account_id='ACCT-001'")
+            print(f"  UPDATE ACCT-001 (status changed to frozen)")
 
-            # Delete a machine
-            cur.execute(f"DELETE FROM {schema}.{DEMO_TABLE} WHERE machine_id='M-003'")
-            print(f"  DELETE M-003 (machine removed)")
+            # Delete an account
+            cur.execute(f"DELETE FROM {schema}.{DEMO_TABLE} WHERE account_id='ACCT-003'")
+            print(f"  DELETE ACCT-003 (account closed/removed)")
 
             # Get the new LSN after changes
             cur.execute("SELECT pg_current_wal_lsn()")
@@ -170,7 +170,7 @@ def main():
             print("\n4. Cleaning up:")
             cleanup(conn)
             print("\n✓ Logical decoding is roadmap on Lakebase.")
-            print("  When GA: drive cache invalidation, outbox, downstream sync straight off the WAL.")
+            print("  When GA: drive cache invalidation, outbox, AML/fraud ledger sync straight off the WAL.")
 
 
 if __name__ == "__main__":

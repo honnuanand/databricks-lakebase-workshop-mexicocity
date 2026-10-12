@@ -118,7 +118,7 @@ def main():
     ap.add_argument("--step", choices=["tables", "columns", "schema-map", "sample-data"])
     args = ap.parse_args()
 
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     if args.step == "tables":
         list_tables(schema)

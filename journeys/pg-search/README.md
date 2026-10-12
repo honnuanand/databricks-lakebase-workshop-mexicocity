@@ -4,17 +4,17 @@
 >
 > **Key takeaways**
 >
-> - [Full-text search](../../docs/glossary.md) (FTS) ranks results by relevance (e.g. "hydraulic manifold" finds write-ups with both words, ranked higher if they're close). Uses `to_tsvector`, `ts_rank`, and [GIN](../../docs/glossary.md) indexes.
-> - Fuzzy matching tolerates typos (e.g. a search for part "PT-BEARING-6024" still finds "PT-BEARING-6204" with the digits transposed). Uses [pg_trgm](../../docs/glossary.md) (trigram similarity) for fast substring matching.
+> - [Full-text search](../../docs/glossary.md) (FTS) ranks results by relevance (e.g. "wire fraud" finds case notes with both words, ranked higher if they're close). Uses `to_tsvector`, `ts_rank`, and [GIN](../../docs/glossary.md) indexes.
+> - Fuzzy matching tolerates typos (e.g. a search for account "ACCT-100240" still finds "ACCT-100204" with the digits transposed). Uses [pg_trgm](../../docs/glossary.md) (trigram similarity) for fast substring matching.
 > - Hybrid search blends keyword relevance with semantic similarity when you have embeddings. One query, two ranking signals.
 >
-> **You'll be able to:** search 20+ years of maintenance write-ups by keyword and typo tolerance, and combine keyword and semantic ranking for smarter search results.
+> **You'll be able to:** search years of fraud and AML case notes by keyword and typo tolerance, and combine keyword and semantic ranking for smarter search results.
 >
 > **Time:** about 30 minutes  ·  **Status:** live
 
 ## The scenario
 
-Operations needs to search decades of maintenance write-ups. "I remember an engineer's note about a hydraulic seep on the press manifold, maybe 3 years ago. Find it." A naive search for "hydraulic AND manifold" across unindexed text is slow. A search that tolerates "hydralic" (the typo) needs fuzzy logic. And if you have embeddings of historical maintenance docs, you could rank by both keyword match and semantic closeness: "show me notes about manifold hydraulics, preferring ones semantically similar to my query."
+A fraud and AML analyst needs to search case notes from years of investigations. "I remember a note about a card-not-present charge and account freeze, maybe 2 years back. Find it." A naive search for "card AND compromise" across unindexed text is slow. A search that tolerates "ACCT-100204" (a typo in an account ID) needs fuzzy logic. And if you have embeddings of historical case notes, you could rank by both keyword match and semantic closeness: "show me notes about wire fraud, preferring ones semantically similar to this suspected structuring case."
 
 ## Why search matters
 
@@ -22,13 +22,13 @@ Search is a feature, not a side effect. Every SaaS product has it. Most teams st
 
 ## The wow moment
 
-You write a single query that ranks maintenance logs by full-text relevance, tolerates typos in part numbers, and uses embeddings to find semantically similar notes. The query returns results in milliseconds, ranked by a blend of keyword and semantic signals. All of that is one table and one SQL statement, with no secondary systems.
+You write a single query that ranks case notes by full-text relevance, tolerates typos in account and instrument IDs, and uses embeddings to find semantically similar notes. The query returns results in milliseconds, ranked by a blend of keyword and semantic signals. All of that is one table and one SQL statement, with no secondary systems.
 
 ## What you'll do
 
-1. Load maintenance write-ups (free-text notes from engineers).
-2. Write a [full-text search](../../docs/glossary.md) query: find notes matching "hydraulic AND manifold", ranked by relevance.
-3. Add fuzzy matching: find part numbers that are close (typo-tolerant) using [trigram](../../docs/glossary.md) similarity.
+1. Load case notes (free-text analyst write-ups on fraud and AML alerts).
+2. Write a [full-text search](../../docs/glossary.md) query: find notes matching "wire OR fraud", ranked by relevance.
+3. Add fuzzy matching: find account IDs that are close (typo-tolerant) using [trigram](../../docs/glossary.md) similarity.
 4. Create a [GIN](../../docs/glossary.md) index on the FTS column and measure speedup.
 5. (Optional) create a [pgvector](../../docs/glossary.md) embedding column and write a hybrid query (keyword + semantic).
 
@@ -36,7 +36,7 @@ Full copy-paste steps are in [`instructions.md`](instructions.md); the exact out
 
 ## Prerequisites
 
-Finish [`../../00-setup/`](../../00-setup/) so you have a branch with the factory schema. The [pg_trgm](../../docs/glossary.md) extension is standard; [pgvector](../../docs/glossary.md) is optional (only for the hybrid search step).
+Finish [`../../00-setup/`](../../00-setup/) so you have a branch with the bank schema. The [pg_trgm](../../docs/glossary.md) extension is standard; [pgvector](../../docs/glossary.md) is optional (only for the hybrid search step).
 
 ## Wrapping up
 

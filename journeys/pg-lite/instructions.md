@@ -31,48 +31,48 @@ In the "SQL Editor" pane (left side), type or paste any Postgres SQL. Examples:
 
 **CREATE TABLE:**
 ```sql
-CREATE TABLE machines (
-  id TEXT PRIMARY KEY,
+CREATE TABLE accounts (
+  account_id TEXT PRIMARY KEY,
   status TEXT,
-  health NUMERIC
+  health_pct NUMERIC(5,2)
 );
 ```
 
 **INSERT:**
 ```sql
-INSERT INTO machines VALUES
-  ('M-204', 'healthy', 91.5),
-  ('M-205', 'derated', 72.0);
+INSERT INTO accounts VALUES
+  ('ACCT-100234', 'good_standing', 98.5),
+  ('ACCT-100240', 'watch', 91.0);
 ```
 
 **SELECT:**
 ```sql
-SELECT * FROM machines;
+SELECT * FROM accounts;
 ```
 
 **JSON aggregation:**
 ```sql
 SELECT
   status,
-  jsonb_agg(jsonb_build_object('id', id, 'health', health)) as machines
-FROM machines
+  jsonb_agg(jsonb_build_object('account_id', account_id, 'health_pct', health_pct)) as accounts
+FROM accounts
 GROUP BY status;
 ```
 
 **Window functions:**
 ```sql
 SELECT
-  id,
+  account_id,
   status,
-  ROW_NUMBER() OVER (ORDER BY health DESC) as rank
-FROM machines
+  ROW_NUMBER() OVER (ORDER BY health_pct DESC) as rank
+FROM accounts
 ORDER BY rank;
 ```
 
 **ON CONFLICT (upsert):**
 ```sql
-INSERT INTO machines VALUES ('M-204', 'operational', 99.0)
-ON CONFLICT (id) DO UPDATE SET health = 99.0;
+INSERT INTO accounts VALUES ('ACCT-100240', 'frozen', 88.0)
+ON CONFLICT (account_id) DO UPDATE SET status = 'frozen', health_pct = 88.0;
 ```
 
 ## Run SQL

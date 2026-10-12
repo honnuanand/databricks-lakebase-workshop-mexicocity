@@ -100,7 +100,7 @@ print(f"  Expires in: 3600 seconds (1 hour)")
 
 # COMMAND ----------
 
-url = f"https://{host}/api/v1/factory.machine"
+url = f"https://{host}/api/v1/bank.account"
 headers = {"Authorization": f"Bearer {token}"}
 
 print(f"Checking Data API:")
@@ -142,7 +142,7 @@ except Exception as e:
 if not data_api_enabled:
     print("Skipping: Data API is not enabled. Enable it first (see Step 3).")
 else:
-    url = f"https://{host}/api/v1/factory.machine"
+    url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
 
     print(f"Fetching all machines:")
@@ -171,9 +171,9 @@ else:
 if not data_api_enabled:
     print("Skipping: Data API is not enabled.")
 else:
-    url = f"https://{host}/api/v1/factory.machine"
+    url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
-    params = {"select": "machine_id,status", "status": "eq.healthy"}
+    params = {"select": "account_id,status", "status": "eq.healthy"}
 
     print(f"Fetching only healthy machines:")
     print(f"  URL: {url}")
@@ -200,7 +200,7 @@ else:
 # MAGIC The same query in SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT machine_id, status FROM factory.machine WHERE status = 'healthy'
+# MAGIC SELECT account_id, status FROM bank.account WHERE status = 'healthy'
 # MAGIC ```
 
 # COMMAND ----------
@@ -211,12 +211,12 @@ if not data_api_enabled:
     print("Skipping: Data API is not enabled.")
 else:
     print("SQL equivalent:")
-    print("  SELECT machine_id, status FROM factory.machine WHERE status = 'healthy'")
+    print("  SELECT account_id, status FROM bank.account WHERE status = 'healthy'")
     print()
 
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT machine_id, status FROM factory.machine WHERE status = 'healthy'")
+            cur.execute("SELECT account_id, status FROM bank.account WHERE status = 'healthy'")
             sql_rows = cur.fetchall()
             print(f"SQL result: {len(sql_rows)} rows")
             print(f"\nSample rows:")

@@ -35,8 +35,8 @@ You should see a table:
 ```text
 Machine ID | Line        | Type   | Status    | Health
 -----------|-------------|--------|-----------|----------
-M-204      | Stamping-A  | press  | healthy   | 91.0%
-M-205      | Stamping-A  | press  | derated   | 70.0%
+ACCT-100240      | Stamping-A  | press  | healthy   | 91.0%
+ACCT-100241      | Stamping-A  | press  | derated   | 70.0%
 M-301      | Assembly-B  | robot  | down      | 45.0%
 ...
 ```
@@ -48,9 +48,9 @@ Click a machine row to see details (plant, type, recent sensor readings, mainten
 Search for a product:
 
 ```text
-Search: PRD-GEARBOX-X1
+Search: FUND-GROWTH-A
 Results:
-  Product: PRD-GEARBOX-X1
+  Product: FUND-GROWTH-A
   Parts contained:
     PT-BEARING-6204 (qty 1)
     PT-GEAR-420 (qty 2)
@@ -60,13 +60,13 @@ Results:
 
 ### Maintenance Tab
 
-Search maintenance logs:
+Search case notes:
 
 ```text
 Search: bearing
 Results (5 matching logs):
   Date: 2025-09-22 14:30
-  Machine: M-204
+  Machine: ACCT-100240
   Defect: bearing noise detected
   Action: inspected bearing, no damage
   Confidence: 0.85

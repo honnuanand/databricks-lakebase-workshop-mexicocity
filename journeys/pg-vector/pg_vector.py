@@ -58,9 +58,9 @@ def check():
     """Check the part table."""
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM factory.part")
+            cur.execute("SELECT count(*) FROM bank.instrument")
             count = cur.fetchone()[0]
-            cur.execute("SELECT part_id, name FROM factory.part LIMIT 5")
+            cur.execute("SELECT instrument_id, name FROM bank.instrument LIMIT 5")
             parts = cur.fetchall()
 
     print(f"Checking part table:")
@@ -86,8 +86,8 @@ def add_embedding_column():
     print(f"Adding embedding column (768-dim):")
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("ALTER TABLE factory.part ADD COLUMN IF NOT EXISTS embedding vector(768)")
-            print(f"  Column 'embedding' added to factory.part")
+            cur.execute("ALTER TABLE bank.instrument ADD COLUMN IF NOT EXISTS embedding vector(768)")
+            print(f"  Column 'embedding' added to bank.instrument")
     print()
 
 
@@ -97,22 +97,22 @@ def populate_embeddings():
     with connect() as conn:
         with conn.cursor() as cur:
             # Get all parts
-            cur.execute("SELECT part_id, name, spec FROM factory.part ORDER BY part_id")
+            cur.execute("SELECT instrument_id, name, spec FROM bank.instrument ORDER BY instrument_id")
             parts = cur.fetchall()
 
             print(f"  Embedding {len(parts)} parts:")
-            for part_id, name, spec in parts:
-                # Create embedding from part name + spec (if spec is not None)
+            for instrument_id, name, spec in parts:
+                # Create embedding from instrument name + spec (if spec is not None)
                 spec_str = spec if spec else "{}"
                 text_to_embed = f"{name} {spec_str}"
                 embedding_str = _hash_to_embedding(text_to_embed)
 
                 # Update the part row
                 cur.execute(
-                    f"UPDATE factory.part SET embedding = %s::vector(768) WHERE part_id = %s",
-                    [embedding_str, part_id],
+                    f"UPDATE bank.instrument SET embedding = %s::vector(768) WHERE instrument_id = %s",
+                    [embedding_str, instrument_id],
                 )
-                print(f"    {part_id}: embedded")
+                print(f"    {instrument_id}: embedded")
 
     print()
 
@@ -128,7 +128,7 @@ def search():
         with conn.cursor() as cur:
             # Get the embedding of the reference part
             cur.execute(
-                f"SELECT embedding FROM factory.part WHERE part_id = %s", [ref_part_id]
+                f"SELECT embedding FROM bank.instrument WHERE instrument_id = %s", [ref_part_id]
             )
             ref_row = cur.fetchone()
             if not ref_row or ref_row[0] is None:
@@ -137,10 +137,10 @@ def search():
 
             # Query for similar parts (excluding the reference itself)
             cur.execute(
-                f"""SELECT part_id, name, part_type,
+                f"""SELECT instrument_id, name, part_type,
                       1 - (embedding <=> %s::vector(768)) AS similarity
-                   FROM factory.part
-                   WHERE embedding IS NOT NULL AND part_id != %s
+                   FROM bank.instrument
+                   WHERE embedding IS NOT NULL AND instrument_id != %s
                    ORDER BY similarity DESC LIMIT 5""",
                 [ref_row[0], ref_part_id],
             )
@@ -148,8 +148,8 @@ def search():
 
     print(f"  Reference part: {ref_part_id}")
     print(f"  Top 5 similar parts:")
-    for i, (part_id, name, part_type, similarity) in enumerate(similar_parts, 1):
-        print(f"    {i}. {part_id}: similarity={similarity:.2f} ({name})")
+    for i, (instrument_id, name, part_type, similarity) in enumerate(similar_parts, 1):
+        print(f"    {i}. {instrument_id}: similarity={similarity:.2f} ({name})")
     print()
 
 
@@ -167,7 +167,7 @@ def create_index():
                 print(f"  Index already exists")
             else:
                 cur.execute(
-                    "CREATE INDEX ON factory.part USING hnsw (embedding vector_cosine_ops)"
+                    "CREATE INDEX ON bank.instrument USING hnsw (embedding vector_cosine_ops)"
                 )
                 print(f"  HNSW index created on embedding column")
     print()

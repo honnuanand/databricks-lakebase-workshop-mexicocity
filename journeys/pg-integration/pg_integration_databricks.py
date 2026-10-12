@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import run_sql, _env
 from collections import defaultdict
 
-SCHEMA = os.environ.get("LB_SCHEMA", "factory")
+SCHEMA = os.environ.get("LB_SCHEMA", "bank")
 print(f"Schema: {SCHEMA}")
 
 # COMMAND ----------
@@ -132,20 +132,20 @@ print(f"Total columns: {len(rows)}")
 # MAGIC Query a sample of rows from key tables to verify the schema and data match. The SQL (example for machine table):
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT * FROM factory.machine LIMIT 3;
+# MAGIC SELECT * FROM bank.account LIMIT 3;
 # MAGIC ```
 
 # COMMAND ----------
 
 # Sample machine table
 rows = run_sql(f"SELECT * FROM {SCHEMA}.machine LIMIT 3")
-print(f"Sample rows from machine table:")
+print(f"Sample rows from account table:")
 for row in rows:
     print(f"  {row[:3]}...")  # Show first 3 cols
 
 # Sample work_order table
 rows = run_sql(f"SELECT * FROM {SCHEMA}.work_order LIMIT 3")
-print(f"\nSample rows from work_order table:")
+print(f"\nSample rows from trade table:")
 for row in rows:
     print(f"  {row[:3]}...")  # Show first 3 cols
 

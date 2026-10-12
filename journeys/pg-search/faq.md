@@ -20,19 +20,19 @@ source workshop.env
 
 Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 
-## "table factory.maintenance_log does not exist" or writeup is NULL
+## "table bank.case_note does not exist" or writeup is NULL
 
-The factory schema was not loaded, or the maintenance logs were not seeded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-factory step.
+The bank schema was not loaded, or the case notes were not seeded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-bank step.
 
 ## Full-text search query returns no results
 
 Check that the table has data with actual text:
 
 ```sql
-SELECT COUNT(*) FROM factory.maintenance_log WHERE writeup IS NOT NULL;
+SELECT COUNT(*) FROM bank.case_note WHERE writeup IS NOT NULL;
 ```
 
-If it's zero, the logs weren't seeded. Also check the language parameter in `to_tsvector`. The query uses `'english'` as the language; if your writeups are in another language, that won't work.
+If it's zero, the case notes weren't seeded. Also check the language parameter in `to_tsvector`. The query uses `'english'` as the language; if your notes are in another language, that won't work.
 
 ## pg_trgm is not available
 
@@ -50,20 +50,20 @@ Large FTS queries can be slow if the query term matches many documents. Check th
 
 ```sql
 EXPLAIN (ANALYZE, BUFFERS) 
-SELECT * FROM factory.maintenance_log
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'hydraulic & bearing')
+SELECT * FROM bank.case_note
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire | fraud')
  ORDER BY ts_rank(...) DESC;
 ```
 
 Look for "Index Scan" in the plan. If you see "Seq Scan", either:
 1. The dataset is too small (< 1000 rows) for the index to be worthwhile.
-2. The index doesn't exist. Create it: `CREATE INDEX idx_maintenance_log_fts ON factory.maintenance_log USING gin(to_tsvector('english', writeup));`
+2. The index doesn't exist. Create it: `CREATE INDEX idx_case_note_fts ON bank.case_note USING gin(to_tsvector('english', writeup));`
 3. The query is so selective that a sequential scan is faster.
 
 ## What's the difference between `to_tsquery` and `plainto_tsquery`?
 
-- **`plainto_tsquery`**: simpler; treats input as plain text and adds AND operators. `plainto_tsquery('english', 'hydraulic bearing')` becomes `'hydraulic' & 'bearing'`.
-- **`to_tsquery`**: more powerful; lets you write operators directly. `to_tsquery('english', 'hydraulic | bearing')` searches for either word (OR logic).
+- **`plainto_tsquery`**: simpler; treats input as plain text and adds AND operators. `plainto_tsquery('english', 'wire fraud')` becomes `'wire' & 'fraud'`.
+- **`to_tsquery`**: more powerful; lets you write operators directly. `to_tsquery('english', 'wire | fraud')` searches for either word (OR logic).
 
 Use `plainto_tsquery` for simple queries (just words), `to_tsquery` when you need boolean logic.
 
@@ -72,25 +72,25 @@ Use `plainto_tsquery` for simple queries (just words), `to_tsquery` when you nee
 Use AND in the WHERE clause:
 
 ```sql
-SELECT * FROM factory.maintenance_log
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'hydraulic')
-   AND machine_id = 'M-204'
+SELECT * FROM bank.case_note
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire')
+   AND account_id = 'ACCT-100240'
    AND ts > now() - INTERVAL '1 year';
 ```
 
-This finds notes about hydraulic issues on machine M-204 from the past year, ranked by relevance.
+This finds case notes about wire transfers on account ACCT-100240 from the past year, ranked by relevance.
 
 ## Can I search across multiple columns?
 
 Yes, combine them in `to_tsvector`:
 
 ```sql
-SELECT * FROM factory.maintenance_log
- WHERE to_tsvector('english', writeup || ' ' || COALESCE(system, '')) 
-       @@ to_tsquery('english', 'hydraulic');
+SELECT * FROM bank.case_note
+ WHERE to_tsvector('english', writeup || ' ' || COALESCE(category, '')) 
+       @@ to_tsquery('english', 'fraud');
 ```
 
-This searches both the writeup and the system (subsystem) column. The `||` concatenates them; the COALESCE handles NULLs.
+This searches both the writeup and the category (AI-extracted field) column. The `||` concatenates them; the COALESCE handles NULLs.
 
 ## pgvector is not available
 
@@ -109,15 +109,15 @@ Start with 60/40 (keyword/semantic) and adjust based on your results. If you're 
 
 ## What's the trigram approach, really?
 
-A trigram is a 3-character substring. "BEARING" has trigrams: " BE", "BEA", "EAR", "ARI", "RIN", "ING", "NG ". "BEARING" and "BERING" (missing the A) share most trigrams (" BE", "ERI", "RIN", "ING"). The `similarity()` function counts overlapping trigrams and returns a score (0 to 1). It's simple but surprisingly effective for typo tolerance.
+A trigram is a 3-character substring. "ACCT-100240" has trigrams: "ACC", "CCT", "CT-", "T-1", "-10", "100", "002", "024", "240". "ACCT-100240" and "ACCT-100204" (with digits transposed) share most trigrams. The `similarity()` function counts overlapping trigrams and returns a score (0 to 1). It's simple but surprisingly effective for typo tolerance.
 
 ## Can I search on exact phrases?
 
 Yes, use phrase queries in `to_tsquery`:
 
 ```sql
-SELECT * FROM factory.maintenance_log
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', '"hydraulic pressure"');
+SELECT * FROM bank.case_note
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', '"card compromise"');
 ```
 
 The quotes make it a phrase query. It matches only if the words appear in that order and are adjacent.
