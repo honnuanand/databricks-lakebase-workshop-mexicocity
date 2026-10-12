@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MVCC and the WAL—multi-version concurrency control machinery.
+"""MVCC and the WAL, multi-version concurrency control machinery.
 
 Query xmin/xmax/ctid, watch versioning, observe dead tuples, run VACUUM.
 """
@@ -14,22 +14,22 @@ def run_update():
     """Step 2: UPDATE and watch xmin/xmax/ctid change."""
     print("\n=== Step 2: UPDATE and Watch Versioning ===")
 
-    # Get a sample machine
-    machines = run_sql("SELECT machine_id FROM factory.machine LIMIT 1")
-    if not machines:
-        print("  No machines found")
+    # Get a sample account
+    accounts = run_sql("SELECT account_id FROM bank.account LIMIT 1")
+    if not accounts:
+        print("  No accounts found")
         return
 
-    machine_id = machines[0][0]
+    account_id = accounts[0][0]
 
     with connect() as conn:
         with conn.cursor() as cur:
             # Query before
             cur.execute(f"""
             SELECT xmin, xmax, ctid, health_pct
-              FROM factory.machine
-             WHERE machine_id = %s
-            """, (machine_id,))
+              FROM bank.account
+             WHERE account_id = %s
+            """, (account_id,))
             before = cur.fetchone()
             print(f"\n  Before UPDATE:")
             if before:
@@ -37,18 +37,18 @@ def run_update():
 
             # UPDATE
             cur.execute(f"""
-            UPDATE factory.machine
+            UPDATE bank.account
               SET health_pct = 50.0
-             WHERE machine_id = %s
-            """, (machine_id,))
+             WHERE account_id = %s
+            """, (account_id,))
             print(f"\n  Running UPDATE...")
 
             # Query after
             cur.execute(f"""
             SELECT xmin, xmax, ctid, health_pct
-              FROM factory.machine
-             WHERE machine_id = %s
-            """, (machine_id,))
+              FROM bank.account
+             WHERE account_id = %s
+            """, (account_id,))
             after = cur.fetchone()
             print(f"\n  After UPDATE:")
             if after:
@@ -56,20 +56,20 @@ def run_update():
 
             if before and after:
                 if before[0] != after[0]:
-                    print(f"\n  Note: xmin changed ({before[0]} → {after[0]}), new version created")
+                    print(f"\n  Note: xmin changed ({before[0]} -> {after[0]}), new version created")
                 if before[2] != after[2]:
-                    print(f"  Note: ctid changed ({before[2]} → {after[2]}), new physical location")
+                    print(f"  Note: ctid changed ({before[2]} -> {after[2]}), new physical location")
 
 def run_deadtuples():
     """Step 3: Run multiple UPDATEs and watch dead tuples accumulate."""
     print("\n=== Step 3: Dead Tuples Accumulate ===")
 
-    machines = run_sql("SELECT machine_id FROM factory.machine LIMIT 1")
-    if not machines:
-        print("  No machines found")
+    accounts = run_sql("SELECT account_id FROM bank.account LIMIT 1")
+    if not accounts:
+        print("  No accounts found")
         return
 
-    machine_id = machines[0][0]
+    account_id = accounts[0][0]
 
     with connect() as conn:
         with conn.cursor() as cur:
@@ -77,7 +77,7 @@ def run_deadtuples():
             cur.execute("""
             SELECT n_live_tup, n_dead_tup
               FROM pg_stat_user_tables
-             WHERE relname = 'machine'
+             WHERE relname = 'account'
             """)
             before = cur.fetchone()
             print(f"\n  Before UPDATEs:")
@@ -87,10 +87,10 @@ def run_deadtuples():
             # Run 10 UPDATEs
             for i in range(10):
                 cur.execute(f"""
-                UPDATE factory.machine
+                UPDATE bank.account
                   SET health_pct = health_pct + 1.0
-                 WHERE machine_id = %s
-                """, (machine_id,))
+                 WHERE account_id = %s
+                """, (account_id,))
 
             print(f"\n  After 10 UPDATEs:")
 
@@ -98,7 +98,7 @@ def run_deadtuples():
             cur.execute("""
             SELECT n_live_tup, n_dead_tup
               FROM pg_stat_user_tables
-             WHERE relname = 'machine'
+             WHERE relname = 'account'
             """)
             after = cur.fetchone()
             if after:
@@ -116,7 +116,7 @@ def run_vacuum():
             cur.execute("""
             SELECT n_live_tup, n_dead_tup
               FROM pg_stat_user_tables
-             WHERE relname = 'machine'
+             WHERE relname = 'account'
             """)
             before = cur.fetchone()
             print(f"\n  Before VACUUM:")
@@ -124,14 +124,14 @@ def run_vacuum():
                 print(f"    n_live_tup={before[0]}, n_dead_tup={before[1]}")
 
             # VACUUM
-            cur.execute("VACUUM factory.machine")
+            cur.execute("VACUUM bank.account")
             print(f"\n  Running VACUUM...")
 
             # After VACUUM
             cur.execute("""
             SELECT n_live_tup, n_dead_tup
               FROM pg_stat_user_tables
-             WHERE relname = 'machine'
+             WHERE relname = 'account'
             """)
             after = cur.fetchone()
             print(f"\n  After VACUUM:")
@@ -143,25 +143,25 @@ def run_vacuum():
 def run_end_to_end():
     """Run all steps end to end."""
     print("\n" + "="*60)
-    print("MVCC AND THE WAL—MULTI-VERSION CONCURRENCY CONTROL")
+    print("MVCC AND THE WAL, MULTI-VERSION CONCURRENCY CONTROL")
     print("="*60)
 
     print("\n=== Step 1: Query System Columns ===")
-    machines = run_sql("SELECT machine_id FROM factory.machine LIMIT 1")
-    if machines:
-        machine_id = machines[0][0]
+    accounts = run_sql("SELECT account_id FROM bank.account LIMIT 1")
+    if accounts:
+        account_id = accounts[0][0]
         sql = f"""
-        SELECT xmin, xmax, ctid, machine_id, health_pct
-          FROM factory.machine
-         WHERE machine_id = %s
+        SELECT xmin, xmax, ctid, account_id, health_pct
+          FROM bank.account
+         WHERE account_id = %s
         """
         with connect() as conn:
             with conn.cursor() as cur:
-                cur.execute(sql, (machine_id,))
+                cur.execute(sql, (account_id,))
                 row = cur.fetchone()
                 if row:
                     print(f"  xmin={row[0]}, xmax={row[1]}, ctid={row[2]}")
-                    print(f"  machine_id={row[3]}, health_pct={row[4]}")
+                    print(f"  account_id={row[3]}, health_pct={row[4]}")
 
     run_update()
     run_deadtuples()

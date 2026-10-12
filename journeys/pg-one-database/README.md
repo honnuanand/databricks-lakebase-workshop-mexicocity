@@ -14,11 +14,11 @@
 
 ## The scenario
 
-You're designing a comprehensive machine-intelligence query. Given a plant and machine type, find machines that:
+You're designing a comprehensive account-intelligence query. Given a branch and account type, find accounts that:
 - Are physically near a reference location (geospatial: "within 5 km").
-- Have a similar spec to a reference machine (vector similarity: "similar embeddings").
-- Are of a specific model (JSON spec: "type = 'Press'").
-- Are in a particular production line (relational: "line = 'Stamping-A'").
+- Have a similar spec to a reference account (vector similarity: "similar embeddings").
+- Are of a specific product line (JSON spec: "type = 'commercial'").
+- Are in a particular line of business (relational: "line = 'Credit'").
 
 A naive architecture would split this across four systems:
 - A relational database for line filters.
@@ -36,7 +36,7 @@ You create a single table with relational, JSON, vector, and geospatial columns.
 
 ## What you'll do
 
-1. Create a demo table with all four data types: relational (machine_id, line), JSON (spec), vector (embedding), and geospatial (location).
+1. Create a demo table with all four data types: relational (account_id, line), JSON (spec), vector (embedding), and geospatial (location).
 2. Write a single SELECT that filters on all four and computes similarity/distance.
 3. Show the EXPLAIN plan: one plan, not four sub-queries.
 4. Run the query and show the unified result.

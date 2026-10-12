@@ -4,7 +4,7 @@
 >
 > **Key takeaways**
 >
-> - The planner assumes columns are independent; a filter on two CORRELATED columns (e.g., plant and machine_line) under-estimates rows by 2.5x or more.
+> - The planner assumes columns are independent; a filter on two CORRELATED columns (e.g., branch and region) under-estimates rows by 2.5x or more.
 > - `CREATE STATISTICS` teaches the planner column dependencies, and the row estimate snaps to reality, fixing downstream join and memory choices.
 > - Extended statistics are tuning the planner's *knowledge*, not the data, they cost nothing to create or maintain.
 >
@@ -14,11 +14,11 @@
 
 ## The scenario
 
-You're running a multi-plant factory. The operations database tracks machines across plants, and each plant has specific production lines (a stamping plant in Detroit runs Stamping-A, Stamping-B, Stamping-C; an assembly plant in Shanghai runs Assembly-1, Assembly-2). Plant and machine_line are **correlated**: knowing the plant tells you the line.
+You're running a bank with branches across several regions. The operational database tracks accounts across branches, and each branch sits in exactly one region (a New York branch is US-Northeast; a San Francisco branch is US-West; a London branch is EU-UK). Branch and region are **correlated**: knowing the branch tells you the region.
 
-A query filters machines by both: "Give me all machines in PL-DETROIT on Stamping-A." By default, the Postgres planner assumes the two columns are independent, it has no idea that a plant fully determines which lines exist there. So it estimates the intersection as if they were random, under-estimating by 2 to 3 times the actual rows. That estimate cascades into the rest of the query: the planner chooses the wrong join method, allocates the wrong amount of work memory, picks the wrong scan strategy.
+A query filters accounts by both: "Give me all accounts at BR-NYC in region US-Northeast." By default, the Postgres planner assumes the two columns are independent, it has no idea that a branch fully determines its region. So it estimates the intersection as if they were random, under-estimating by 2 to 3 times the actual rows. That estimate cascades into the rest of the query: the planner chooses the wrong join method, allocates the wrong amount of work memory, picks the wrong scan strategy.
 
-The DBA's subtle move is to teach the planner the correlation without changing the data: `CREATE STATISTICS ... ON plant, machine_line`.
+The DBA's subtle move is to teach the planner the correlation without changing the data: `CREATE STATISTICS ... ON branch_id, region`.
 
 ## What a bad estimate actually costs
 
@@ -28,11 +28,11 @@ This journey shows the measurement: the honest numbers, from EXPLAIN ANALYZE, th
 
 ## The wow moment
 
-You run EXPLAIN ANALYZE on the query and see the estimate is wildly wrong. You create one SQL statement (`CREATE STATISTICS`), re-analyze, and run the same query again. The estimate snaps from 16k to 40k, matching reality exactly. Same data, same table, same query. You tuned the planner's knowledge.
+You run EXPLAIN ANALYZE on the query and see the estimate is wildly wrong. You create one SQL statement (`CREATE STATISTICS`), re-analyze, and run the same query again. The estimate snaps from 16k to 25k, matching reality exactly. Same data, same table, same query. You tuned the planner's knowledge.
 
 ## What you'll do
 
-1. Create a demo table with correlated columns (plant determines machine_line).
+1. Create a demo table with correlated columns (branch determines region).
 2. Show the bad estimate: filter on both columns, and the planner guesses 2.5x too low.
 3. Create statistics to teach the planner the correlation.
 4. Re-run the same query and watch the estimate snap to the correct value.

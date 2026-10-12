@@ -3,14 +3,14 @@
 # MAGIC # Branch the brain, step by step
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will fork your
-# MAGIC factory database, change a machine on the fork, prove your original is untouched, and throw
+# MAGIC bank database, change an account on the fork, prove your original is untouched, and throw
 # MAGIC the fork away.
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, the SDK where the step is a
 # MAGIC control-plane action like forking a branch.
 # MAGIC
 # MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA`
-# MAGIC are set and the factory is loaded on your branch.
+# MAGIC are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -29,8 +29,8 @@ import psycopg
 PROJECT = os.environ["LB_PROJECT"]
 MINE    = os.environ["LB_BRANCH"]
 EXP     = MINE + "-exp"
-SCHEMA  = os.environ.get("LB_SCHEMA", "factory")
-MACHINE = "M-204"
+SCHEMA  = os.environ.get("LB_SCHEMA", "bank")
+ACCOUNT = "ACCT-100240"
 w = client()
 
 def connect_branch(branch):
@@ -51,19 +51,19 @@ print("connected as", w.current_user.me().user_name)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, look at M-204 on your branch
-# MAGIC `M-204` is a stamping press on Detroit's Stamping-B line, one of the machines in the factory
-# MAGIC you loaded in setup. It starts out `healthy` at 91% health. This step is a plain query, so
-# MAGIC here is the SQL you could run in any Postgres tool:
+# MAGIC ## Step 1, look at ACCT-100240 on your branch
+# MAGIC `ACCT-100240` is a retail Credit account at the New York Midtown branch, one of the accounts
+# MAGIC in the bank you loaded in setup. It starts out on `watch` at 91% health. This step is a plain
+# MAGIC query, so here is the SQL you could run in any Postgres tool:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id = 'M-204';
+# MAGIC SELECT account_id, status, health_pct FROM bank.account WHERE account_id = 'ACCT-100240';
 # MAGIC ```
 
 # COMMAND ----------
 
 with connect_branch(MINE) as c, c.cursor() as cur:
-    cur.execute("SELECT machine_id, status, health_pct FROM machine WHERE machine_id=%s", [MACHINE])
+    cur.execute("SELECT account_id, status, health_pct FROM account WHERE account_id=%s", [ACCOUNT])
     print("your branch, before:", cur.fetchone())
 
 # COMMAND ----------
@@ -101,21 +101,22 @@ print(f"fork API {api_ms:.0f} ms; endpoint ACTIVE in ~{waited:.1f}s")
 
 # MAGIC %md
 # MAGIC ## Step 3, diverge on the fork, prove production is untouched
-# MAGIC Change `M-204` on the fork only, then read it from both branches. The SQL that runs on the fork:
+# MAGIC Freeze `ACCT-100240` on the fork only, then read it from both branches. The SQL that runs on
+# MAGIC the fork:
 # MAGIC
 # MAGIC ```sql
-# MAGIC UPDATE factory.machine SET status = 'derated', health_pct = 70.0 WHERE machine_id = 'M-204';
+# MAGIC UPDATE bank.account SET status = 'frozen', health_pct = 70.0 WHERE account_id = 'ACCT-100240';
 # MAGIC ```
 
 # COMMAND ----------
 
 with connect_branch(EXP) as c, c.cursor() as cur:
-    cur.execute("UPDATE machine SET status='derated', health_pct=70.0 WHERE machine_id=%s", [MACHINE])
-    cur.execute("SELECT machine_id, status, health_pct FROM machine WHERE machine_id=%s", [MACHINE])
+    cur.execute("UPDATE account SET status='frozen', health_pct=70.0 WHERE account_id=%s", [ACCOUNT])
+    cur.execute("SELECT account_id, status, health_pct FROM account WHERE account_id=%s", [ACCOUNT])
     print("fork, after change:", cur.fetchone())
 
 with connect_branch(MINE) as c, c.cursor() as cur:
-    cur.execute("SELECT machine_id, status, health_pct FROM machine WHERE machine_id=%s", [MACHINE])
+    cur.execute("SELECT account_id, status, health_pct FROM account WHERE account_id=%s", [ACCOUNT])
     print("your branch, still: ", cur.fetchone())
 
 # COMMAND ----------
@@ -138,5 +139,5 @@ print("branches now:", [b.branch_id for b in w.postgres.list_branches(parent=f"p
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC Branching a live database is seconds-scale and near-free, because it is copy-on-write. You
-# MAGIC forked, diverged, and discarded without touching your source data. Next: **Break it, then
-# MAGIC rewind** points this same machinery at the past.
+# MAGIC forked, froze an account, and discarded without touching your source data. Next: **Break it,
+# MAGIC then rewind** points this same machinery at the past.

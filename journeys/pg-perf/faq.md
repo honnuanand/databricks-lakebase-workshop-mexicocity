@@ -26,14 +26,14 @@ Make sure you ran `ANALYZE` after creating the statistics. The script does this 
 with `--step stats`, but if you ran the raw SQL, don't forget:
 
 ```sql
-ANALYZE machine_perf_demo
+ANALYZE account_perf_demo
 ```
 
 If you did run `ANALYZE` and the estimate is still off, try:
 
 ```sql
-DROP STATISTICS factory.machine_perf_stat
-ANALYZE machine_perf_demo
+DROP STATISTICS bank.account_perf_stat
+ANALYZE account_perf_demo
 ```
 
 Then create the statistics again. Occasionally the planner needs a fresh start.
@@ -76,9 +76,9 @@ Different tools, same goal (speed the query):
 
 Both matter. This journey is about statistics; [`../pg-index/`](../pg-index/) covers indexes.
 
-## This is a solo factory machine table. In production, do I really need this?
+## This is a solo demo table. In production, do I really need this?
 
-Yes. In any production system, you'll have multi-column filters on correlated attributes. Plant
-and line are one example; others include region and country, customer-segment and product-line,
-time-of-day and traffic-pattern. Whenever one column's values determine another's, teach the
+Yes. In any production system, you'll have multi-column filters on correlated attributes. Branch
+and region are one example; others include merchant-category and amount-band, customer-segment and
+product-line, time-of-day and transaction-type. Whenever one column's values determine another's, teach the
 planner with statistics.

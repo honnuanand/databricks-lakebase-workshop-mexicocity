@@ -17,9 +17,9 @@ from lakebase import connect, _env, branch_endpoint, branch_name
 from databricks.sdk import WorkspaceClient
 import psycopg
 
-DEMO_TABLE = 'machine_isolation_demo'
-SCHEMA = _env('LB_SCHEMA', 'factory')
-MACHINE_ID = 'M-TEST-ISOLATION'
+DEMO_TABLE = 'account_isolation_demo'
+SCHEMA = _env('LB_SCHEMA', 'bank')
+ACCOUNT_ID = 'ACCT-TEST-ISOLATION'
 
 def connect_branch():
     w = WorkspaceClient()
@@ -44,11 +44,11 @@ print('Ready to demonstrate locking.')
 # MAGIC ## Step 1, Create demo table and row
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE TABLE machine_isolation_demo (
-# MAGIC     machine_id TEXT PRIMARY KEY,
-# MAGIC     maintenance_slots INT
+# MAGIC CREATE TABLE account_isolation_demo (
+# MAGIC     account_id TEXT PRIMARY KEY,
+# MAGIC     available_credit INT
 # MAGIC );
-# MAGIC INSERT INTO machine_isolation_demo VALUES ('M-TEST-ISOLATION', 10);
+# MAGIC INSERT INTO account_isolation_demo VALUES ('ACCT-TEST-ISOLATION', 10000);
 # MAGIC ```
 # COMMAND ----------
 
@@ -57,12 +57,12 @@ with connect() as conn:
         cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.{DEMO_TABLE}")
         cur.execute(f"""
             CREATE TABLE {SCHEMA}.{DEMO_TABLE} (
-                machine_id TEXT PRIMARY KEY,
-                maintenance_slots INT
+                account_id TEXT PRIMARY KEY,
+                available_credit INT
             )
         """)
-        cur.execute(f"INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES ('{MACHINE_ID}', 10)")
-        print(f'✓ Created demo table and row: {MACHINE_ID} has 10 slots')
+        cur.execute(f"INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES ('{ACCOUNT_ID}', 10000)")
+        print(f'✓ Created demo table and row: {ACCOUNT_ID} has 10000 available credit')
 
 # COMMAND ----------
 
@@ -72,8 +72,8 @@ with connect() as conn:
 # MAGIC
 # MAGIC ```sql
 # MAGIC BEGIN;
-# MAGIC UPDATE machine_isolation_demo SET maintenance_slots = maintenance_slots - 1
-# MAGIC WHERE machine_id = 'M-TEST-ISOLATION';
+# MAGIC UPDATE account_isolation_demo SET available_credit = available_credit - 500
+# MAGIC WHERE account_id = 'ACCT-TEST-ISOLATION';
 # MAGIC ```
 # COMMAND ----------
 
@@ -82,9 +82,9 @@ conn_a = connect_branch()
 cur_a = conn_a.cursor()
 cur_a.execute(f"SET search_path TO {SCHEMA}, public")
 cur_a.execute("BEGIN")
-cur_a.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET maintenance_slots = maintenance_slots - 1 WHERE machine_id = '{MACHINE_ID}'")
+cur_a.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET available_credit = available_credit - 500 WHERE account_id = '{ACCOUNT_ID}'")
 print(f'✓ Session A: began transaction, updated row (lock held, NOT committed)')
-print(f'  Rows now have 9 slots (locally to Session A)')
+print(f'  Available credit now 9500 (locally to Session A)')
 
 # COMMAND ----------
 
@@ -93,8 +93,8 @@ print(f'  Rows now have 9 slots (locally to Session A)')
 # MAGIC Open Connection B and try to update the same row. Session B blocks on Session A's lock.
 # MAGIC
 # MAGIC ```sql
-# MAGIC UPDATE machine_isolation_demo SET maintenance_slots = maintenance_slots - 5
-# MAGIC WHERE machine_id = 'M-TEST-ISOLATION';
+# MAGIC UPDATE account_isolation_demo SET available_credit = available_credit - 2500
+# MAGIC WHERE account_id = 'ACCT-TEST-ISOLATION';
 # MAGIC ```
 # COMMAND ----------
 
@@ -109,7 +109,7 @@ def session_b_update():
     cur_b.execute(f"SET search_path TO {SCHEMA}, public")
     t0 = time.time()
     try:
-        cur_b.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET maintenance_slots = maintenance_slots - 5 WHERE machine_id = '{MACHINE_ID}'")
+        cur_b.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET available_credit = available_credit - 2500 WHERE account_id = '{ACCOUNT_ID}'")
         result_b['blocked_until'] = time.time() - t0
         result_b['done'] = True
         cur_b.close()
@@ -151,21 +151,21 @@ conn_a.close()
 # MAGIC ## Step 5, Confirm both updates landed
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT machine_id, maintenance_slots FROM machine_isolation_demo
-# MAGIC WHERE machine_id = 'M-TEST-ISOLATION';
+# MAGIC SELECT account_id, available_credit FROM account_isolation_demo
+# MAGIC WHERE account_id = 'ACCT-TEST-ISOLATION';
 # MAGIC ```
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"SET search_path TO {SCHEMA}, public")
-        cur.execute(f"SELECT machine_id, maintenance_slots FROM {SCHEMA}.{DEMO_TABLE} WHERE machine_id = '{MACHINE_ID}'")
+        cur.execute(f"SELECT account_id, available_credit FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = '{ACCOUNT_ID}'")
         row = cur.fetchone()
         if row:
-            machine_id, slots = row
-            print(f'✓ Final state: {machine_id} has {slots} slots')
-            print(f'  Started with 10, Session A subtracted 1, Session B subtracted 5 = {slots}')
-            if slots == 4:
+            account_id, credit = row
+            print(f'✓ Final state: {account_id} has {credit} available credit')
+            print(f'  Started with 10000, Session A subtracted 500, Session B subtracted 2500 = {credit}')
+            if credit == 7000:
                 print(f'✓ Both updates landed; neither was lost')
         else:
             print(f'✗ Row not found')

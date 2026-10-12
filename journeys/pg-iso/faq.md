@@ -14,7 +14,7 @@ to confirm your connection to the branch works.
 
 The script may have run too fast (especially on a warm connection). The blocking is real, but the wait time was very short, under 100 ms. Re-run it; you may see a longer wait on the second run or on a cold project.
 
-The core point: both updates landed without loss, which you can confirm from the final slot count.
+The core point: both updates landed without loss, which you can confirm from the final available credit.
 
 ## Can I watch the lock without running the script?
 
@@ -31,7 +31,7 @@ You'll see Session B's PID with `wait_event_type = 'Lock'` while Session A is in
 Yes, but that's a different pattern. You could use:
 
 ```sql
-UPDATE machine_isolation_demo SET maintenance_slots = ... WHERE machine_id = 'M-TEST-ISOLATION' NOWAIT
+UPDATE account_isolation_demo SET available_credit = ... WHERE account_id = 'ACCT-TEST-ISOLATION' NOWAIT
 ```
 
 `NOWAIT` tells the database to fail immediately if the row is locked, instead of waiting. But this
@@ -60,7 +60,7 @@ in-region on the instance.
 ## Does this work across branches?
 
 No. Each branch is its own Postgres server; locks don't span branches. This journey locks a row on
-*your* branch. If someone else updates the same machine ID on the production branch, that's a separate
+*your* branch. If someone else updates the same account ID on the production branch, that's a separate
 row, separate lock. Branches are isolated by design.
 
 (See [`../branch-the-brain/`](../branch-the-brain/) for the branching story.)

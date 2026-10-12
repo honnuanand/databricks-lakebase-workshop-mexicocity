@@ -19,7 +19,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
-SCHEMA = os.environ.get("LB_SCHEMA", "factory")
+SCHEMA = os.environ.get("LB_SCHEMA", "bank")
 print("connected; schema:", SCHEMA)
 
 # COMMAND ----------
@@ -30,12 +30,12 @@ print("connected; schema:", SCHEMA)
 # MAGIC See the structure of operations (work routing on machines). The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT op_id, machine_id, starts_at, ends_at FROM factory.operation LIMIT 3
+# MAGIC SELECT settlement_id, account_id, starts_at, ends_at FROM bank.settlement LIMIT 3
 # MAGIC ```
 
 # COMMAND ----------
 
-sql = "SELECT op_id, machine_id, starts_at, ends_at FROM factory.operation LIMIT 3"
+sql = "SELECT settlement_id, account_id, starts_at, ends_at FROM bank.settlement LIMIT 3"
 rows = run_sql(sql)
 print("Sample operations:")
 for row in rows:
@@ -50,9 +50,9 @@ for row in rows:
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE EXTENSION IF NOT EXISTS btree_gist;
-# MAGIC ALTER TABLE factory.operation
+# MAGIC ALTER TABLE bank.settlement
 # MAGIC   ADD CONSTRAINT IF NOT EXISTS no_machine_overlap
-# MAGIC   EXCLUDE USING gist (machine_id WITH =,
+# MAGIC   EXCLUDE USING gist (account_id WITH =,
 # MAGIC                       tstzrange(starts_at, ends_at) WITH &&)
 # MAGIC ```
 
@@ -67,11 +67,11 @@ with connect() as conn:
             pass
 
         # Postgres has no ADD CONSTRAINT IF NOT EXISTS; drop then add so it's idempotent.
-        cur.execute("ALTER TABLE factory.operation DROP CONSTRAINT IF EXISTS no_machine_overlap")
+        cur.execute("ALTER TABLE bank.settlement DROP CONSTRAINT IF EXISTS no_machine_overlap")
         sql = """
-        ALTER TABLE factory.operation
+        ALTER TABLE bank.settlement
           ADD CONSTRAINT no_machine_overlap
-          EXCLUDE USING gist (machine_id WITH =,
+          EXCLUDE USING gist (account_id WITH =,
                               tstzrange(starts_at, ends_at) WITH &&)
         """
         try:
@@ -91,35 +91,35 @@ with connect() as conn:
 
 import datetime
 
-# Get an existing operation (and its work order, to satisfy the FK) to overlap.
+# Get an existing operation (and its trade, to satisfy the FK) to overlap.
 ops = run_sql("""
-SELECT op_id, wo_id, machine_id, starts_at, ends_at
-  FROM factory.operation
- WHERE machine_id IS NOT NULL AND starts_at IS NOT NULL AND ends_at IS NOT NULL
+SELECT settlement_id, trade_id, account_id, starts_at, ends_at
+  FROM bank.settlement
+ WHERE account_id IS NOT NULL AND starts_at IS NOT NULL AND ends_at IS NOT NULL
  LIMIT 1
 """)
 
 if not ops:
     print("No existing operations found")
 else:
-    op_id, wo_id, machine_id, starts_at, ends_at = ops[0]
+    settlement_id, trade_id, account_id, starts_at, ends_at = ops[0]
 
     # Try to insert an overlapping operation
     with connect() as conn:
         with conn.cursor() as cur:
             # Clean any prior test row so this is re-runnable
-            cur.execute("DELETE FROM factory.operation WHERE op_id = 'OP-OVERLAP'")
+            cur.execute("DELETE FROM bank.settlement WHERE settlement_id = 'OP-OVERLAP'")
             try:
                 # Create an operation that overlaps with the existing one
                 overlap_start = starts_at
                 overlap_end = ends_at + datetime.timedelta(hours=1)
 
                 cur.execute("""
-                INSERT INTO factory.operation
-                  (op_id, wo_id, machine_id, seq, status, starts_at, ends_at)
+                INSERT INTO bank.settlement
+                  (settlement_id, trade_id, account_id, seq, status, starts_at, ends_at)
                 VALUES
                   (%s, %s, %s, %s, %s, %s, %s)
-                """, ('OP-OVERLAP', wo_id, machine_id, 99, 'pending', overlap_start, overlap_end))
+                """, ('OP-OVERLAP', trade_id, account_id, 99, 'pending', overlap_start, overlap_end))
                 print("ERROR: Overlap should have been rejected!")
             except Exception as e:
                 error_msg = str(e)
@@ -138,10 +138,10 @@ else:
 
 # COMMAND ----------
 
-sql = ("EXPLAIN INSERT INTO factory.operation "
-       "(op_id, wo_id, machine_id, seq, status, starts_at, ends_at) "
-       "SELECT 'op-explain', wo_id, 'M-204', 98, 'pending', now(), now() + interval '1 hour' "
-       "FROM factory.operation LIMIT 1")
+sql = ("EXPLAIN INSERT INTO bank.settlement "
+       "(settlement_id, trade_id, account_id, seq, status, starts_at, ends_at) "
+       "SELECT 'op-explain', trade_id, 'ACCT-100240', 98, 'pending', now(), now() + interval '1 hour' "
+       "FROM bank.settlement LIMIT 1")
 
 with connect() as conn:
     with conn.cursor() as cur:

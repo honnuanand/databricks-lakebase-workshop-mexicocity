@@ -15,8 +15,8 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), '..', '..', 'common', 'scripts'))
 from lakebase import connect, _env
 
-DEMO_TABLE = 'machine_index_demo'
-SCHEMA = _env('LB_SCHEMA', 'factory')
+DEMO_TABLE = 'account_index_demo'
+SCHEMA = _env('LB_SCHEMA', 'bank')
 
 def show_plan(cur, query: str):
     cur.execute(f"EXPLAIN (FORMAT JSON) {query}")
@@ -30,11 +30,11 @@ print('Ready.')
 # MAGIC ## Step 1, Create table with 6 data types
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE TABLE machine_index_demo (
-# MAGIC     machine_id TEXT PRIMARY KEY,
-# MAGIC     status_code INT NOT NULL,
+# MAGIC CREATE TABLE account_index_demo (
+# MAGIC     account_id TEXT PRIMARY KEY,
+# MAGIC     mcc INT NOT NULL,
 # MAGIC     spec JSONB,
-# MAGIC     created_at TIMESTAMPTZ NOT NULL,
+# MAGIC     opened_at TIMESTAMPTZ NOT NULL,
 # MAGIC     location POINT,
 # MAGIC     embedding VECTOR(256)
 # MAGIC );
@@ -46,10 +46,10 @@ with connect() as conn:
         cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.{DEMO_TABLE} CASCADE")
         cur.execute(f"""
             CREATE TABLE {SCHEMA}.{DEMO_TABLE} (
-                machine_id TEXT PRIMARY KEY,
-                status_code INT NOT NULL,
+                account_id TEXT PRIMARY KEY,
+                mcc INT NOT NULL,
                 spec JSONB DEFAULT '{{}}'::jsonb,
-                created_at TIMESTAMPTZ NOT NULL,
+                opened_at TIMESTAMPTZ NOT NULL,
                 location POINT,
                 embedding VECTOR(256)
             )
@@ -58,11 +58,11 @@ with connect() as conn:
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{DEMO_TABLE}
             SELECT
-                'M-' || g,
+                'ACCT-' || g,
                 (g % 10)::int,
-                jsonb_build_object('model', 'CNC-' || (g % 5), 'year', 2020 + (g % 4)),
+                jsonb_build_object('product', CASE WHEN (g % 3) = 0 THEN 'Checking' WHEN (g % 3) = 1 THEN 'Savings' ELSE 'Credit' END, 'tier', 'Premium' || (g % 5)),
                 now() - (g % 365 || ' days')::interval,
-                point(45.0 + (g::numeric % 10) / 100, -73.0 + (g::numeric % 10) / 100),
+                point(40.7549 + (g::numeric % 10) / 100, -73.9840 + (g::numeric % 10) / 100),
                 (array_fill(0.5::real, ARRAY[256]))::vector(256)
             FROM generate_series(1, 60000) g
         """)
@@ -73,22 +73,22 @@ with connect() as conn:
 # MAGIC ## Step 2, Create 6 indexes
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE INDEX idx_btree_machine_id ON machine_index_demo USING BTREE (machine_id);
-# MAGIC CREATE INDEX idx_hash_status ON machine_index_demo USING HASH (status_code);
-# MAGIC CREATE INDEX idx_gin_spec ON machine_index_demo USING GIN (spec);
-# MAGIC CREATE INDEX idx_brin_created ON machine_index_demo USING BRIN (created_at);
-# MAGIC CREATE INDEX idx_gist_location ON machine_index_demo USING GIST (location);
-# MAGIC CREATE INDEX idx_hnsw_embedding ON machine_index_demo USING HNSW (embedding vector_cosine_ops);
+# MAGIC CREATE INDEX idx_btree_account_id ON account_index_demo USING BTREE (account_id);
+# MAGIC CREATE INDEX idx_hash_mcc ON account_index_demo USING HASH (mcc);
+# MAGIC CREATE INDEX idx_gin_spec ON account_index_demo USING GIN (spec);
+# MAGIC CREATE INDEX idx_brin_opened ON account_index_demo USING BRIN (opened_at);
+# MAGIC CREATE INDEX idx_gist_location ON account_index_demo USING GIST (location);
+# MAGIC CREATE INDEX idx_hnsw_embedding ON account_index_demo USING HNSW (embedding vector_cosine_ops);
 # MAGIC ```
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
         indexes = [
-            ('idx_btree_machine_id', 'BTREE', '(machine_id)'),
-            ('idx_hash_status', 'HASH', '(status_code)'),
+            ('idx_btree_account_id', 'BTREE', '(account_id)'),
+            ('idx_hash_mcc', 'HASH', '(mcc)'),
             ('idx_gin_spec', 'GIN', '(spec)'),
-            ('idx_brin_created', 'BRIN', '(created_at)'),
+            ('idx_brin_opened', 'BRIN', '(opened_at)'),
             ('idx_gist_location', 'GIST', '(location)'),
             ('idx_hnsw_embedding', 'HNSW', '(embedding vector_cosine_ops)'),
         ]
@@ -116,11 +116,11 @@ with connect() as conn:
             return "Index" in plan_text
 
         queries = [
-            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE machine_id = 'M-100'"),
-            ('HASH', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE status_code = 5"),
-            ('GIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE spec @> '{{\"model\": \"CNC-1\"}}'::jsonb"),
-            ('BRIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE created_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),
-            ('GIST', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} ORDER BY location <-> point(45.0, -73.0) LIMIT 5"),
+            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'ACCT-100'"),
+            ('HASH', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE mcc = 5"),
+            ('GIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE spec @> '{{\"product\": \"Checking\"}}'::jsonb"),
+            ('BRIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE opened_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),
+            ('GIST', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} ORDER BY location <-> point(40.7549, -73.9840) LIMIT 5"),
         ]
 
         print("Explain shows which index each query uses:")

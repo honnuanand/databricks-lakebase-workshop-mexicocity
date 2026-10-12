@@ -14,13 +14,13 @@
 
 ## The scenario
 
-You're running a digital twin of a manufacturing floor. Hundreds of machines stream telemetry: temperature, vibration, RPM, load, millions of readings per day. That's 365 million readings a year, billions over a decade. A single table.
+You're running a transaction processing system for a bank. Thousands of accounts stream transactions: payments, transfers, purchases, withdrawals, millions of transactions per day. That's 365 million transactions a year, billions over a decade. A single table.
 
 How do you keep a single-month query fast on a table with years of data?
 
-The answer is declarative RANGE partitioning: split the table by month. Logically it's one table; physically it's 12 per year. When you ask "show me March's telemetry," the planner knows to scan *only* the March partition. Pruning.
+The answer is declarative RANGE partitioning: split the table by month. Logically it's one table, physically it's 12 per year. When you ask "show me March's transactions," the planner knows to scan only the March partition. Pruning.
 
-When the C-level asks for a trend analysis across 10 years of data, that query legitimately scans all 120 partitions. But that's a heavy analytical query, not an operational one. It belongs in the lakehouse, not Lakebase. (Lakebase syncs the same data to Databricks as Delta, where heavy scans run in parallel across a warehouse, not serially on a single Postgres server.)
+When compliance asks for a 10-year audit trail across all transactions, that query legitimately scans all 120 partitions. But that's a heavy analytical query, not an operational one. It belongs in the lakehouse, not Lakebase. (Lakebase syncs the same data to Databricks as Delta, where heavy scans run in parallel across a warehouse, not serially on a single Postgres server.)
 
 This journey shows both: partition pruning for operational queries, and the honest edge for analytics.
 

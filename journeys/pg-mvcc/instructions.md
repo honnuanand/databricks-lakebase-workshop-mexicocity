@@ -9,7 +9,7 @@ There are a few ways to work through the steps. Pick one:
 - **By hand:** follow the numbered steps below, copying each command yourself.
 - **Just see it work:** run `python pg_mvcc.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
-Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
+Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank loaded.
 
 Everything here is a single script you can read: [`./pg_mvcc.py`](./pg_mvcc.py). You can run it end to end, or follow the steps by hand to see each piece.
 
@@ -26,15 +26,15 @@ This walks through the entire journey and prints results. Read on for what each 
 
 ### Step 1, query system columns (xmin, xmax, ctid)
 
-Query a machine row and see its internal system columns:
+Query an account row and see its internal system columns:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT machine_id, health_pct, xmin, xmax, ctid FROM factory.machine WHERE machine_id='M-204'"
+  "SELECT account_id, health_pct, xmin, xmax, ctid FROM bank.account WHERE account_id='ACCT-100240'"
 ```
 
 Output shows:
-- `machine_id`, `health_pct`: normal columns
+- `account_id`, `health_pct`: normal columns
 - `xmin`: transaction ID that created this version (the INSERT or UPDATE that wrote it)
 - `xmax`: transaction ID that marked it as dead (UPDATE or DELETE that replaced it), or 0 if still alive
 - `ctid`: physical location of the row (page number and slot within the page)
@@ -43,7 +43,7 @@ Initially, xmax=0 (row is alive), and ctid points to its physical location.
 
 ### Step 2, UPDATE the row and watch versioning
 
-UPDATE the machine's health and query again:
+UPDATE the account's health and query again:
 
 ```bash
 python pg_mvcc.py --step update
@@ -51,7 +51,7 @@ python pg_mvcc.py --step update
 
 The script:
 1. Queries the row before (see xmin, xmax, ctid)
-2. Runs: `UPDATE factory.machine SET health_pct = 50.0 WHERE machine_id='M-204'`
+2. Runs: `UPDATE bank.account SET health_pct = 50.0 WHERE account_id='ACCT-100240'`
 3. Queries the row after (see new xmin, new xmax, new ctid)
 
 Results show:
@@ -67,10 +67,10 @@ Run several UPDATEs on the same row:
 python pg_mvcc.py --step deadtuples
 ```
 
-The script runs 10 UPDATEs on M-204, then checks pg_stat_user_tables to see dead tuples accumulating:
+The script runs 10 UPDATEs on ACCT-100240, then checks pg_stat_user_tables to see dead tuples accumulating:
 
 ```sql
-SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname='machine';
+SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname='account';
 ```
 
 Output shows dead_tup increasing (9 old versions + the current version = many dead tuples).
@@ -85,7 +85,7 @@ python pg_mvcc.py --step vacuum
 
 The script:
 1. Checks dead tuples before: n_dead_tup is high (9 or so)
-2. Runs: `VACUUM factory.machine;`
+2. Runs: `VACUUM bank.account;`
 3. Checks dead tuples after: n_dead_tup is zero
 
 The space is reclaimed and the free space map is updated so future INSERTs can reuse the space.

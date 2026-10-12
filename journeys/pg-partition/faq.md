@@ -16,7 +16,7 @@ python lakebase.py --check
 Yes, RANGE works on any ordered column: numbers, strings, dates. Most common is time (date/timestamp),
 but you can partition by:
 - **Date range**: range by day, month, year.
-- **Numeric range**: range by ID bands (e.g., machines 0-999, 1000-1999, etc.).
+- **Numeric range**: range by ID bands (e.g., accounts 100000-199999, 200000-299999, etc.).
 - **Geographic range** (rare): range by coordinates.
 
 Time-based is most useful because old data naturally ages out (you can DROP old partitions to free space).
@@ -35,10 +35,10 @@ For this journey, we created 6 fixed partitions. In production, you'd add a new 
 ## Why not just create indexes instead of partitioning?
 
 Different tools:
-- **Index**: helps the planner choose a faster path *within* a table (e.g., "use btree on date").
+- **Index**: helps the planner choose a faster path within a table (e.g., "use btree on date").
 - **Partition**: reduces the amount of data the planner has to scan; the pruning happens at the table level.
 
-On a 1-year table with 365 million rows, even an index may require millions of row checks. Partition pruning
+On a 1-year table with 365 million transactions, even an index may require millions of row checks. Partition pruning
 avoids scanning the table at all for 11 of the 12 months. Pruning is often faster than indexing on very large tables.
 
 Both matter; they're complementary.
@@ -50,9 +50,9 @@ both partitions must be read.
 
 ## If I partition by day instead of month, will queries be faster?
 
-Depends. More partitions → smaller each partition → finer-grained pruning (a one-day query on
+Depends. More partitions, smaller each partition, finer-grained pruning (a one-day query on
 365 daily partitions prunes 364). But many small partitions also add overhead. A good rule: partition
-granularity = your smallest common query scope. For most systems, monthly partitions are reasonable.
+granularity equals your smallest common query scope. For most systems, monthly partitions are reasonable.
 
 ## This is 6 months. In production, how long does it take to create all the partitions upfront?
 

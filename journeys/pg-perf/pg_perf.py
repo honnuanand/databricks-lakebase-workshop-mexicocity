@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Tune the planner — extended statistics fix a bad row estimate.
+"""Tune the planner, extended statistics fix a bad row estimate.
 
-When a query filters on two CORRELATED columns (e.g., machine_line and plant),
+When a query filters on two CORRELATED columns (e.g., region and branch),
 the planner assumes they're independent and badly under-estimates rows.
 CREATE STATISTICS teaches it the correlation, and the estimate snaps to reality.
 
-All numbers are server-side (EXPLAIN ANALYZE) — measured by Postgres itself.
+All numbers are server-side (EXPLAIN ANALYZE), measured by Postgres itself.
 
 Usage:
     python pg_perf.py                 # run the whole story with estimates
@@ -28,8 +28,8 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, _env
 
-DEMO_TABLE = "machine_perf_demo"
-DEMO_STAT = "machine_perf_stat"
+DEMO_TABLE = "account_perf_demo"
+DEMO_STAT = "account_perf_stat"
 
 
 def _explain(cur, query: str) -> tuple[int, int]:
@@ -45,37 +45,37 @@ def _explain(cur, query: str) -> tuple[int, int]:
 
 
 def setup(conn):
-    """Create a demo table with correlated columns: machine_line => plant."""
-    schema = _env("LB_SCHEMA", "factory")
+    """Create a demo table with correlated columns: region => branch."""
+    schema = _env("LB_SCHEMA", "bank")
     with conn.cursor() as cur:
         # Drop if exists
         cur.execute(f"DROP TABLE IF EXISTS {schema}.{DEMO_TABLE} CASCADE")
         cur.execute(f"DROP STATISTICS IF EXISTS {schema}.{DEMO_STAT}")
 
-        # Create table: machine_line is fully determined by plant (100% correlated)
+        # Create table: region is fully determined by branch (100% correlated)
         cur.execute(f"""
             CREATE TABLE {schema}.{DEMO_TABLE} (
                 id BIGSERIAL PRIMARY KEY,
-                machine_id TEXT,
-                plant_id TEXT,
-                machine_line TEXT,
-                temp_c NUMERIC,
+                account_id TEXT,
+                branch_id TEXT,
+                region TEXT,
+                amount_usd NUMERIC,
                 health_pct NUMERIC
             )
         """)
 
-        # Insert: each plant has specific lines (correlated)
-        # Plant PL-DETROIT -> Stamping-A,B,C; Plant PL-SHANGHAI -> Assembly-1,2
+        # Insert: each branch sits in exactly one region (correlated)
+        # Branch BR-NYC -> US-Northeast; Branch BR-SFO -> US-West
         cur.execute(f"""
-            INSERT INTO {schema}.{DEMO_TABLE}(machine_id, plant_id, machine_line, temp_c, health_pct)
+            INSERT INTO {schema}.{DEMO_TABLE}(account_id, branch_id, region, amount_usd, health_pct)
             SELECT
-                'M-' || g,
-                (ARRAY['PL-DETROIT', 'PL-DETROIT', 'PL-SHANGHAI', 'PL-SHANGHAI'])[1 + (g % 4)],
+                'ACCT-' || g,
+                (ARRAY['BR-NYC', 'BR-NYC', 'BR-SFO', 'BR-SFO'])[1 + (g % 4)],
                 CASE (g % 4)
-                    WHEN 0 THEN 'Stamping-A'
-                    WHEN 1 THEN 'Stamping-B'
-                    WHEN 2 THEN 'Assembly-1'
-                    ELSE 'Assembly-2'
+                    WHEN 0 THEN 'US-Northeast'
+                    WHEN 1 THEN 'US-Northeast'
+                    WHEN 2 THEN 'US-West'
+                    ELSE 'US-West'
                 END,
                 50.0 + (g % 30),
                 80.0 + (g % 20)
@@ -84,15 +84,15 @@ def setup(conn):
 
         # Gather statistics so the planner has baseline data
         cur.execute(f"ANALYZE {schema}.{DEMO_TABLE}")
-        print(f"Created demo table {schema}.{DEMO_TABLE} with 100k rows (machine_line correlated with plant)")
+        print(f"Created demo table {schema}.{DEMO_TABLE} with 100k rows (region correlated with branch)")
 
 
 def before(conn):
     """Show the bad estimate before CREATE STATISTICS."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
     query = (
-        f"SELECT id FROM {schema}.{DEMO_TABLE} "
-        f"WHERE plant_id = 'PL-DETROIT' AND machine_line = 'Stamping-A'"
+        f"SELECT account_id FROM {schema}.{DEMO_TABLE} "
+        f"WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'"
     )
     with conn.cursor() as cur:
         est, act = _explain(cur, query)
@@ -105,27 +105,27 @@ def before(conn):
 
 def create_stats(conn):
     """Create statistics to teach the planner the correlation."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
     with conn.cursor() as cur:
         # CREATE STATISTICS on the two correlated columns with dependencies
         cur.execute(f"""
             CREATE STATISTICS {schema}.{DEMO_STAT}
-            ON plant_id, machine_line
+            ON branch_id, region
             FROM {schema}.{DEMO_TABLE}
         """)
-        print(f"Created statistics: {schema}.{DEMO_STAT} on (plant_id, machine_line)")
+        print(f"Created statistics: {schema}.{DEMO_STAT} on (branch_id, region)")
 
         # Reanalyze so the planner picks up the new stats
         cur.execute(f"ANALYZE {schema}.{DEMO_TABLE}")
-        print("Reanalyzed table — planner now uses the new statistics")
+        print("Reanalyzed table, planner now uses the new statistics")
 
 
 def after(conn):
     """Show the fixed estimate after CREATE STATISTICS."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
     query = (
-        f"SELECT id FROM {schema}.{DEMO_TABLE} "
-        f"WHERE plant_id = 'PL-DETROIT' AND machine_line = 'Stamping-A'"
+        f"SELECT account_id FROM {schema}.{DEMO_TABLE} "
+        f"WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'"
     )
     with conn.cursor() as cur:
         est, act = _explain(cur, query)

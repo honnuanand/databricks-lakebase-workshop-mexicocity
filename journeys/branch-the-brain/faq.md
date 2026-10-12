@@ -49,7 +49,7 @@ identical; only the source branch differs.
 
 Correct. Lakebase branches are copy-on-write: the fork shares your branch's storage as of the
 moment you forked, and only pages you *change* on the fork get written separately. That's why the
-fork of a tiny factory and a fork of a multi-terabyte database cost about the same to create, and
+fork of a tiny bank and a fork of a multi-terabyte database cost about the same to create, and
 why discarding the fork leaves nothing behind.
 
 ## I discarded the fork. Is anything left over?
@@ -57,6 +57,14 @@ why discarding the fork leaves nothing behind.
 No. `delete_branch` removes the branch and its endpoint. Because only changed pages were ever
 written, there's no leftover storage. Confirm with `--step list`: the `-exp` branch is gone and
 your branch remains.
+
+## Why freeze the account on the fork instead of in production?
+
+Freezing a customer account is a real, customer-facing action: payments decline, cards stop,
+service tickets open. Testing the downstream effect of a freeze on the live database would mean
+freezing a real customer to run an experiment. The fork lets the fraud analyst watch exactly what
+a freeze does to the account's flows, in full isolation, then throw the whole experiment away.
+The shared production branch, and the real customer, never saw it.
 
 ## How is this different from point-in-time restore?
 

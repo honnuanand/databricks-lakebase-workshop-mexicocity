@@ -2,11 +2,11 @@
 # MAGIC %md
 # MAGIC # SQL you already know, step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will master window functions, recursive CTEs, and the Oracle-to-Postgres idiom map using a real bill-of-materials explosion.
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will master window functions, recursive CTEs, and the Oracle-to-Postgres idiom map using a real fund holdings explosion.
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -21,41 +21,41 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
-SCHEMA = os.environ.get("LB_SCHEMA", "factory")
+SCHEMA = os.environ.get("LB_SCHEMA", "bank")
 print("connected; schema:", SCHEMA)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, inspect the BOM data model
+# MAGIC ## Step 1, inspect the holdings data model
 # MAGIC
-# MAGIC The `bom_edge` table stores edges in a tree: each row says "part X contains part Y, with quantity Q". The SQL:
+# MAGIC The `holding` table stores edges in a tree: each row says "fund X holds instrument Y, with units Q". The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT parent_id, child_part, qty FROM factory.bom_edge LIMIT 5
+# MAGIC SELECT parent_id, instrument_id, qty FROM bank.holding LIMIT 5
 # MAGIC ```
 
 # COMMAND ----------
 
-sql = "SELECT parent_id, child_part, qty FROM factory.bom_edge LIMIT 5"
+sql = "SELECT parent_id, instrument_id, qty FROM bank.holding LIMIT 5"
 rows = run_sql(sql)
-print("BOM edges (parent -> child with qty):")
+print("Holdings edges (parent -> instrument with units):")
 for row in rows:
     print(f"  {row}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2, window functions rank machines by health
+# MAGIC ## Step 2, window functions rank accounts by health
 # MAGIC
-# MAGIC Use ROW_NUMBER(), RANK(), and LAG() to rank machines by health. The OVER clause defines the window. The SQL:
+# MAGIC Use ROW_NUMBER(), RANK(), and LAG() to rank accounts by health. The OVER clause defines the window. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT machine_id, plant_id, health_pct,
+# MAGIC SELECT account_id, branch_id, health_pct,
 # MAGIC        ROW_NUMBER() OVER (ORDER BY health_pct DESC) as rank,
 # MAGIC        RANK() OVER (ORDER BY health_pct DESC) as rank_with_ties,
 # MAGIC        LAG(health_pct, 1) OVER (ORDER BY health_pct DESC) as prev_health
-# MAGIC   FROM factory.machine
+# MAGIC   FROM bank.account
 # MAGIC  ORDER BY health_pct DESC
 # MAGIC  LIMIT 10
 # MAGIC ```
@@ -63,82 +63,82 @@ for row in rows:
 # COMMAND ----------
 
 sql = """
-SELECT machine_id, plant_id, health_pct,
+SELECT account_id, branch_id, health_pct,
        ROW_NUMBER() OVER (ORDER BY health_pct DESC) as rank,
        RANK() OVER (ORDER BY health_pct DESC) as rank_with_ties,
        LAG(health_pct, 1) OVER (ORDER BY health_pct DESC) as prev_health
-  FROM factory.machine
+  FROM bank.account
  ORDER BY health_pct DESC
  LIMIT 10
 """
 rows = run_sql(sql)
-print("Top 10 machines by health (with window functions):")
+print("Top 10 accounts by health (with window functions):")
 for row in rows:
     print(f"  {row}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, recursive CTE explodes a BOM tree
+# MAGIC ## Step 3, recursive CTE explodes a holdings tree
 # MAGIC
-# MAGIC A recursive CTE traverses the BOM graph starting from a product, following edges downward and multiplying quantities. This is the equivalent of Oracle's CONNECT BY. The SQL:
+# MAGIC A recursive CTE traverses the holdings graph starting from a fund, following edges downward and multiplying units. This is the equivalent of Oracle's CONNECT BY. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC WITH RECURSIVE bom_tree AS (
-# MAGIC   -- Anchor: start with edges from the product
-# MAGIC   SELECT parent_id, child_part, qty as multiplier, 1 as depth
-# MAGIC     FROM factory.bom_edge
+# MAGIC WITH RECURSIVE holdings_tree AS (
+# MAGIC   -- Anchor: start with holdings of the fund
+# MAGIC   SELECT parent_id, instrument_id, qty as multiplier, 1 as depth
+# MAGIC     FROM bank.holding
 # MAGIC    WHERE parent_id = %s
 # MAGIC
 # MAGIC   UNION ALL
 # MAGIC
-# MAGIC   -- Recursive: traverse child -> grandchild, multiply quantities
-# MAGIC   SELECT e.parent_id, e.child_part, t.multiplier * e.qty, t.depth + 1
-# MAGIC     FROM factory.bom_edge e
-# MAGIC     JOIN bom_tree t ON e.parent_id = t.child_part
+# MAGIC   -- Recursive: traverse holding -> sub-holding, multiply units
+# MAGIC   SELECT h.parent_id, h.instrument_id, t.multiplier * h.qty, t.depth + 1
+# MAGIC     FROM bank.holding h
+# MAGIC     JOIN holdings_tree t ON h.parent_id = t.instrument_id
 # MAGIC    WHERE t.depth < 10
 # MAGIC )
-# MAGIC SELECT child_part, multiplier, depth
-# MAGIC   FROM bom_tree
-# MAGIC  ORDER BY depth, child_part
+# MAGIC SELECT instrument_id, multiplier, depth
+# MAGIC   FROM holdings_tree
+# MAGIC  ORDER BY depth, instrument_id
 # MAGIC ```
 
 # COMMAND ----------
 
-# Find a product to explode
-product_rows = run_sql("SELECT product_id FROM factory.product LIMIT 1")
-if not product_rows:
-    print("No products found; check 00-setup/load-factory.py")
+# Find a fund to explode
+fund_rows = run_sql("SELECT fund_id FROM bank.fund LIMIT 1")
+if not fund_rows:
+    print("No funds found; check 00-setup/load_bank.py")
 else:
-    product_id = product_rows[0][0]
-    print(f"Exploding BOM for {product_id}")
+    fund_id = fund_rows[0][0]
+    print(f"Exploding holdings for {fund_id}")
 
     sql = """
-    WITH RECURSIVE bom_tree AS (
-      SELECT parent_id, child_part, qty as multiplier, 1 as depth
-        FROM factory.bom_edge
+    WITH RECURSIVE holdings_tree AS (
+      SELECT parent_id, instrument_id, qty as multiplier, 1 as depth
+        FROM bank.holding
        WHERE parent_id = %s
 
       UNION ALL
 
-      SELECT e.parent_id, e.child_part, t.multiplier * e.qty, t.depth + 1
-        FROM factory.bom_edge e
-        JOIN bom_tree t ON e.parent_id = t.child_part
+      SELECT h.parent_id, h.instrument_id, t.multiplier * h.qty, t.depth + 1
+        FROM bank.holding h
+        JOIN holdings_tree t ON h.parent_id = t.instrument_id
        WHERE t.depth < 10
     )
-    SELECT child_part, multiplier, depth
-      FROM bom_tree
-     ORDER BY depth, child_part
+    SELECT instrument_id, multiplier, depth
+      FROM holdings_tree
+     ORDER BY depth, instrument_id
     """
 
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute(sql, (product_id,))
+            cur.execute(sql, (fund_id,))
             rows = cur.fetchall()
 
-    print(f"BOM explosion for {product_id} (first 15 rows):")
+    print(f"Holdings explosion for {fund_id} (first 15 rows):")
     for row in rows[:15]:
-        print(f"  part={row[0]}, qty={row[1]}, depth={row[2]}")
+        print(f"  instrument={row[0]}, units={row[1]}, depth={row[2]}")
     if len(rows) > 15:
         print(f"  ... and {len(rows) - 15} more rows")
 
@@ -150,12 +150,12 @@ else:
 # MAGIC Postgres uses LIMIT to fetch the first N rows, while Oracle uses WHERE ROWNUM <= N. They are equivalent. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT machine_id, health_pct FROM factory.machine LIMIT 3
+# MAGIC SELECT account_id, health_pct FROM bank.account LIMIT 3
 # MAGIC ```
 
 # COMMAND ----------
 
-sql = "SELECT machine_id, health_pct FROM factory.machine LIMIT 3"
+sql = "SELECT account_id, health_pct FROM bank.account LIMIT 3"
 rows = run_sql(sql)
 print("LIMIT 3 returns (same as WHERE ROWNUM <= 3 on Oracle):")
 for row in rows:
@@ -169,18 +169,18 @@ for row in rows:
 # MAGIC Postgres uses COALESCE(col, default_val) to return a default when a value is NULL. Oracle calls it NVL(). They are equivalent. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT machine_id,
+# MAGIC SELECT account_id,
 # MAGIC        COALESCE(health_pct, 0.0) as health_or_zero
-# MAGIC   FROM factory.machine
+# MAGIC   FROM bank.account
 # MAGIC  LIMIT 3
 # MAGIC ```
 
 # COMMAND ----------
 
 sql = """
-SELECT machine_id,
+SELECT account_id,
        COALESCE(health_pct, 0.0) as health_or_zero
-  FROM factory.machine
+  FROM bank.account
  LIMIT 3
 """
 rows = run_sql(sql)
@@ -212,13 +212,13 @@ if rows:
 # MAGIC %md
 # MAGIC ## Step 7, Oracle idiom map: CONNECT BY to WITH RECURSIVE
 # MAGIC
-# MAGIC We already showed the full BOM explosion in Step 3. Postgres WITH RECURSIVE is more explicit and often faster than Oracle CONNECT BY. The transformation:
+# MAGIC We already showed the full holdings explosion in Step 3. Postgres WITH RECURSIVE is more explicit and often faster than Oracle CONNECT BY. The transformation:
 # MAGIC
 # MAGIC **Oracle (CONNECT BY):**
 # MAGIC ```sql
-# MAGIC SELECT * FROM bom_edge
-# MAGIC  START WITH parent_id = 'PRD-X'
-# MAGIC  CONNECT BY parent_id = PRIOR child_part
+# MAGIC SELECT * FROM holding
+# MAGIC  START WITH parent_id = 'FUND-X'
+# MAGIC  CONNECT BY parent_id = PRIOR instrument_id
 # MAGIC ```
 # MAGIC
 # MAGIC **Postgres (WITH RECURSIVE):** See Step 3 above.
@@ -226,7 +226,7 @@ if rows:
 # COMMAND ----------
 
 print("Oracle CONNECT BY pattern:")
-print("  SELECT * FROM bom_edge START WITH parent_id = 'PRD-X' CONNECT BY parent_id = PRIOR child_part")
+print("  SELECT * FROM holding START WITH parent_id = 'FUND-X' CONNECT BY parent_id = PRIOR instrument_id")
 print()
 print("Postgres WITH RECURSIVE (Step 3) is the equivalent.")
 print("It is more explicit: you see the anchor (base case) and recursion (inductive case) clearly.")

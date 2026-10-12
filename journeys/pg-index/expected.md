@@ -6,16 +6,16 @@ The key: each query shows an Index in the EXPLAIN output.
 ## Setup
 
 ```text
-Created machine_index_demo with 60k rows and all data types
+Created account_index_demo with 60k rows and all data types
 ```
 
 ## Indexes created
 
 ```text
-✓ BTREE index on machine_id (relational lookups)
-✓ HASH index on status_code (integer equality)
+✓ BTREE index on account_id (relational lookups)
+✓ HASH index on mcc (integer equality)
 ✓ GIN index on spec (JSON containment @>)
-✓ BRIN index on created_at (time-series range scans)
+✓ BRIN index on opened_at (time-series range scans)
 ✓ GIST index on location (geospatial distance <->)
 ✓ HNSW index on embedding (vector similarity <=>)
 ```
@@ -38,13 +38,13 @@ Each query type uses its matching index:
 
 ```text
 1. Creating demo table with every data type:
-Created machine_index_demo with 60k rows and all data types
+Created account_index_demo with 60k rows and all data types
 
 2. Creating six index types:
-✓ BTREE index on machine_id (relational lookups)
-✓ HASH index on status_code (integer equality)
+✓ BTREE index on account_id (relational lookups)
+✓ HASH index on mcc (integer equality)
 ✓ GIN index on spec (JSON containment @>)
-✓ BRIN index on created_at (time-series range scans)
+✓ BRIN index on opened_at (time-series range scans)
 ✓ GIST index on location (geospatial distance <->)
 ✓ HNSW index on embedding (vector similarity <=>)
 
@@ -64,12 +64,12 @@ Explain shows which index each query uses:
 
 | Index AM | Data type | Query pattern | Typical use |
 | --------- | --------- | ------------- | ----------- |
-| BTREE | relational | exact match / range | IDs, codes, lookups |
-| HASH | relational | exact match only | integer comparisons |
-| GIN | JSONB | containment (@>) | searching JSON specs |
-| BRIN | TIMESTAMP | range queries | time-series (machines over date range) |
+| BTREE | relational | exact match / range | account IDs, codes, lookups |
+| HASH | relational | exact match only | merchant category comparisons |
+| GIN | JSONB | containment (@>) | searching account/product specs |
+| BRIN | TIMESTAMP | range queries | time-series (accounts opened in date range) |
 | GIST | geometry/geography | spatial distance (<->) | proximity queries |
-| HNSW | vector | similarity (<=>) | embedding similarity search |
+| HNSW | vector | similarity (<=>) | account similarity search |
 
 > **From the field**
 > All six indexes exist on a single table. The planner chooses which to use (or none) based on the

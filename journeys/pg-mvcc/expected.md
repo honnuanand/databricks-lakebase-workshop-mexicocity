@@ -5,8 +5,8 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 ## Step 1, system columns before update
 
 ```text
-machine_id  health_pct  xmin  xmax  ctid
-M-204       91.00       1234  0     (0,5)
+account_id    health_pct  xmin  xmax  ctid
+ACCT-100240   91.00       1234  0     (0,5)
 ```
 
 The row is alive: xmin=1234 (created by TID 1234), xmax=0 (not deleted), ctid=(0,5) (physical location: page 0, slot 5).
@@ -17,16 +17,16 @@ After UPDATE health_pct=50.0:
 
 ```text
 -- Before:
-machine_id  health_pct  xmin  xmax  ctid
-M-204       91.00       1234  0     (0,5)
+account_id    health_pct  xmin  xmax  ctid
+ACCT-100240   91.00       1234  0     (0,5)
 
 -- After:
-machine_id  health_pct  xmin  xmax  ctid
-M-204       50.00       1245  0     (0,7)
+account_id    health_pct  xmin  xmax  ctid
+ACCT-100240   50.00       1245  0     (0,7)
 ```
 
-- `xmin` changed: 1234 → 1245 (new transaction)
-- `ctid` changed: (0,5) → (0,7) (new physical location)
+- `xmin` changed: 1234 to 1245 (new transaction)
+- `ctid` changed: (0,5) to (0,7) (new physical location)
 - The old version (health_pct=91, xmin=1234) is still on disk; its xmax is now set to 1245
 
 The new version is alive (xmax=0); the old version is dead (xmax=1245).
@@ -37,11 +37,11 @@ After 10 UPDATEs:
 
 ```text
 n_live_tup  n_dead_tup  last_vacuum
-2507        9           <null or recent>
+8           9           <null or recent>
 ```
 
-- `n_live_tup`: ~2507 (all rows in the machine table, or just the sample)
-- `n_dead_tup`: 9 (the 9 old versions of M-204 that we UPDATEd)
+- `n_live_tup`: ~8 (all rows in the account table, or just the sample)
+- `n_dead_tup`: 9 (the 9 old versions of ACCT-100240 that we UPDATEd)
 - `last_vacuum`: NULL or a timestamp if VACUUM has run
 
 The dead tuples accumulate until VACUUM cleans them up.
@@ -53,11 +53,11 @@ After VACUUM:
 ```text
 Before VACUUM:
 n_live_tup  n_dead_tup
-2507        9
+8           9
 
 After VACUUM:
 n_live_tup  n_dead_tup
-2507        0
+8           0
 ```
 
 - `n_dead_tup` drops to 0 (dead tuples are removed)

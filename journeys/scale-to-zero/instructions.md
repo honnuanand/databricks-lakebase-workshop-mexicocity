@@ -11,11 +11,8 @@ There are a few ways to work through the steps. Pick one:
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
-Everything here is a single script you can read: [`./scale_to_zero.py`](./scale_to_zero.py).
-You can run it end to end, or follow the steps by hand to see each piece.
-
-> **Warning**
-> This journey stops database compute on the **project level**. If you're on a shared project, other journeys will pause until you restart. If you're unsure you're on your own project, ask your instructor before proceeding.
+> **Note**
+> This journey does not press a stop button. On a Lakebase Autoscaling endpoint, idle compute suspends to zero on its own, and the next query wakes it. There is nothing destructive here: watching the state and waking it with a `SELECT 1` is safe to run on a shared project.
 
 ## Run it end to end
 
@@ -24,13 +21,13 @@ cd journeys/scale-to-zero
 python scale_to_zero.py
 ```
 
-This walks the whole story: checks the compute state, stops it, verifies the stop, restarts it, and prints timings. Read on for what each step does; the exact output to expect is in [`expected.md`](expected.md).
+This walks the whole story: reads the endpoint state, explains that idle suspends to zero automatically, wakes it with one query, times the wake, and confirms the data is untouched. Read on for what each step does; the exact output to expect is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
 ### Step 1, check the current state
 
-Query the project's compute endpoint to see its current state:
+Read the branch's compute endpoint state. This is a control-plane read (the SDK), not SQL:
 
 ```bash
 python scale_to_zero.py --step status
@@ -39,78 +36,48 @@ python scale_to_zero.py --step status
 You'll see output like:
 
 ```text
-  endpoint_id: primary
-  state: ACTIVE
-  nodes: 1
-  cu: 1
+  branch u-arao: endpoint primary is ACTIVE
+  -> serving: compute is up and metering.
 ```
 
-The endpoint is `ACTIVE`, which means compute is running.
+`ACTIVE` means compute is up and metering. `IDLE` means it auto-suspended to zero: no compute nodes, no compute cost. A branch you just used is usually `ACTIVE`; one you have not queried for a few minutes is `IDLE`.
 
-### Step 2, stop the compute
+### Step 2, idle compute suspends to zero on its own
+
+There is no command to run here. With no queries, an Autoscaling endpoint auto-suspends to `IDLE` after its suspend timeout, and the compute nodes are released. You pay nothing for compute while it sits idle. To watch a clear cold wake, point at a branch that has actually been idle (for example the `production` branch if you have not touched it):
 
 ```bash
-python scale_to_zero.py --step stop
+python scale_to_zero.py --step status --branch production
 ```
 
-This calls the Lakebase API to stop the compute on your project:
+### Step 3, wake it on demand with one query
 
-```python
-w.postgres.update_database_instance(name=..., database_instance=DatabaseInstance(stopped=True))
-```
-
-The script waits for the state to transition to `STOPPED` and prints:
-
-```text
-  stopping compute ...
-  stopped in ~4.2s; nodes: 0; effective_stopped: true
-```
-
-The compute is now stopped and costs nothing.
-
-### Step 3, verify the stop
+A single `SELECT 1` wakes the endpoint. Waking is about the compute, not any table, so this works on any branch:
 
 ```bash
-python scale_to_zero.py --step status
+python scale_to_zero.py --step wake --branch production
 ```
 
-You'll see:
+You'll see the wake timed:
 
 ```text
-  endpoint_id: primary
-  state: STOPPED
-  nodes: 0
-  effective_stopped: true
+  endpoint is IDLE; a single query will wake it. timing...
+  woke IDLE -> ACTIVE; first query answered in ~1700 ms
 ```
 
-### Step 4, restart the compute
+If the endpoint was already warm, you'll instead see it stay `ACTIVE` and the query return in around a second (that is the network round trip, not a cold wake).
 
-```bash
-python scale_to_zero.py --step start
-```
+### Step 4, verify data is untouched
 
-This calls:
-
-```python
-w.postgres.update_database_instance(name=..., database_instance=DatabaseInstance(stopped=False))
-```
-
-The script waits for the state to transition to `ACTIVE` and prints:
-
-```text
-  starting compute ...
-  started in ~7.1s; state: ACTIVE; nodes: 1
-```
-
-### Step 5, verify data is untouched
+Suspending compute never touches your data. Confirm the account table is still intact:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT count(*) FROM factory.machine"
+  "SELECT count(*) FROM bank.account"
 ```
 
-The machine table is still intact. Stopping compute does not touch the data.
+The account table is still there with all its rows. Only the compute suspended and woke; the storage stayed.
 
 ## What you just did
 
-You stopped database compute to $0/hr, restarted it, and confirmed the data was untouched. Compare the timings you saw against [`expected.md`](expected.md), and if anything went sideways, [`faq.md`](faq.md) has the common causes.
+You saw idle Lakebase compute cost nothing automatically, woke it on demand with a single query in about two seconds, and confirmed the data was untouched. Compare the timings you saw against [`expected.md`](expected.md), and if anything went sideways, [`faq.md`](faq.md) has the common causes.

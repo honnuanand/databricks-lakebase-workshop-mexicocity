@@ -20,13 +20,13 @@ source workshop.env    # the file you built in 00-setup
 
 Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 
-## "table factory.part does not exist" or spec column is NULL
+## "table bank.instrument does not exist" or spec column is NULL
 
-The factory schema was not loaded, or the part specs were not seeded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-factory step. If the column exists but contains NULLs, update a few rows with test specs:
+The bank schema was not loaded, or the instrument specs were not seeded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-bank step. If the column exists but contains NULLs, update a few rows with test specs:
 
 ```sql
-UPDATE factory.part SET spec = '{"material": "steel", "load_capacity_kg": 500}'
-  WHERE part_id = 'PT-BEARING-6204';
+UPDATE bank.instrument SET spec = '{"sector": "tech", "beta": 1.2}'
+  WHERE instrument_id = 'INS-AAPL';
 ```
 
 ## What's the difference between ->> and #>>?
@@ -38,9 +38,9 @@ UPDATE factory.part SET spec = '{"material": "steel", "load_capacity_kg": 500}'
 Example:
 
 ```sql
-SELECT spec -> 'material' FROM factory.part;  -- returns JSONB '{"material": "steel"}'
-SELECT spec ->> 'material' FROM factory.part; -- returns text 'steel'
-SELECT spec #>> '{material}' FROM factory.part; -- same as ->> ; also returns text 'steel'
+SELECT spec -> 'sector' FROM bank.instrument;  -- returns JSONB '{"sector": "tech"}'
+SELECT spec ->> 'sector' FROM bank.instrument; -- returns text 'tech'
+SELECT spec #>> '{sector}' FROM bank.instrument; -- same as ->> ; also returns text 'tech'
 ```
 
 ## Can I create an index on a path inside the JSON?
@@ -48,34 +48,34 @@ SELECT spec #>> '{material}' FROM factory.part; -- same as ->> ; also returns te
 Yes. Instead of indexing the entire JSONB column, you can index a specific path:
 
 ```sql
-CREATE INDEX idx_part_spec_material ON factory.part
-  USING gin((spec #>> '{material}'));
+CREATE INDEX idx_instrument_spec_sector ON bank.instrument
+  USING gin((spec #>> '{sector}'));
 ```
 
-This indexes just the material field as text. Use this when you have a few hot query paths that dominate your workload.
+This indexes just the sector field as text. Use this when you have a few hot query paths that dominate your workload.
 
-## What if my JSON has nested objects (e.g., `{"engine": {"horsepower": 300}}`)?
+## What if my JSON has nested objects (e.g., `{"properties": {"rating": "AAA"}}`)?
 
 Postgres handles nested JSON naturally. Extract nested values with path arrays:
 
 ```sql
-SELECT spec #>> '{engine, horsepower}' FROM factory.part;
+SELECT spec #>> '{properties, rating}' FROM bank.instrument;
 ```
 
-This extracts the horsepower from the engine object. The path is an array of keys: `'{engine, horsepower}'`.
+This extracts the rating from the properties object. The path is an array of keys: `'{properties, rating}'`.
 
 ## How do I check if a JSON key exists?
 
 Use the `?` operator:
 
 ```sql
-SELECT * FROM factory.part WHERE spec ? 'material';
+SELECT * FROM bank.instrument WHERE spec ? 'sector';
 ```
 
-This returns rows where the spec has a top-level key named 'material'. For nested keys:
+This returns rows where the spec has a top-level key named 'sector'. For nested keys:
 
 ```sql
-SELECT * FROM factory.part WHERE spec -> 'properties' ? 'material';
+SELECT * FROM bank.instrument WHERE spec -> 'properties' ? 'rating';
 ```
 
 ## Can I update a specific field in JSONB without rewriting the whole document?
@@ -84,12 +84,12 @@ Yes, use the `||` (merge) operator or the `jsonb_set()` function:
 
 ```sql
 -- Merge (shallow; overwrites matching keys at top level)
-UPDATE factory.part SET spec = spec || '{"material": "aluminum"}'
-  WHERE part_id = 'PT-SHAFT-A';
+UPDATE bank.instrument SET spec = spec || '{"sector": "energy"}'
+  WHERE instrument_id = 'INS-AAPL';
 
 -- jsonb_set (deep; set a specific path)
-UPDATE factory.part SET spec = jsonb_set(spec, '{material}', '"aluminum"')
-  WHERE part_id = 'PT-SHAFT-A';
+UPDATE bank.instrument SET spec = jsonb_set(spec, '{sector}', '"energy"')
+  WHERE instrument_id = 'INS-AAPL';
 ```
 
 The `||` operator is simpler for top-level updates. Use `jsonb_set()` for nested paths.

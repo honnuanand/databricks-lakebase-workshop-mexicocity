@@ -20,105 +20,109 @@ source workshop.env
 
 Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 
-## The operation row already exists (from a prior run)
+## The account was already frozen (from a prior run)
 
-The script is idempotent: it checks the agent's memory before assigning. If you see "already
-assigned" on the first run, it means a prior run left data behind. Clean up:
+The script is idempotent: `--step review` (and a full run) first calls `_setup()`, which puts
+ACCT-100240 back on `watch` and clears any prior hold flag and memory. If you ran only
+`--step review-again` and see unexpected state, run a full `python agentic_work.py` to reset
+and replay the whole story. To reset by hand:
 
 ```bash
-python lakebase.py --sql "DELETE FROM factory.operation WHERE wo_id='WO-1001'"
-python lakebase.py --sql "DELETE FROM factory.agent_memory WHERE namespace='default' AND content LIKE '%WO-1001%'"
+python lakebase.py --sql "UPDATE bank.account SET status='watch' WHERE account_id='ACCT-100240'"
+python lakebase.py --sql "DELETE FROM bank.case_note WHERE account_id='ACCT-100240' AND action='hold_placed'"
+python lakebase.py --sql "DELETE FROM bank.agent_memory WHERE namespace='default' AND content LIKE '%ACCT-100240%'"
 ```
-
-Then re-run the script.
 
 ## The agent didn't call any tools
 
-If you see "no tool calls" in the output, the agent prompt may have been misinterpreted. Check:
+The script drives the tool calls directly (the SQL reads and writes), and uses the Foundation
+Model API only to *narrate* the decision. If the FM API is unavailable, you'll see a
+`(FM API unavailable: ...; using fallback)` line and a canned narration, and the tool calls
+(the real work) still run. To check the endpoint:
 
-1. **Fallback simulation**: The script falls back to simulating tool calls if the FM API
-   is unavailable. Check if the FM endpoint is running:
+```bash
+databricks serving-endpoints list --profile workshop | grep claude
+```
+
+Set `FM_ENDPOINT=<name>` if your model endpoint is named differently.
+
+## The tool call succeeded but the state didn't change
+
+If you see "place_hold ... froze account" but the account still shows `watch`, check:
+
+1. **Are you querying the right table/branch?** Run:
    ```bash
-   databricks serving-endpoints list --profile workshop | grep claude
+   python lakebase.py --sql "SELECT account_id, status FROM bank.account WHERE account_id='ACCT-100240'"
    ```
-2. **Model response parsing**: The script expects Claude to return a `<tool_name>` and
-   `<tool_input>` block. If Claude's response format changed, the parser might not recognize it.
-   Look for "parse failed" in the output.
+   If the status is still `watch`, the UPDATE did not commit on this branch.
 
-## The tool call succeeded but the row didn't insert
-
-If you see "tool call: assign_work_order OK" but the operation table is still empty, check:
-
-1. **Are you querying the right table?** Run:
-   ```bash
-   python lakebase.py --sql "SELECT count(*) FROM factory.operation"
-   ```
-   If the count changed, the insert worked but maybe with a different wo_id or machine_id.
-
-2. **Check the agent's SQL**: The script runs:
+2. **Check the case_note flag**: the hold writes both an account UPDATE and a case_note INSERT:
    ```sql
-   INSERT INTO factory.operation (op_id, wo_id, machine_id, seq, status)
-   VALUES ('OP-' || gen_random_uuid()::text, 'WO-1001', 'M-204', 1, 'pending')
+   INSERT INTO bank.case_note (account_id, writeup, category, finding, action, confidence)
+   VALUES ('ACCT-100240', '...', 'fraud', '...', 'hold_placed', 0.95)
    ```
-   If that failed (e.g., foreign key violation), the operation table would be unchanged. Look
-   for an error in the script's debug output.
+   If that failed (for example a foreign-key violation on account_id), the case_note table
+   would be unchanged. Look for an error in the script output.
 
-3. **Branch isolation**: If you're on a different branch than when the agent ran, you'd see
+3. **Branch isolation**: if you're on a different branch than when the agent ran, you'd see
    different data. Confirm your branch: `echo $LB_BRANCH`.
 
-## The second release didn't refuse; it assigned again
+## The second review didn't refuse; it placed another hold
 
-If you called the script twice and both times saw "assigned", the memory table might not be
+If you called the script twice and both times saw "hold placed", the memory table might not be
 keeping the agent's log. Check:
 
 ```bash
 python lakebase.py --sql \
-  "SELECT agent_id, content FROM factory.agent_memory WHERE namespace='default'"
+  "SELECT agent_id, content FROM bank.agent_memory WHERE namespace='default' AND content LIKE '%ACCT-100240%'"
 ```
 
-You should see rows from both calls. If not, the agent's memory table is on a different
-schema or branch. Confirm `$LB_SCHEMA` (default: `factory`).
+You should see the "placed hold on ACCT-100240" row from the first call. If not, the agent's
+memory is on a different schema or branch. Confirm `$LB_SCHEMA` (default: `bank`).
 
-## I want to use a different work order or machine
+## I want to use a different account
 
-The script hardcodes `WO-1001` and `M-204`. To use different values, edit the script or pass
-them as arguments (not currently supported; you'd need to modify the script):
+The script hardcodes `ACCT-100240` (the seeded fraud signal). To use a different account, edit
+the script:
 
 1. Open `agentic_work.py`.
-2. Change these lines:
+2. Change this line:
    ```python
-   WO_ID = "WO-1001"
-   MACHINE_ID = "M-204"
+   ACCOUNT_ID = "ACCT-100240"
    ```
-3. Re-run.
+3. Re-run. Pick an account that has transactions with a meaningful anomaly score, otherwise
+   the hold decision has nothing to act on.
 
-Or manually run the tool calls:
+Or run the tool calls by hand:
 
 ```bash
 python lakebase.py --sql \
-  "SELECT machine_id, status FROM factory.machine WHERE status='healthy' LIMIT 5"
+  "SELECT account_id, status FROM bank.account WHERE status='watch' LIMIT 5"
 
 python lakebase.py --sql \
-  "INSERT INTO factory.operation (op_id, wo_id, machine_id, seq, status) \
-   VALUES (gen_random_uuid()::text, 'WO-XXXX', 'M-YYYY', 1, 'pending')"
+  "UPDATE bank.account SET status='frozen' WHERE account_id='ACCT-XXXXXX'"
 ```
 
 ## Can I test this with my own agent?
 
 Yes, if your agent supports a tool-calling pattern:
 
-1. Deploy an agent that accepts a `release_work_order` tool.
-2. Have it accept `wo_id` and `machine_id` as arguments.
-3. Have it call a `get_free_machines` tool to read the machine table.
-4. Point the script at your Model Serving endpoint (edit `FM_ENDPOINT` in the script or pass
-   `--fm-endpoint <name>`).
+1. Deploy an agent that accepts a `get_account_risk` tool and a `place_hold` tool.
+2. Have `get_account_risk` read `bank.account` and `bank.txn`.
+3. Have `place_hold` UPDATE the account status and INSERT a `case_note` flag row.
+4. Point the script at your Model Serving endpoint by setting `FM_ENDPOINT=<name>`.
 
 The journey script is a minimal example; production agents would add error handling, retries,
 and transaction isolation.
 
-## Why does the operation table have an auto-generated ID (op_id)?
+## Why write to both account.status and case_note?
 
-The `operation` table tracks routing steps of a work order. Each operation is one step. WO-1001
-might have operations on M-204 (press), M-205 (another press), and M-311 (CNC). The op_id
-is unique per operation. A single work order can have multiple operation rows. The script
-generates one operation per release.
+The hold is one logical action with two durable effects:
+
+- **`account.status = 'frozen'`** is the live operational state: downstream systems that read
+  the account see the hold immediately.
+- **`case_note` with `action='hold_placed'`** is the audit trail: who/what acted, why (the
+  anomaly score), and when. It is also the stable marker that makes a re-run idempotent.
+
+Keeping both in one Lakebase database means the operational change and its audit record are a
+single transaction, not a sync between two systems.

@@ -9,7 +9,7 @@ There are a few ways to work through the steps. Pick one:
 - **By hand:** follow the numbered steps below, copying each command yourself.
 - **Just see it work:** run `python break_and_rewind.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
-Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
+Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank loaded.
 
 Everything here is a single script you can read: [`./break_and_rewind.py`](./break_and_rewind.py).
 You can run it end to end, or follow the steps by hand to see each piece.
@@ -27,14 +27,14 @@ This walks the whole story, captures the LSN before the delete, runs the delete,
 
 ### Step 1, establish the data
 
-First, confirm a few work orders exist on your branch:
+First, confirm a few trades exist on your branch:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT wo_id, product_id, qty, status FROM factory.work_order"
+  "SELECT trade_id, fund_id, qty, status FROM bank.trade ORDER BY trade_id"
 ```
 
-You'll see the seeded work orders: WO-8821 and WO-8822. This is production data. Note the timestamp.
+You'll see the seeded trades: TRD-8821 and TRD-8822. This is production data. Note the timestamp.
 
 ### Step 2, capture the LSN (optional, for the curious)
 
@@ -48,7 +48,7 @@ The LSN is the write-ahead log position that marks "the state of the database ri
 
 ### Step 3, make the mistake
 
-Delete all work orders on your branch (simulating a bad query):
+Delete all trades on your branch (simulating a bad query). Settlements reference trades by a foreign key, so the script removes the settlement legs first, then the trades:
 
 ```bash
 python break_and_rewind.py --step delete
@@ -57,10 +57,11 @@ python break_and_rewind.py --step delete
 The script runs:
 
 ```sql
-DELETE FROM factory.work_order;
+DELETE FROM bank.settlement;   -- children first (FK to trade)
+DELETE FROM bank.trade;
 ```
 
-Then checks: the table is now empty.
+Then checks: both tables are now empty.
 
 ### Step 4, rewind
 
@@ -71,9 +72,9 @@ python break_and_rewind.py --step recover
 ```
 
 This is the core moment:
-- Calls `w.postgres.create_branch()` with `source_lsn=<the LSN from before the delete>`
+- Calls `w.postgres.create_branch()` with `source_branch_lsn=<the LSN from before the delete>`
 - The branch endpoint reaches ACTIVE in about two seconds
-- The script then reads the work orders from the PITR branch
+- The script then reads the trades from the PITR branch
 - All deleted rows are back
 
 ### Step 5, discard the restore branch

@@ -11,18 +11,19 @@
 > - Diverging on a branch never touches production. Discarding the branch leaves zero storage
 >   behind. Fork, experiment, throw away, as cheaply as a git branch, for a live database.
 >
-> **You'll be able to:** fork your production factory database into a new branch, change data on
+> **You'll be able to:** fork your production bank database into a new branch, change an account on
 > the branch, prove production is untouched, and discard the branch clean.
 >
 > **Time:** about 15 minutes  ·  **Status:** live
 
 ## The scenario
 
-You run the twin of a stamping plant. Right now production says machine `M-204` is `healthy` and
-cleared to run the night shift. A process engineer wants to try something risky: re-tag `M-204`
-as `derated` and see how the scheduling logic reacts, because a vibration reading looked off. But
-this is the live operational database. Changing `M-204` in production to run an experiment is
-exactly the kind of thing that pages someone at 2 a.m.
+You run the operational core of a retail and commercial bank. Right now production says account
+`ACCT-100240` is on `watch` and still open for spending. A fraud analyst wants to try something
+risky: freeze the account and watch how the downstream flows react, because an overnight
+transaction scored high for fraud. But this is the live operational database. Freezing a live
+customer account in production to run an experiment is exactly the kind of thing that pages
+someone at 2 a.m.
 
 The normal answer is "spin up a copy of the database." On most systems that means a dump and
 restore, or a storage-level clone that takes minutes to stand up and real disk to hold. You do
@@ -48,7 +49,7 @@ Here is the object model you're working in. You have your own branch, `u-<name>`
 `production`. In this journey you fork *your* branch to create a short-lived experiment branch.
 
 ```text
-Project (factory)
+Project (bank)
  ├─ production            the protected, shared source
  ├─ u-alex                your working branch (from 00-setup)
  └─ u-alex-exp            the experiment fork you create here, then discard
@@ -58,9 +59,9 @@ Project (factory)
 
 The beat worth watching: you click create, and a full copy of the database is ready to query on
 its own endpoint in about two seconds. Not a progress bar for a clone job. Seconds. Then you set
-`M-204` to `derated` on the fork, read it back changed, switch to production, and read the same
-row still `healthy`. Two live databases, one of them forked from the other moments ago, holding
-different facts.
+`ACCT-100240` to `frozen` on the fork, read it back changed, switch to production, and read the
+same row still on `watch`. Two live databases, one of them forked from the other moments ago,
+holding different facts about the same account.
 
 > **From the field**
 > The honest number: the branch's *data* is ready almost instantly, the copy-on-write metadata
@@ -72,10 +73,11 @@ different facts.
 
 ## What you'll do
 
-1. Look at `M-204` on your branch: it's `healthy`.
+1. Look at `ACCT-100240` on your branch: it's on `watch`.
 2. Fork your branch into an experiment branch, and time how long until it's `ACTIVE`.
-3. On the fork, set `M-204` to `derated`. Read it back changed.
-4. Switch to production and read `M-204`, still `healthy`. The divergence lives only on the fork.
+3. On the fork, set `ACCT-100240` to `frozen`. Read it back changed.
+4. Switch to production and read `ACCT-100240`, still on `watch`. The divergence lives only on
+   the fork.
 5. Discard the fork. Confirm it's gone and production is untouched.
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output and timings

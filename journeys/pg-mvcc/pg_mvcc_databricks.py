@@ -19,7 +19,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
-SCHEMA = os.environ.get("LB_SCHEMA", "factory")
+SCHEMA = os.environ.get("LB_SCHEMA", "bank")
 print("connected; schema:", SCHEMA)
 
 # COMMAND ----------
@@ -30,30 +30,30 @@ print("connected; schema:", SCHEMA)
 # MAGIC Postgres stores hidden columns on every row: xmin (transaction that inserted), xmax (transaction that deleted, or 0 if live), ctid (physical location). The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT xmin, xmax, ctid, machine_id, health_pct
-# MAGIC   FROM factory.machine
-# MAGIC  WHERE machine_id = %s
+# MAGIC SELECT xmin, xmax, ctid, account_id, health_pct
+# MAGIC   FROM bank.account
+# MAGIC  WHERE account_id = %s
 # MAGIC ```
 
 # COMMAND ----------
 
-machines = run_sql("SELECT machine_id FROM factory.machine LIMIT 1")
+machines = run_sql("SELECT account_id FROM bank.account LIMIT 1")
 if not machines:
     print("No machines found")
 else:
-    machine_id = machines[0][0]
+    account_id = machines[0][0]
     sql = """
-    SELECT xmin, xmax, ctid, machine_id, health_pct
-      FROM factory.machine
-     WHERE machine_id = %s
+    SELECT xmin, xmax, ctid, account_id, health_pct
+      FROM bank.account
+     WHERE account_id = %s
     """
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute(sql, (machine_id,))
+            cur.execute(sql, (account_id,))
             row = cur.fetchone()
             if row:
                 print(f"xmin={row[0]}, xmax={row[1]}, ctid={row[2]}")
-                print(f"machine_id={row[3]}, health_pct={row[4]}")
+                print(f"account_id={row[3]}, health_pct={row[4]}")
 
 # COMMAND ----------
 
@@ -63,34 +63,34 @@ else:
 # MAGIC Run an UPDATE and see xmin, xmax, and ctid change as Postgres creates a new version. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT xmin, xmax, ctid, health_pct FROM factory.machine WHERE machine_id = %s;
-# MAGIC UPDATE factory.machine SET health_pct = 50.0 WHERE machine_id = %s;
-# MAGIC SELECT xmin, xmax, ctid, health_pct FROM factory.machine WHERE machine_id = %s
+# MAGIC SELECT xmin, xmax, ctid, health_pct FROM bank.account WHERE account_id = %s;
+# MAGIC UPDATE bank.account SET health_pct = 50.0 WHERE account_id = %s;
+# MAGIC SELECT xmin, xmax, ctid, health_pct FROM bank.account WHERE account_id = %s
 # MAGIC ```
 
 # COMMAND ----------
 
-machines = run_sql("SELECT machine_id FROM factory.machine LIMIT 1")
+machines = run_sql("SELECT account_id FROM bank.account LIMIT 1")
 if not machines:
     print("No machines found")
 else:
-    machine_id = machines[0][0]
+    account_id = machines[0][0]
 
     with connect() as conn:
         with conn.cursor() as cur:
             # Query before
-            cur.execute("SELECT xmin, xmax, ctid, health_pct FROM factory.machine WHERE machine_id = %s", (machine_id,))
+            cur.execute("SELECT xmin, xmax, ctid, health_pct FROM bank.account WHERE account_id = %s", (account_id,))
             before = cur.fetchone()
             print("Before UPDATE:")
             if before:
                 print(f"  xmin={before[0]}, xmax={before[1]}, ctid={before[2]}, health_pct={before[3]}")
 
             # UPDATE
-            cur.execute("UPDATE factory.machine SET health_pct = 50.0 WHERE machine_id = %s", (machine_id,))
+            cur.execute("UPDATE bank.account SET health_pct = 50.0 WHERE account_id = %s", (account_id,))
             print("\nRunning UPDATE...")
 
             # Query after
-            cur.execute("SELECT xmin, xmax, ctid, health_pct FROM factory.machine WHERE machine_id = %s", (machine_id,))
+            cur.execute("SELECT xmin, xmax, ctid, health_pct FROM bank.account WHERE account_id = %s", (account_id,))
             after = cur.fetchone()
             print("\nAfter UPDATE:")
             if after:
@@ -112,16 +112,16 @@ else:
 # MAGIC ```sql
 # MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine';
 # MAGIC -- Run multiple UPDATEs
-# MAGIC UPDATE factory.machine SET health_pct = health_pct + 1.0 WHERE machine_id = %s  -- repeat 10 times
+# MAGIC UPDATE bank.account SET health_pct = health_pct + 1.0 WHERE account_id = %s  -- repeat 10 times
 # MAGIC ```
 
 # COMMAND ----------
 
-machines = run_sql("SELECT machine_id FROM factory.machine LIMIT 1")
+machines = run_sql("SELECT account_id FROM bank.account LIMIT 1")
 if not machines:
     print("No machines found")
 else:
-    machine_id = machines[0][0]
+    account_id = machines[0][0]
 
     with connect() as conn:
         with conn.cursor() as cur:
@@ -134,7 +134,7 @@ else:
 
             # Run 10 UPDATEs
             for i in range(10):
-                cur.execute("UPDATE factory.machine SET health_pct = health_pct + 1.0 WHERE machine_id = %s", (machine_id,))
+                cur.execute("UPDATE bank.account SET health_pct = health_pct + 1.0 WHERE account_id = %s", (account_id,))
 
             print("\nAfter 10 UPDATEs:")
 
@@ -155,7 +155,7 @@ else:
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine';
-# MAGIC VACUUM factory.machine;
+# MAGIC VACUUM bank.account;
 # MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine'
 # MAGIC ```
 
@@ -171,7 +171,7 @@ with connect() as conn:
             print(f"  n_live_tup={before[0]}, n_dead_tup={before[1]}")
 
         # VACUUM
-        cur.execute("VACUUM factory.machine")
+        cur.execute("VACUUM bank.account")
         print("\nRunning VACUUM...")
 
         # After VACUUM

@@ -34,19 +34,19 @@ python pg_partition.py --step setup
 Creates a RANGE-partitioned table on the month of `ts`:
 
 ```sql
-CREATE TABLE sensor_readings_partitioned (
-    reading_id BIGSERIAL,
-    machine_id TEXT NOT NULL,
+CREATE TABLE txn_partitioned (
+    txn_id BIGSERIAL,
+    account_id TEXT NOT NULL,
     ts TIMESTAMPTZ NOT NULL,
-    temp_c NUMERIC(6,2),
-    vibration_mm_s NUMERIC(6,2),
-    PRIMARY KEY (reading_id, ts)
+    amount_usd NUMERIC(12,2),
+    anomaly_score NUMERIC(6,2),
+    PRIMARY KEY (txn_id, ts)
 ) PARTITION BY RANGE (ts)
 ```
 
 Then creates 6 monthly partitions (Jan–Jun 2024), each holding 30k rows (180k total).
 
-Logically one table; physically 6 sub-tables, one per month.
+Logically one table, physically 6 sub-tables, one per month.
 
 ### Step 2, run EXPLAIN on a one-month query
 
@@ -59,7 +59,7 @@ This runs two queries and shows their EXPLAIN plans:
 **One-month query:**
 
 ```sql
-SELECT COUNT(*) FROM sensor_readings_partitioned
+SELECT COUNT(*) FROM txn_partitioned
 WHERE ts >= '2024-03-01' AND ts < '2024-04-01'
 ```
 
@@ -68,7 +68,7 @@ EXPLAIN output shows: `Subplans Removed: 5`, the planner pruned 5 of 6 partition
 **Full-range query:**
 
 ```sql
-SELECT COUNT(*) FROM sensor_readings_partitioned
+SELECT COUNT(*) FROM txn_partitioned
 WHERE ts >= '2024-01-01' AND ts < '2024-07-01'
 ```
 

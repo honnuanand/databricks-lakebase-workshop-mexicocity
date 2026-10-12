@@ -18,22 +18,22 @@ You're in a terminal that didn't load your environment. Re-source it:
 source workshop.env
 ```
 
-## "table factory.machine does not exist"
+## "table bank.account does not exist"
 
-The factory schema was not loaded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-factory step.
+The bank schema was not loaded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-bank step.
 
 ## xmin, xmax, ctid are not showing in my query
 
 These are system columns. They're not included in `SELECT *` by default. Query them explicitly:
 
 ```sql
-SELECT xmin, xmax, ctid, machine_id FROM factory.machine;
+SELECT xmin, xmax, ctid, account_id FROM bank.account;
 ```
 
 Or use `SELECT *` and explicitly add them:
 
 ```sql
-SELECT *, xmin, xmax, ctid FROM factory.machine;
+SELECT *, xmin, xmax, ctid FROM bank.account;
 ```
 
 ## My UPDATEs don't seem to be creating new versions
@@ -41,10 +41,10 @@ SELECT *, xmin, xmax, ctid FROM factory.machine;
 Check that autovacuum hasn't cleaned up the old versions yet. If autovacuum runs frequently (typical), dead tuples disappear quickly. You can disable it temporarily to see dead tuple accumulation:
 
 ```sql
-ALTER TABLE factory.machine SET (autovacuum_enabled = false);
+ALTER TABLE bank.account SET (autovacuum_enabled = false);
 -- Now do your UPDATEs; dead tuples will accumulate
 -- Re-enable when done
-ALTER TABLE factory.machine SET (autovacuum_enabled = true);
+ALTER TABLE bank.account SET (autovacuum_enabled = true);
 ```
 
 Or run `VACUUM` manually when you're ready to clean up.

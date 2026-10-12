@@ -3,7 +3,7 @@
 ## "pgvector extension not available" or HNSW index fails
 
 PGlite (WASM Postgres) and some managed instances don't ship pgvector by default. The script
-handles this gracefully, if HNSW fails, you'll see a warning and the other five indexes will work.
+handles this gracefully; if HNSW fails, you'll see a warning and the other five indexes will work.
 
 If you're running on a full Postgres instance and want pgvector, install it:
 
@@ -34,16 +34,16 @@ HASH is used primarily for specific patterns where it has a cost advantage.
 
 ## Why BRIN for timestamps, not BTREE?
 
-Both can index timestamps. BRIN is *smaller* (useful on very large tables) and still fast for range scans
+Both can index timestamps. BRIN is smaller (useful on very large tables) and still fast for range scans
 on natural time ordering. BTREE is more flexible. For 60k rows, either works; BRIN teaches the pattern:
-for billion-row time-series tables, BRIN is often the better choice.
+for billion-row account time-series tables, BRIN is often the better choice.
 
 ## This is a toy 60k-row table. Does this matter on real data?
 
-Very much. On a 1 billion-row machine-telemetry table:
-- A BRIN index on created_at might be 1 MB (vs 100 MB for BTREE).
-- A GIN index on JSON specs makes "find all machines with spec.model = 'Press'" instant.
-- An HNSW index on embeddings enables "find similar machines" predictions.
+Very much. On a 1 billion-row account table:
+- A BRIN index on opened_at might be 1 MB (vs 100 MB for BTREE).
+- A GIN index on JSON specs makes "find all accounts with spec.product = 'Savings'" instant.
+- An HNSW index on embeddings enables account similarity and risk-cohort predictions.
 
 The planner still arbitrates all six indexes on every query. The principles don't change.
 

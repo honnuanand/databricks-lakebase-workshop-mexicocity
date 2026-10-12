@@ -19,9 +19,9 @@
 
 ## The scenario
 
-It's 17:00 on Friday. The stamping plant's shift ends. Production stops for the weekend, the
-[manufacturing execution system](../../docs/glossary.md) (MES) goes quiet, and nobody queries the
-database until Monday. On a always-on database you pay full price for those idle hours anyway.
+It's 23:00 on a Friday. The bank's trading desks have closed for the week, settlement batches
+have run, and nobody queries the account database until Monday. On an always-on database you pay
+full price for those idle weekend hours anyway.
 
 On Lakebase Autoscaling, you do not have to do anything. When the queries stop, the endpoint's
 compute auto-suspends to zero. Over the weekend it costs nothing for compute. Monday morning, the

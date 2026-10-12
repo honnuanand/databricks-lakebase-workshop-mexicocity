@@ -21,6 +21,19 @@ source workshop.env    # the file you built in 00-setup
 
 Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 
+## The delete failed with a foreign-key error
+
+Settlements reference trades by a foreign key, so you cannot delete a trade while a settlement
+still points at it. Delete the children first:
+
+```sql
+DELETE FROM bank.settlement;   -- children first
+DELETE FROM bank.trade;        -- then the parents
+```
+
+The journey script already does this in the right order. If you ran a raw `DELETE FROM bank.trade`
+by hand and hit the error, delete `bank.settlement` first and retry.
+
 ## The recovery branch never reached ACTIVE
 
 The script waits about 30 seconds. If it times out:
@@ -31,7 +44,7 @@ The script waits about 30 seconds. If it times out:
 
 ## Can I recover data from weeks ago?
 
-Yes. Lakebase typically holds 30 days of WAL history, so you can branch to any LSN within that window. The journey only demonstrates seconds, but the capability spans the entire retention window. If you delete something on Monday and remember on Friday, PITR still works.
+Yes. Lakebase typically holds 30 days of WAL history, so you can branch to any LSN within that window. The journey only demonstrates seconds, but the capability spans the entire retention window. If you delete the trade book on Monday and remember on Friday, PITR still works.
 
 ## Why is "production" my own branch here, not the real production?
 
@@ -45,6 +58,6 @@ Correct. The PITR branch is a zero-copy branch from a past LSN. The branch share
 
 Lakebase uses the same copy-on-write mechanism as branching, so PITR is *not* a separate feature, it's branching at a past LSN. An Aurora Backtrack moves the production database back in time in place. A Lakebase PITR branch creates an isolated, read-only copy at that past time, leaving production unchanged and letting you read the old data while production keeps running. You get the best of both: recovery speed (seconds) and isolation (the recovery branch is independent).
 
-## I see "source_lsn" in the SDK docs. Is that what the script uses?
+## I see "source_branch_lsn" in the SDK docs. Is that what the script uses?
 
-Yes. The script queries the current LSN before the delete, stores it, then calls `create_branch()` with `source_lsn=<that LSN>` to create the recovery branch. The same call works for branching from now (omit `source_lsn`) or from the past (include it). The mechanism is identical.
+Yes. The script queries the current LSN before the delete, stores it, then calls `create_branch()` with `source_branch_lsn=<that LSN>` to create the recovery branch. The same call works for branching from now (omit `source_branch_lsn`) or from the past (include it). The mechanism is identical.

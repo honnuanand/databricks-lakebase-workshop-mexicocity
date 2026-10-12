@@ -10,7 +10,7 @@ There are a few ways to work through the steps. Pick one:
 - **Just see it work:** run `python branch_the_brain.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that
-first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
+first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank
 loaded.
 
 Everything here is a single script you can read: [`./branch_the_brain.py`](./branch_the_brain.py).
@@ -28,14 +28,14 @@ to expect is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
-### Step 1, look at M-204 on your branch
+### Step 1, look at ACCT-100240 on your branch
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id='M-204'"
+  "SELECT account_id, status, health_pct FROM bank.account WHERE account_id='ACCT-100240'"
 ```
 
-M-204 is `healthy`. This is the state you're about to fork.
+ACCT-100240 is on `watch`. This is the state you're about to fork.
 
 ### Step 2, fork your branch into an experiment branch
 
@@ -48,11 +48,11 @@ python branch_the_brain.py --step fork
 ```
 
 Watch the timing: the API returns in under a second, the endpoint is `ACTIVE` in about two
-seconds. A full, independent copy of your factory, ready to query, in seconds.
+seconds. A full, independent copy of your bank, ready to query, in seconds.
 
 ### Step 3, diverge on the fork
 
-Set M-204 to `derated` on the experiment branch only:
+Set ACCT-100240 to `frozen` on the experiment branch only:
 
 ```bash
 python branch_the_brain.py --step diverge
@@ -61,20 +61,20 @@ python branch_the_brain.py --step diverge
 The script connects to the *fork* and runs:
 
 ```sql
-UPDATE factory.machine SET status='derated', health_pct=70.0 WHERE machine_id='M-204';
+UPDATE bank.account SET status='frozen', health_pct=70.0 WHERE account_id='ACCT-100240';
 ```
 
-Then reads M-204 back from the fork: it's now `derated`.
+Then reads ACCT-100240 back from the fork: it's now `frozen`.
 
 ### Step 4, prove production (your branch) is untouched
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id='M-204'"
+  "SELECT account_id, status, health_pct FROM bank.account WHERE account_id='ACCT-100240'"
 ```
 
-Still `healthy`, `91.0`. Your branch never changed. The divergence lives only on the fork. Two
-live databases, forked moments ago, holding different facts about the same machine.
+Still `watch`, `91.0`. Your branch never changed. The divergence lives only on the fork. Two
+live databases, forked moments ago, holding different facts about the same account.
 
 ### Step 5, discard the fork
 

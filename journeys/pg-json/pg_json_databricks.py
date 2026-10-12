@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -19,25 +19,25 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, run_sql
 
-SCHEMA = os.environ.get("LB_SCHEMA", "factory")
+SCHEMA = os.environ.get("LB_SCHEMA", "bank")
 print("connected; schema:", SCHEMA)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, inspect JSONB specs on parts
+# MAGIC ## Step 1, inspect JSONB specs on instruments
 # MAGIC
-# MAGIC Each part has a `spec` column (JSONB). The contents vary: one part might have `{"load_capacity_kg": 500, "material": "steel"}`, another might have `{"tensile_strength_mpa": 1200, "coating": "zinc"}`. No schema migration needed when a new part type arrives with new fields. The SQL:
+# MAGIC Each instrument has a `spec` column (JSONB). The contents vary: one instrument might have `{"ticker": "AAPL", "sector": "tech", "beta": 1.2}`, another might have `{"tenor": "10Y", "coupon": 4.0, "rating": "AAA"}`. No schema migration needed when a new instrument type arrives with new fields. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT part_id, name, spec FROM factory.part LIMIT 3
+# MAGIC SELECT instrument_id, name, spec FROM bank.instrument LIMIT 3
 # MAGIC ```
 
 # COMMAND ----------
 
-sql = "SELECT part_id, name, spec FROM factory.part LIMIT 3"
+sql = "SELECT instrument_id, name, spec FROM bank.instrument LIMIT 3"
 rows = run_sql(sql)
-print("Sample part specs (JSONB, varying fields):")
+print("Sample instrument specs (JSONB, varying fields):")
 for row in rows:
     print(f"  {row[0]}: {row[1]}")
     print(f"    spec: {row[2]}")
@@ -45,27 +45,27 @@ for row in rows:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2, use containment operator (@>)
+# MAGIC ## Step 2, use containment operator (@>) to find instruments matching a spec
 # MAGIC
-# MAGIC The `@>` operator asks "does the JSON document on the left contain the JSON sub-document on the right?" This is the workhorse for spec matching. Find parts that match a spec. The SQL:
+# MAGIC The `@>` operator asks "does the JSON document on the left contain the JSON sub-document on the right?" This is the workhorse for spec matching. Find instruments that match a spec. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT part_id, name, spec
-# MAGIC   FROM factory.part
-# MAGIC  WHERE spec @> '{"material": "steel"}'
+# MAGIC SELECT instrument_id, name, spec
+# MAGIC   FROM bank.instrument
+# MAGIC  WHERE spec @> '{"sector": "tech"}'
 # MAGIC  LIMIT 5
 # MAGIC ```
 
 # COMMAND ----------
 
 sql = """
-SELECT part_id, name, spec
-  FROM factory.part
- WHERE spec @> '{"material": "steel"}'
+SELECT instrument_id, name, spec
+  FROM bank.instrument
+ WHERE spec @> '{"sector": "tech"}'
  LIMIT 5
 """
 rows = run_sql(sql)
-print("Parts with material='steel' (using @> containment):")
+print("Instruments with sector='tech' (using @> containment):")
 for row in rows:
     print(f"  {row[0]}: {row[1]}")
     print(f"    spec: {row[2]}")
@@ -73,29 +73,29 @@ for row in rows:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, use path extraction (#>>) and key exists (?)
+# MAGIC ## Step 3, use path extraction (#>>) and key exists (?) operators
 # MAGIC
 # MAGIC The `#>>` operator extracts a value from a path in the JSON. Use it to extract a field for filtering or display. The `?` operator checks if a key exists. Together, they let you filter and display JSON fields like columns. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT part_id, name, spec #>> '{material}' as material
-# MAGIC   FROM factory.part
-# MAGIC  WHERE spec ? 'material'
+# MAGIC SELECT instrument_id, name, spec #>> '{sector}' as sector
+# MAGIC   FROM bank.instrument
+# MAGIC  WHERE spec ? 'sector'
 # MAGIC  LIMIT 5
 # MAGIC ```
 
 # COMMAND ----------
 
 sql = """
-SELECT part_id, name, spec #>> '{material}' as material
-  FROM factory.part
- WHERE spec ? 'material'
+SELECT instrument_id, name, spec #>> '{sector}' as sector
+  FROM bank.instrument
+ WHERE spec ? 'sector'
  LIMIT 5
 """
 rows = run_sql(sql)
-print("Extracted material field from JSONB spec:")
+print("Extracted sector field from JSONB spec:")
 for row in rows:
-    print(f"  {row[0]}: material={row[2]}")
+    print(f"  {row[0]}: sector={row[2]}")
 
 # COMMAND ----------
 
@@ -105,45 +105,45 @@ for row in rows:
 # MAGIC JSONB queries are fast even without an index. With a GIN (Generalized Inverted Index) on the JSONB column, they are faster. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE INDEX IF NOT EXISTS idx_part_spec_gin ON factory.part
+# MAGIC CREATE INDEX IF NOT EXISTS idx_instrument_spec_gin ON bank.instrument
 # MAGIC   USING gin(spec jsonb_path_ops)
 # MAGIC ```
 
 # COMMAND ----------
 
-sql = "CREATE INDEX IF NOT EXISTS idx_part_spec_gin ON factory.part USING gin(spec jsonb_path_ops)"
+sql = "CREATE INDEX IF NOT EXISTS idx_instrument_spec_gin ON bank.instrument USING gin(spec jsonb_path_ops)"
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(sql)
-print("GIN index created on factory.part(spec)")
+print("GIN index created on bank.instrument(spec)")
 print("(Queries will use the index if beneficial)")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5, realistic compliance query: parts for harsh environment
+# MAGIC ## Step 5, realistic screening query: equities in tech sector
 # MAGIC
-# MAGIC Find parts suitable for a harsh environment (must be steel or stainless). The SQL:
+# MAGIC Find instruments that are equities in the tech sector. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT part_id, name, spec
-# MAGIC   FROM factory.part
-# MAGIC  WHERE spec @> '{"material": "steel"}'
-# MAGIC     OR spec @> '{"material": "stainless"}'
+# MAGIC SELECT instrument_id, name, spec
+# MAGIC   FROM bank.instrument
+# MAGIC  WHERE spec @> '{"sector": "tech"}'
+# MAGIC    AND kind = 'equity'
 # MAGIC  LIMIT 10
 # MAGIC ```
 
 # COMMAND ----------
 
 sql = """
-SELECT part_id, name, spec
-  FROM factory.part
- WHERE spec @> '{"material": "steel"}'
-    OR spec @> '{"material": "stainless"}'
+SELECT instrument_id, name, spec
+  FROM bank.instrument
+ WHERE spec @> '{"sector": "tech"}'
+    AND kind = 'equity'
  LIMIT 10
 """
 rows = run_sql(sql)
-print("Parts suitable for harsh environment (steel or stainless):")
+print("Equities in tech sector:")
 for row in rows:
     print(f"  {row[0]}: {row[1]}")
     if row[2]:
@@ -156,4 +156,4 @@ for row in rows:
 # MAGIC
 # MAGIC You mastered JSONB: the containment operator (@>) for semantic matching, path extraction (#>>) and key checks (?) for drill-down, and GIN indexes for speed. Postgres gives you flexibility of schema-less storage with the power of a relational query engine.
 # MAGIC
-# MAGIC Next: **Geospatial queries** use PostGIS to find locations within a distance, nearest neighbors, and spatial indexes.
+# MAGIC Next: **Geospatial queries** use PostGIS to find branches, custodians, and counterparties within a distance, nearest neighbors, and spatial indexes.

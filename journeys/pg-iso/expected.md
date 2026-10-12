@@ -5,13 +5,13 @@ Use this to check your run. The key: Session B blocks, then proceeds after Sessi
 ## Initial state
 
 ```text
-Slots before any update: 10
+Available credit before any update: 10000
 ```
 
 ## Session A: BEGIN + UPDATE
 
 ```text
-Session A sees: 9 slots after booking 1
+Session A sees: 9500 available credit after reducing by 500
 Session A is holding the transaction open (row is LOCKED)
 ```
 
@@ -29,39 +29,39 @@ Session B's UPDATE blocked waiting for Session A's lock. You see the wait time.
 ## Final state
 
 ```text
-Final slots: 4 (10 - 1 - 5 = 4)
+Final available credit: 7000 (10000 - 500 - 2500 = 7000)
 Both writes succeeded; neither was lost. Isolation works.
 ```
 
-Both updates landed: Session A booked 1 slot, Session B booked 5. Total = 6 slots booked,
-leaving 4 available. No conflict, no data corruption, no explicit application-level locks.
+Both updates landed: Session A reduced by 500, Session B reduced by 2,500. Total reduction = 3,000,
+leaving 7,000 available. No conflict, no data corruption, no explicit application-level locks.
 
 ## Full run
 
 ```text
-1. Initial state: machine has 10 maintenance slots available
-   Slots before any update: 10
+1. Initial state: account has 10,000 available credit
+   Available credit before any update: 10000
 
-2. Session A: BEGIN + UPDATE (book 1 slot), HOLD transaction open
-   Session A sees: 9 slots after booking 1
+2. Session A: BEGIN + UPDATE (reduce by 500), HOLD transaction open
+   Session A sees: 9500 available credit after reducing by 500
    Session A is holding the transaction open (row is LOCKED)
 
-3. Session B: try to UPDATE the same row (book 5 slots), WILL BLOCK
+3. Session B: try to UPDATE the same row (reduce by 2500), WILL BLOCK
    Session B running UPDATE (will wait for A's lock)...
    Session B proceeded after A committed (waited ~X.Xs)
 
 4. Final state: both updates landed in order
-   Final slots: 4 (10 - 1 - 5 = 4)
+   Final available credit: 7000 (10000 - 500 - 2500 = 7000)
    Both writes succeeded; neither was lost. Isolation works.
 ```
 
 ## The numbers that matter
 
-| Step | Slots | Reason |
-| ---- | ----- | ------ |
-| Initial | 10 | before any booking |
-| After Session A's UPDATE | 9 | A booked 1 slot |
-| After Session B's UPDATE | 4 | B booked 5 slots |
+| Step | Available Credit | Reason |
+| ---- | ---- | ------ |
+| Initial | 10000 | before any transaction |
+| After Session A's UPDATE | 9500 | A reduced by 500 |
+| After Session B's UPDATE | 7000 | B reduced by 2500 |
 | Lost updates | 0 | both updates applied; nothing lost |
 
 > **From the field**

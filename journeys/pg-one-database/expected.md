@@ -6,7 +6,7 @@ The key: one query, one result set, unified data from all four types.
 ## Setup
 
 ```text
-Created machine_unified_demo with 1000 machines (relational + JSON + vector + geo)
+Created account_unified_demo with 1000 accounts (relational + JSON + vector + geo)
 ```
 
 ## Query results
@@ -16,25 +16,25 @@ One SELECT spanning relational + JSON + vector + geo:
 
 Query:
 SELECT
-    machine_id,
-    plant_id,
+    account_id,
+    branch_id,
     line,
-    (spec->>'type') as machine_type,
-    (spec->>'year')::int as manufacture_year,
+    (spec->>'type') as account_type,
+    (spec->>'year')::int as vintage,
     (embedding <-> reference_embedding)::numeric(6,4) as embedding_distance,
     ST_Distance(location, reference_point) * 111.0 as km_from_ref
-FROM machine_unified_demo
+FROM account_unified_demo
 WHERE
-    plant_id = 'PL-DETROIT'
-    AND (spec->>'type') = 'Press'
+    branch_id = 'BR-NYC'
+    AND (spec->>'type') = 'commercial'
     AND ST_DWithin(location, reference_point, 0.1)
 ORDER BY embedding_distance, km_from_ref
 LIMIT 5
 
 Results (single query, single plan):
-  M-0042 | PL-DETROIT | Stamping-A | Press | 2021 | dist=0.0123 | km=0.0234
-  M-0089 | PL-DETROIT | Stamping-A | Press | 2023 | dist=0.0167 | km=0.0456
-  M-0156 | PL-DETROIT | Stamping-B | Press | 2022 | dist=0.0198 | km=0.0678
+  ACCT-1042 | BR-NYC | Checking | commercial | 2021 | dist=0.0123 | km=0.0234
+  ACCT-1089 | BR-NYC | Credit | commercial | 2023 | dist=0.0167 | km=0.0456
+  ACCT-1156 | BR-NYC | Savings | commercial | 2022 | dist=0.0198 | km=0.0678
 
 ✓ All four data models (relational, JSON, vector, geo) in one query
 ✓ One execution plan, one snapshot, one transaction
@@ -44,8 +44,8 @@ Results (single query, single plan):
 
 ```text
 EXPLAIN shows single plan across all types:
-  Seq Scan on machine_unified_demo
-    Filter: (plant_id = 'PL-DETROIT') AND ((spec->>'type') = 'Press') AND st_dwithin(location, ...
+  Seq Scan on account_unified_demo
+    Filter: (branch_id = 'BR-NYC') AND ((spec->>'type') = 'commercial') AND st_dwithin(location, ...
 ```
 
 One plan, four filters. Not four sub-queries stitched together.
@@ -54,7 +54,7 @@ One plan, four filters. Not four sub-queries stitched together.
 
 ```text
 1. Creating unified table (relational + JSON + vector + geo):
-Created machine_unified_demo with 1000 machines (relational + JSON + vector + geo)
+Created account_unified_demo with 1000 accounts (relational + JSON + vector + geo)
 
 2. Running the unified query:
 One SELECT spanning relational + JSON + vector + geo:
@@ -63,16 +63,16 @@ Query:
 [SQL query shown above]
 
 Results (single query, single plan):
-  M-0042 | PL-DETROIT | Stamping-A | Press | 2021 | dist=0.0123 | km=0.0234
-  M-0089 | PL-DETROIT | Stamping-A | Press | 2023 | dist=0.0167 | km=0.0456
-  M-0156 | PL-DETROIT | Stamping-B | Press | 2022 | dist=0.0198 | km=0.0678
+  ACCT-1042 | BR-NYC | Checking | commercial | 2021 | dist=0.0123 | km=0.0234
+  ACCT-1089 | BR-NYC | Credit | commercial | 2023 | dist=0.0167 | km=0.0456
+  ACCT-1156 | BR-NYC | Savings | commercial | 2022 | dist=0.0198 | km=0.0678
 
 ✓ All four data models (relational, JSON, vector, geo) in one query
 ✓ One execution plan, one snapshot, one transaction
 
 3. EXPLAIN shows single plan across all types:
-  Seq Scan on machine_unified_demo
-    Filter: (plant_id = 'PL-DETROIT') AND ((spec->>'type') = 'Press') AND st_dwithin(...)
+  Seq Scan on account_unified_demo
+    Filter: (branch_id = 'BR-NYC') AND ((spec->>'type') = 'commercial') AND st_dwithin(...)
 
 ✓ Not four products. One database.
 ```

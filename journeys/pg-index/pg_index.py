@@ -25,7 +25,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, _env
 
-DEMO_TABLE = "machine_index_demo"
+DEMO_TABLE = "account_index_demo"
 
 
 def _explain_uses_index(cur, query: str) -> bool:
@@ -38,7 +38,7 @@ def _explain_uses_index(cur, query: str) -> bool:
 
 def setup(conn):
     """Create a demo table with every data type."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     with conn.cursor() as cur:
         # Drop if exists
@@ -47,10 +47,10 @@ def setup(conn):
         # Create table with all types
         cur.execute(f"""
             CREATE TABLE {schema}.{DEMO_TABLE} (
-                machine_id TEXT PRIMARY KEY,           -- btree (lookups)
-                status_code INT NOT NULL,               -- hash (equality)
+                account_id TEXT PRIMARY KEY,           -- btree (lookups)
+                mcc INT NOT NULL,                       -- hash (equality)
                 spec JSONB DEFAULT '{{}}'::jsonb,      -- gin (JSON containment)
-                created_at TIMESTAMPTZ NOT NULL,        -- brin (time range scans)
+                opened_at TIMESTAMPTZ NOT NULL,         -- brin (time range scans)
                 location POINT,                         -- gist (spatial queries)
                 embedding VECTOR(256)                   -- hnsw (vector similarity)
             )
@@ -61,13 +61,13 @@ def setup(conn):
 
         # Seed with 60k rows
         cur.execute(f"""
-            INSERT INTO {schema}.{DEMO_TABLE}(machine_id, status_code, spec, created_at, location, embedding)
+            INSERT INTO {schema}.{DEMO_TABLE}(account_id, mcc, spec, opened_at, location, embedding)
             SELECT
-                'M-' || g,
+                'ACCT-' || g,
                 g % 10,
-                jsonb_build_object('model', 'CNC-X' || (g % 5), 'year', 2020 + (g % 4)),
+                jsonb_build_object('product', CASE WHEN (g % 3) = 0 THEN 'Checking' WHEN (g % 3) = 1 THEN 'Savings' ELSE 'Credit' END, 'tier', 'Premium' || (g % 5)),
                 now() - (g % 365 || ' days')::interval,
-                point(45.0 + (g % 10)::numeric / 100, -73.0 + (g % 10)::numeric / 100),
+                point(40.7549 + (g % 10)::numeric / 100, -73.9840 + (g % 10)::numeric / 100),
                 (array_fill(0.5::real, ARRAY[256]))::vector(256)  -- simplified embedding
             FROM generate_series(1, 60000) g
         """)
@@ -77,24 +77,24 @@ def setup(conn):
 
 def create_indexes(conn):
     """Create all six index types."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     with conn.cursor() as cur:
         # 1. BTREE (relational lookups)
-        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_btree_machine_id ON {schema}.{DEMO_TABLE} USING BTREE (machine_id)")
-        print("✓ BTREE index on machine_id (relational lookups)")
+        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_btree_account_id ON {schema}.{DEMO_TABLE} USING BTREE (account_id)")
+        print("✓ BTREE index on account_id (relational lookups)")
 
         # 2. HASH (equality on integers)
-        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_hash_status ON {schema}.{DEMO_TABLE} USING HASH (status_code)")
-        print("✓ HASH index on status_code (integer equality)")
+        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_hash_mcc ON {schema}.{DEMO_TABLE} USING HASH (mcc)")
+        print("✓ HASH index on mcc (integer equality)")
 
         # 3. GIN (JSON containment)
         cur.execute(f"CREATE INDEX IF NOT EXISTS idx_gin_spec ON {schema}.{DEMO_TABLE} USING GIN (spec)")
         print("✓ GIN index on spec (JSON containment @>)")
 
         # 4. BRIN (time-series range scans)
-        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_brin_created ON {schema}.{DEMO_TABLE} USING BRIN (created_at)")
-        print("✓ BRIN index on created_at (time-series range scans)")
+        cur.execute(f"CREATE INDEX IF NOT EXISTS idx_brin_opened ON {schema}.{DEMO_TABLE} USING BRIN (opened_at)")
+        print("✓ BRIN index on opened_at (time-series range scans)")
 
         # 5. GIST (geospatial distance)
         cur.execute(f"CREATE INDEX IF NOT EXISTS idx_gist_location ON {schema}.{DEMO_TABLE} USING GIST (location)")
@@ -110,17 +110,17 @@ def create_indexes(conn):
 
 def explain_all(conn):
     """Run EXPLAIN on each query type to prove the planner picks each index."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     queries = [
-        ("BTREE", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE machine_id = 'M-100'"),
-        ("HASH", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE status_code = 5"),
-        ("GIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE spec @> '{{\"model\": \"CNC-X1\"}}'::jsonb"),
+        ("BTREE", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE account_id = 'ACCT-100'"),
+        ("HASH", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE mcc = 5"),
+        ("GIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE spec @> '{{\"product\": \"Checking\"}}'::jsonb"),
         # A narrow time window so the BRIN index is selective (a 90-day window matches
         # most rows, where the planner correctly prefers a seq scan).
-        ("BRIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE created_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),
+        ("BRIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE opened_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),
         # A nearest-neighbor ORDER BY ... LIMIT is what a GiST distance index accelerates.
-        ("GIST", f"SELECT * FROM {schema}.{DEMO_TABLE} ORDER BY location <-> point(45.0, -73.0) LIMIT 5"),
+        ("GIST", f"SELECT * FROM {schema}.{DEMO_TABLE} ORDER BY location <-> point(40.7549, -73.9840) LIMIT 5"),
     ]
 
     with conn.cursor() as cur:

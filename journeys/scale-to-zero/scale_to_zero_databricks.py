@@ -7,7 +7,7 @@
 # MAGIC about two seconds. There is no stop button to press: idle is free, automatically.
 # MAGIC
 # MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA`
-# MAGIC are set and the factory is loaded on your branch.
+# MAGIC are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 

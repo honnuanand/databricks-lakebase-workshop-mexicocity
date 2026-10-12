@@ -1,43 +1,49 @@
 # Build a knowledge graph, expected results
 
-Use this to check your run. Your exact triple counts may vary slightly depending on the factory
+Use this to check your run. Your exact triple counts may vary slightly depending on the bank
 data you loaded, but the structure and query shapes should match.
 
-## Step 1, load the BOM as triples
+## Step 1, load the holdings tree as triples
 
-Running the full script prints a summary of triples loaded:
+Running the full script prints a summary of triples loaded. With the standard workshop seed you
+should see:
 
 ```text
-Loaded 250 triples:
-  - 45 product nodes
-  - 120 part nodes
-  - 85 BOM edges (contains relationships)
-  - 8 supplier nodes
-  - 12 part_supplied_by edges
-  - 15 machines and operates_in relationships
-  - (plus name and property triples)
+Loaded 28 triples:
+  - 2 funds
+  - 5 instruments
+  - 5 holdings
+  - 3 counterparties
+  - 3 traded_by_edges
+  - 3 branches
+  - 2 booked_at_edges
 ```
 
-The exact counts depend on your factory seed data, but you should see hundreds of triples.
+The exact counts depend on your bank seed data, but you should see a few dozen triples: each
+instrument contributes a name and a kind triple, each fund, branch, and counterparty a name
+triple, plus the holdings, traded_by, and booked_at edges.
 
-## Step 2, query the BOM
+## Step 2, query the holdings tree
 
 Running `python kg_build.py --step query` (or the full script) shows:
 
 ```text
-Parts contained in PRD-GEARBOX-X1:
-  PT-BEARING-6204
-  PT-GEAR-420
-  PT-SHAFT-110
-  PT-HOUSING-08
+Query: which instruments does FUND-GROWTH-A hold directly?
+  INS-CASH-USD
+  INS-MSFT
+  INS-SLEEVE-EQ
 ```
 
-This is a direct query into the graph's contains relationships. The [SPARQL](../../docs/glossary.md) query is:
+These are the direct children of FUND-GROWTH-A in the holdings tree. Note that `INS-SLEEVE-EQ` is
+itself a sub-sleeve that holds `INS-AAPL` and `INS-UST-10Y`; the direct query stops at the first
+level, while the SPARQL journey walks the whole tree.
+
+The traversal is over the graph's `holds` relationship, equivalent to this [SPARQL](../../docs/glossary.md):
 
 ```sparql
-SELECT ?part WHERE {
-  ?prod <http://factory.local/contains> ?part .
-  FILTER (?prod = <http://factory.local/PRD-GEARBOX-X1>)
+SELECT ?instrument WHERE {
+  ?fund <http://bank.local/holds> ?instrument .
+  FILTER (?fund = <http://bank.local/FUND-GROWTH-A>)
 }
 ```
 
@@ -47,35 +53,36 @@ The script shows the same query in SQL:
 
 ```text
 SQL equivalent:
-SELECT child_part FROM factory.bom_edge WHERE parent_id = 'PRD-GEARBOX-X1'
+SELECT instrument_id FROM bank.holding WHERE parent_id = 'FUND-GROWTH-A'
 ```
 
-Both return the same part IDs. In this simple case they're equally readable. But when you ask
-a multi-hop question like "which products contain a part from supplier S-ACME?", the SQL joins
-grow and the graph query stays shallow.
+Both return the same instrument IDs. In this simple case they're equally readable. But when you
+ask a multi-hop question like "which funds hold an instrument traded by CP-GOLDMAN?", the SQL joins
+grow and have to walk the sleeve nesting, while the graph query stays shallow.
 
 ## Full run output
 
 Running the whole script end to end produces output like:
 
 ```text
-Loading factory into RDF graph...
-  Loaded 250 triples
-  Loaded 45 products
-  Loaded 120 parts
-  Loaded 85 BOM edges
-  Loaded 8 suppliers
-  Loaded 12 supplier relationships
+Loading graph...
+  Loaded 28 triples
+  Loaded 2 funds
+  Loaded 5 instruments
+  Loaded 5 holdings
+  Loaded 3 counterparties
+  Loaded 3 traded_by edges
+  Loaded 3 branches
+  Loaded 2 booked_at edges
 
-Querying: which parts does PRD-GEARBOX-X1 contain?
-  PT-BEARING-6204
-  PT-GEAR-420
-  PT-SHAFT-110
-  PT-HOUSING-08
+Querying: which instruments does FUND-GROWTH-A hold directly?
+  INS-CASH-USD
+  INS-MSFT
+  INS-SLEEVE-EQ
 
 Equivalent SQL:
-SELECT child_part FROM factory.bom_edge WHERE parent_id = 'PRD-GEARBOX-X1'
-  Result: [('PT-BEARING-6204',), ('PT-GEAR-420',), ('PT-SHAFT-110',), ('PT-HOUSING-08',)]
+SELECT instrument_id FROM bank.holding WHERE parent_id = 'FUND-GROWTH-A'
+  Result: [('INS-CASH-USD',), ('INS-SLEEVE-EQ',), ('INS-MSFT',)]
 
 Done. Graph ready for SPARQL queries.
 ```
@@ -84,9 +91,9 @@ Done. Graph ready for SPARQL queries.
 
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
-| triples loaded | 200-300 | reflects your factory's BOM depth and supplier relationships |
-| parts per product | typically 3-6 | BOM complexity; deeper trees mean more complex recall analysis |
-| suppliers in graph | 8-15 | supply-chain density |
+| triples loaded | 25-35 | reflects your bank's holdings depth and counterparty relationships |
+| instruments per fund | typically 2-4 direct | holdings complexity; deeper sleeves mean richer exposure analysis |
+| counterparties in graph | 3 | counterparty network density |
 | time to load | under 1 second | rdflib is fast for small to medium graphs |
 
 > **Note**

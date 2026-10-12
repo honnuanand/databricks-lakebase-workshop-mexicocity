@@ -14,15 +14,15 @@
 
 ## The scenario
 
-You're managing factory maintenance slots. A machine has 10 slots available for maintenance work. Two independent schedulers are running, one in Detroit, one in Shanghai, and they both want to book a slot on the same machine, right now.
+Two tellers at different branches are processing concurrent transactions on the same account's available credit at the exact same time. The account has 10,000 units of available credit. Teller A (at BR-NYC) processes a debit reducing available credit; Teller B (at BR-SFO) processes another debit on the same account.
 
 If Postgres is handling this, what happens?
-- Session A (Detroit): BEGIN, UPDATE (book 1 slot), holds transaction open.
-- Session B (Shanghai): UPDATE (book 5 slots), tries to apply... and **waits**, blocked on Session A's row lock.
+- Session A (Teller at BR-NYC): BEGIN, UPDATE (reduce available credit by 500), holds transaction open.
+- Session B (Teller at BR-SFO): UPDATE (reduce available credit by 2,500), tries to apply... and **waits**, blocked on Session A's row lock.
 - Session A: COMMIT. A's lock releases.
 - Session B: instantly proceeds, applies its update.
 
-Result: slots = 10 - 1 - 5 = 4. Both writes landed; neither was lost. No corruption, no conflict resolution code, no explicit locks in the application. Postgres's isolation handled it.
+Result: available_credit = 10,000 - 500 - 2,500 = 7,000. Both writes landed; neither was lost. No corruption, no conflict resolution code, no explicit locks in the application. Postgres's isolation handled it.
 
 This journey demonstrates it live with two real connections.
 
@@ -32,9 +32,9 @@ You open two connections to your branch. Connection A updates a row and holds th
 
 ## What you'll do
 
-1. Create a demo row (machine with 10 maintenance slots).
-2. Session A: BEGIN + UPDATE (book 1 slot), hold the transaction.
-3. Session B: try to UPDATE (book 5 slots), it blocks.
+1. Create a demo row (account with 10,000 available credit).
+2. Session A: BEGIN + UPDATE (reduce by 500), hold the transaction.
+3. Session B: try to UPDATE (reduce by 2,500), it blocks.
 4. Show the block (confirmed by the script waiting).
 5. Session A: COMMIT. Session B proceeds immediately.
 6. Show the final result: both updates landed, no loss.

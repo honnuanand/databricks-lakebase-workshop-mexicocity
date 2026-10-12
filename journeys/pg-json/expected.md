@@ -5,48 +5,48 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 ## Step 1, JSONB specs
 
 ```text
-('PT-BEARING-6204', 'Deep groove ball bearing 6204', '{"load_capacity_kg": 500, "material": "steel", "temp_min_c": -20, "temp_max_c": 80}')
-('PT-SHAFT-A', 'Precision shaft A', '{"material": "stainless", "diameter_mm": 15.5, "runout_mm": 0.05}')
-('PT-FASTENER-M5', 'M5 hex bolt', '{"tensile_strength_mpa": 800, "coating": "zinc", "material": "steel"}')
+('INS-CASH-USD', 'US Dollar Cash', '{"ccy":"USD"}')
+('INS-SLEEVE-EQ', 'Equity Sleeve', '{"theme":"large-cap"}')
+('INS-AAPL', 'Apple Inc', '{"ticker":"AAPL","sector":"tech","beta":1.2}')
 ```
 
-Each part has a spec JSONB column with varying fields. No nulls, just the fields that apply to each part.
+Each instrument has a spec JSONB column with varying fields. No nulls, just the fields that apply to each instrument.
 
 ## Step 2, containment operator (@>)
 
 ```text
-('PT-BEARING-6204', 'Deep groove ball bearing 6204', '{"load_capacity_kg": 500, "material": "steel", ...}')
-('PT-SHAFT-A', 'Precision shaft A', '{"material": "stainless", ...}')
-('PT-FASTENER-M5', 'M5 hex bolt', '{"tensile_strength_mpa": 800, "coating": "zinc", "material": "steel"}')
+('INS-AAPL', 'Apple Inc', '{"ticker":"AAPL","sector":"tech","beta":1.2}')
+('INS-MSFT', 'Microsoft Corp', '{"ticker":"MSFT","sector":"tech","beta":0.9}')
 ```
 
-All parts that have `"material": "steel"` in their spec (the containment check). The query returns 3-5 rows depending on how many parts were seeded with steel material.
+All instruments that have `"sector": "tech"` in their spec (the containment check). The query returns 2 rows: AAPL and MSFT are the seeded equities in the tech sector.
 
 ## Step 3, path extraction (#>>)
 
 ```text
-('PT-BEARING-6204', 'Deep groove ball bearing 6204', '...', 'steel')
-('PT-SHAFT-A', 'Precision shaft A', '...', 'stainless')
-('PT-FASTENER-M5', 'M5 hex bolt', '...', 'steel')
+('INS-AAPL', 'Apple Inc', '...', 'tech')
+('INS-MSFT', 'Microsoft Corp', '...', 'tech')
+('INS-UST-10Y', 'US Treasury 10Y', '...', 'tech')
 ```
 
-The `spec #>> '{material}'` extracts the material value as text. The `?` operator filters to parts that have a material key. Result shows the material field extracted and displayed as a column.
+The `spec #>> '{sector}'` extracts the sector value as text. The `?` operator filters to instruments that have a sector key. Result shows the sector field extracted and displayed as a column.
 
 ## Step 4, GIN index
 
 ```text
-CREATE INDEX idx_part_spec_gin ON factory.part USING gin(spec jsonb_path_ops);
+CREATE INDEX idx_instrument_spec_gin ON bank.instrument USING gin(spec jsonb_path_ops);
 ```
 
-The index is created. Queries over the JSONB column will now use the index if the planner decides it's beneficial. On the factory dataset (typically a few hundred parts), the difference is invisible; on millions of parts, GIN turns a table scan into an index scan.
+The index is created. Queries over the JSONB column will now use the index if the planner decides it's beneficial. On the bank dataset (typically a few dozen instruments), the difference is invisible; on millions of instruments, GIN turns a table scan into an index scan.
 
-## Step 5, compliance query
+## Step 5, screening query
 
 ```text
-('PT-BEARING-6204', 'Deep groove ball bearing 6204', '{"load_capacity_kg": 500, "material": "steel", "temp_min_c": -20, "temp_max_c": 80}')
+('INS-AAPL', 'Apple Inc', '{"ticker":"AAPL","sector":"tech","beta":1.2}')
+('INS-MSFT', 'Microsoft Corp', '{"ticker":"MSFT","sector":"tech","beta":0.9}')
 ```
 
-Parts that meet the harsh-environment spec: material is stainless OR steel, min temp is -20 or colder, and max temp is 80 or warmer. The query runs in under 50 ms. The result set size depends on how many parts in the seeded factory match the criteria; typically 1-5 rows for a strict query.
+Instruments that are equities in the tech sector. The query runs in under 50 ms. The result set includes AAPL and MSFT, which are the seeded equities with sector 'tech'.
 
 ## The numbers that matter
 
@@ -58,4 +58,4 @@ Parts that meet the harsh-environment spec: material is stainless OR steel, min 
 | Path extraction (#>>) | included in query time | very fast; no separate evaluation |
 
 > **From the field**
-> The real win with JSONB is not speed, regular columns are fast too. The win is flexibility: you can add new fields to the spec without a schema migration (ALTER TABLE is expensive on large tables). You just insert new JSON with the new fields, and queries adapt. This is game-changing for products with evolving spec requirements.
+> The real win with JSONB is not speed, regular columns are fast too. The win is flexibility: you can add new fields to the spec without a schema migration (ALTER TABLE is expensive on large tables). You just insert new JSON with the new fields, and queries adapt. This is game-changing for financial products with evolving spec requirements.

@@ -31,7 +31,7 @@ what each step does; the exact output is in [`expected.md`](expected.md).
 python pg_one_database.py --step sql
 ```
 
-Shows (without running) the setup SQL that creates the unified table and populates it with 1000 machines.
+Shows (without running) the setup SQL that creates the unified table and populates it with 1000 accounts.
 
 ### Step 2, build and query
 
@@ -42,9 +42,9 @@ python pg_one_database.py
 Creates the table:
 
 ```sql
-CREATE TABLE machine_unified_demo (
-    machine_id TEXT PRIMARY KEY,
-    plant_id TEXT NOT NULL,
+CREATE TABLE account_unified_demo (
+    account_id TEXT PRIMARY KEY,
+    branch_id TEXT NOT NULL,
     line TEXT NOT NULL,
     spec JSONB,                      -- JSON data type
     embedding VECTOR(64),             -- pgvector embedding
@@ -56,24 +56,24 @@ Then runs a unified query:
 
 ```sql
 SELECT
-    machine_id,
-    plant_id,
+    account_id,
+    branch_id,
     line,
-    (spec->>'type') as machine_type,
-    (spec->>'year')::int as manufacture_year,
+    (spec->>'type') as account_type,
+    (spec->>'year')::int as vintage,
     (embedding <-> reference_embedding) as embedding_distance,
     ST_Distance(location, reference_point) as km_from_ref
-FROM machine_unified_demo
+FROM account_unified_demo
 WHERE
-    plant_id = 'PL-DETROIT'
-    AND (spec->>'type') = 'Press'
+    branch_id = 'BR-NYC'
+    AND (spec->>'type') = 'commercial'
     AND ST_DWithin(location, reference_point, 0.1)
 ORDER BY embedding_distance, km_from_ref
 LIMIT 5
 ```
 
 This single query:
-- Filters on relational columns (plant_id, line).
+- Filters on relational columns (branch_id, line).
 - Extracts and filters on JSON (spec->>'type').
 - Computes vector distance (embedding <-> reference).
 - Computes geospatial distance (ST_Distance, ST_DWithin).

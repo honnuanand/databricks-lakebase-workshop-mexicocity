@@ -1,13 +1,13 @@
 # Scale-out: partitioning, expected results
 
 Use this to check your run. Numbers are representative; exact timings vary.
-The key: one-month query prunes 5 partitions; full-range query scans all 6.
+The key: one-month query prunes 5 partitions, full-range query scans all 6.
 
 ## Setup
 
 ```text
-Created partitioned table sensor_readings_partitioned with 6 monthly partitions
-Inserted 180k sensor readings (6 months × 30k rows each)
+Created partitioned table txn_partitioned with 6 monthly partitions
+Inserted 180k transactions (6 months × 30k rows each)
 ```
 
 ## One-month query (PARTITION PRUNING)
@@ -38,9 +38,9 @@ The WHERE clause covers Jan–Jun, so all 6 partitions must be scanned.
 ## Full run
 
 ```text
-1. Creating partitioned table with 6 months of sensor data:
-Created partitioned table sensor_readings_partitioned with 6 monthly partitions
-Inserted 180k sensor readings (6 months × 30k rows each)
+1. Creating partitioned table with 6 months of transaction data:
+Created partitioned table txn_partitioned with 6 monthly partitions
+Inserted 180k transactions (6 months × 30k rows each)
 
 2. Running EXPLAIN on one-month query (PARTITION PRUNING):
 One-month query (March 2024):
@@ -60,8 +60,8 @@ EXPLAIN output:
 
 | Query scope | Partitions scanned | Pruning | Use case |
 | ----------- | ------------------- | ------- | --------- |
-| One month | 1 of 6 (17%) | ✓ yes | Operational: "What happened today?" |
-| One quarter | 3 of 6 (50%) | ✓ yes | Light analytics: "This season's trend" |
+| One month | 1 of 6 (17%) | ✓ yes | Operational: "What transactions today?" |
+| One quarter | 3 of 6 (50%) | ✓ yes | Light analytics: "This quarter's volume" |
 | Full year | 6 of 6 (100%) | none | Heavy analytics: belongs in lakehouse |
 
 > **From the field**

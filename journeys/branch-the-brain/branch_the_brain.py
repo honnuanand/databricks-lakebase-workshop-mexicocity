@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Branch the brain — fork your branch, diverge on the fork, discard it.
+"""Branch the brain, fork your branch, diverge on the fork, discard it.
 
 Demonstrates zero-copy Lakebase branching with real timings:
   - fork YOUR branch into an experiment branch (w.postgres.create_branch)
-  - change M-204 on the fork only
+  - change ACCT-100240 on the fork only (set it to frozen)
   - show your branch is untouched
   - discard the fork (zero storage left behind)
 
 Usage:
     python branch_the_brain.py                 # run the whole story with timings
     python branch_the_brain.py --step fork      # just fork + time to ACTIVE
-    python branch_the_brain.py --step diverge   # change M-204 on the fork
+    python branch_the_brain.py --step diverge   # change ACCT-100240 on the fork
     python branch_the_brain.py --step discard   # delete the fork
     python branch_the_brain.py --step list      # list branches
 
@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common",
 from lakebase import (client, branch_name, branch_endpoint, wait_active,
                       _env, PG_PORT, DEFAULT_DB)
 
-MACHINE = "M-204"
+ACCOUNT = "ACCT-100240"
 
 
 def _exp_branch() -> str:
@@ -45,7 +45,7 @@ def _connect_branch(w, project, branch):
         raise RuntimeError(f"branch {branch} has no host (state={state})")
     cred = w.postgres.generate_database_credential(
         endpoint=f"{branch_name(project, branch)}/endpoints/{eid}")
-    schema = os.getenv("LB_SCHEMA", "factory")
+    schema = os.getenv("LB_SCHEMA", "bank")
     conn = psycopg.connect(host=host, port=PG_PORT, dbname=DEFAULT_DB,
                            user=w.current_user.me().user_name, password=cred.token,
                            sslmode="require", autocommit=True, connect_timeout=20)
@@ -56,9 +56,9 @@ def _connect_branch(w, project, branch):
 
 def _show(conn, label):
     with conn.cursor() as cur:
-        cur.execute(f"SELECT machine_id, status, health_pct FROM machine WHERE machine_id=%s", [MACHINE])
+        cur.execute(f"SELECT account_id, status, health_pct FROM account WHERE account_id=%s", [ACCOUNT])
         row = cur.fetchone()
-    print(f"  [{label}] {MACHINE}: status={row[1]} health={row[2]}")
+    print(f"  [{label}] {ACCOUNT}: status={row[1]} health={row[2]}")
 
 
 def fork(w, project, mine, exp):
@@ -82,7 +82,7 @@ def fork(w, project, mine, exp):
 def diverge(w, project, exp):
     with _connect_branch(w, project, exp) as conn:
         with conn.cursor() as cur:
-            cur.execute(f"UPDATE machine SET status='derated', health_pct=70.0 WHERE machine_id=%s", [MACHINE])
+            cur.execute(f"UPDATE account SET status='frozen', health_pct=70.0 WHERE account_id=%s", [ACCOUNT])
         _show(conn, "fork after change")
 
 

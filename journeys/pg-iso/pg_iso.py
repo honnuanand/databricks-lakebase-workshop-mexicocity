@@ -22,63 +22,63 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, _env
 
-DEMO_TABLE = "machine_isolation_demo"
-MACHINE_ID = "M-TEST-ISOLATION"
+DEMO_TABLE = "account_isolation_demo"
+ACCOUNT_ID = "ACCT-TEST-ISOLATION"
 
 
 def setup(conn):
     """Create a demo row."""
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     with conn.cursor() as cur:
         # Drop and recreate
         cur.execute(f"DROP TABLE IF EXISTS {schema}.{DEMO_TABLE}")
         cur.execute(f"""
             CREATE TABLE {schema}.{DEMO_TABLE} (
-                machine_id TEXT PRIMARY KEY,
-                maintenance_slots INT NOT NULL DEFAULT 10
+                account_id TEXT PRIMARY KEY,
+                available_credit INT NOT NULL DEFAULT 10000
             )
         """)
         cur.execute(
-            f"INSERT INTO {schema}.{DEMO_TABLE}(machine_id, maintenance_slots) VALUES (%s, %s)",
-            [MACHINE_ID, 10],
+            f"INSERT INTO {schema}.{DEMO_TABLE}(account_id, available_credit) VALUES (%s, %s)",
+            [ACCOUNT_ID, 10000],
         )
-    print(f"Created {schema}.{DEMO_TABLE} with {MACHINE_ID}: {10} slots")
+    print(f"Created {schema}.{DEMO_TABLE} with {ACCOUNT_ID}: 10000 available credit")
 
 
 def main():
-    schema = _env("LB_SCHEMA", "factory")
+    schema = _env("LB_SCHEMA", "bank")
 
     # Setup
     with connect() as conn:
         setup(conn)
 
-    print("\n1. Initial state: machine has 10 maintenance slots available")
+    print("\n1. Initial state: account has 10000 available credit")
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT maintenance_slots FROM {schema}.{DEMO_TABLE} WHERE machine_id=%s",
-                [MACHINE_ID],
+                f"SELECT available_credit FROM {schema}.{DEMO_TABLE} WHERE account_id=%s",
+                [ACCOUNT_ID],
             )
-            print(f"   Slots before any update: {cur.fetchone()[0]}")
+            print(f"   Available credit before any update: {cur.fetchone()[0]}")
 
-    print("\n2. Session A: BEGIN + UPDATE (book 1 slot), HOLD transaction open")
+    print("\n2. Session A: BEGIN + UPDATE (reduce by 500), HOLD transaction open")
     conn_a = connect()
     with conn_a.cursor() as cur_a:
         cur_a.execute("BEGIN")
         cur_a.execute(
-            f"UPDATE {schema}.{DEMO_TABLE} SET maintenance_slots=maintenance_slots-1 WHERE machine_id=%s",
-            [MACHINE_ID],
+            f"UPDATE {schema}.{DEMO_TABLE} SET available_credit=available_credit-500 WHERE account_id=%s",
+            [ACCOUNT_ID],
         )
         with conn_a.cursor() as check:
             check.execute(
-                f"SELECT maintenance_slots FROM {schema}.{DEMO_TABLE} WHERE machine_id=%s",
-                [MACHINE_ID],
+                f"SELECT available_credit FROM {schema}.{DEMO_TABLE} WHERE account_id=%s",
+                [ACCOUNT_ID],
             )
-            print(f"   Session A sees: {check.fetchone()[0]} slots after booking 1")
+            print(f"   Session A sees: {check.fetchone()[0]} available credit after reducing by 500")
         print("   Session A is holding the transaction open (row is LOCKED)")
 
-        print("\n3. Session B: try to UPDATE the same row (book 5 slots), WILL BLOCK")
+        print("\n3. Session B: try to UPDATE the same row (reduce by 2500), WILL BLOCK")
         conn_b = connect()
         start_wait = time.time()
 
@@ -90,8 +90,8 @@ def main():
                 cur_b.execute("SET statement_timeout='5s'")
                 print("   Session B running UPDATE (will wait for A's lock)...")
                 cur_b.execute(
-                    f"UPDATE {schema}.{DEMO_TABLE} SET maintenance_slots=maintenance_slots-5 WHERE machine_id=%s",
-                    [MACHINE_ID],
+                    f"UPDATE {schema}.{DEMO_TABLE} SET available_credit=available_credit-2500 WHERE account_id=%s",
+                    [ACCOUNT_ID],
                 )
                 waited = time.time() - start_wait
                 print(f"   Session B proceeded after A committed (waited ~{waited:.1f}s)")
@@ -111,8 +111,8 @@ def main():
             conn_b = connect()
             with conn_b.cursor() as cur_b:
                 cur_b.execute(
-                    f"UPDATE {schema}.{DEMO_TABLE} SET maintenance_slots=maintenance_slots-5 WHERE machine_id=%s",
-                    [MACHINE_ID],
+                    f"UPDATE {schema}.{DEMO_TABLE} SET available_credit=available_credit-2500 WHERE account_id=%s",
+                    [ACCOUNT_ID],
                 )
                 print("   Session B update now proceeds")
 
@@ -120,11 +120,11 @@ def main():
         with connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT maintenance_slots FROM {schema}.{DEMO_TABLE} WHERE machine_id=%s",
-                    [MACHINE_ID],
+                    f"SELECT available_credit FROM {schema}.{DEMO_TABLE} WHERE account_id=%s",
+                    [ACCOUNT_ID],
                 )
                 final = cur.fetchone()[0]
-                print(f"   Final slots: {final} (10 - 1 - 5 = {10 - 1 - 5})")
+                print(f"   Final available credit: {final} (10000 - 500 - 2500 = {10000 - 500 - 2500})")
                 print(f"   Both writes succeeded; neither was lost. Isolation works.")
 
         conn_a.close()

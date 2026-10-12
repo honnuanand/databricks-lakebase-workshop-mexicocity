@@ -7,7 +7,7 @@ under-estimate corrected to near 1x.
 ## Step 1, setup
 
 ```text
-Created demo table machine_perf_demo with 100k rows (machine_line correlated with plant)
+Created demo table account_perf_demo with 100k rows (region correlated with branch)
 ```
 
 ## Step 2, before (bad estimate)
@@ -25,7 +25,7 @@ assumes they're independent; the intersection estimate is too small.
 ## Step 3, create statistics
 
 ```text
-Created statistics: factory.machine_perf_stat on (plant_id, machine_line)
+Created statistics: bank.account_perf_stat on (branch_id, region)
 Reanalyzed table, planner now uses the new statistics
 ```
 
@@ -49,7 +49,7 @@ Running `python pg_perf.py` with no arguments prints the whole story:
 
 ```text
 1. Set up the demo table (correlated columns):
-Created demo table machine_perf_demo with 100k rows (machine_line correlated with plant)
+Created demo table account_perf_demo with 100k rows (region correlated with branch)
 
 2. Show the bad estimate (no stats):
 Before CREATE STATISTICS:
@@ -58,7 +58,7 @@ Before CREATE STATISTICS:
   Planner error:  0.6x (estimate is 36% off)
 
 3. Create statistics to teach the planner:
-Created statistics: factory.machine_perf_stat on (plant_id, machine_line)
+Created statistics: bank.account_perf_stat on (branch_id, region)
 Reanalyzed table, planner now uses the new statistics
 
 4. Show the fixed estimate:

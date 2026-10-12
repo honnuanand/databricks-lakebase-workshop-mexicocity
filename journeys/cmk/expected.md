@@ -47,7 +47,7 @@ status.code: 0 (success)
 From a user perspective, Lakebase works the same with CMK as with Databricks-managed keys:
 
 ```bash
-python lakebase.py --sql "SELECT count(*) FROM factory.machine"
+python lakebase.py --sql "SELECT count(*) FROM bank.account"
 ```
 
 Output:

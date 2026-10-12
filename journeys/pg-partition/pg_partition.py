@@ -25,12 +25,12 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common", "scripts"))
 from lakebase import connect, _env
 
-DEMO_TABLE = "sensor_readings_partitioned"
+DEMO_TABLE = "txn_partitioned"
 
 
 def setup(conn):
-    """Create a partitioned table with 6 months of daily sensor readings."""
-    schema = _env("LB_SCHEMA", "factory")
+    """Create a partitioned table with 6 months of transactions."""
+    schema = _env("LB_SCHEMA", "bank")
 
     with conn.cursor() as cur:
         # Drop if exists
@@ -39,12 +39,12 @@ def setup(conn):
         # Create partitioned table (RANGE on month)
         cur.execute(f"""
             CREATE TABLE {schema}.{DEMO_TABLE} (
-                reading_id BIGSERIAL,
-                machine_id TEXT NOT NULL,
+                txn_id BIGSERIAL,
+                account_id TEXT NOT NULL,
                 ts TIMESTAMPTZ NOT NULL,
-                temp_c NUMERIC(6,2),
-                vibration_mm_s NUMERIC(6,2),
-                PRIMARY KEY (reading_id, ts)
+                amount_usd NUMERIC(12,2),
+                anomaly_score NUMERIC(6,2),
+                PRIMARY KEY (txn_id, ts)
             ) PARTITION BY RANGE (ts)
         """)
 
@@ -65,12 +65,12 @@ def setup(conn):
 
         print(f"Created partitioned table {schema}.{DEMO_TABLE} with 6 monthly partitions")
 
-        # Insert data: 30k rows per month (daily readings across 1000 machines)
+        # Insert data: 30k rows per month (transactions across 1000 accounts)
         # Total: 180k rows across 6 months
         cur.execute(f"""
-            INSERT INTO {schema}.{DEMO_TABLE}(machine_id, ts, temp_c, vibration_mm_s)
+            INSERT INTO {schema}.{DEMO_TABLE}(account_id, ts, amount_usd, anomaly_score)
             SELECT
-                'M-' || (g % 1000),
+                'ACCT-' || (g % 1000),
                 '2024-01-01'::timestamptz + (g / 1000 || ' days')::interval + (g % 1440 || ' minutes')::interval,
                 45 + (g % 50),
                 (g % 100) / 10.0
@@ -78,12 +78,12 @@ def setup(conn):
         """)
 
         cur.execute(f"ANALYZE {schema}.{DEMO_TABLE}")
-        print("Inserted 180k sensor readings (6 months × 30k rows each)")
+        print("Inserted 180k transactions (6 months × 30k rows each)")
 
 
 def explain_one_month(conn):
-    """Show EXPLAIN for a one-month query — should prune 5 partitions."""
-    schema = _env("LB_SCHEMA", "factory")
+    """Show EXPLAIN for a one-month query, should prune 5 partitions."""
+    schema = _env("LB_SCHEMA", "bank")
 
     query = f"""
         SELECT COUNT(*) FROM {schema}.{DEMO_TABLE}
@@ -106,8 +106,8 @@ def explain_one_month(conn):
 
 
 def explain_all_months(conn):
-    """Show EXPLAIN for a full-range query — must scan all 6 partitions."""
-    schema = _env("LB_SCHEMA", "factory")
+    """Show EXPLAIN for a full-range query, must scan all 6 partitions."""
+    schema = _env("LB_SCHEMA", "bank")
 
     query = f"""
         SELECT COUNT(*) FROM {schema}.{DEMO_TABLE}
@@ -142,7 +142,7 @@ def main():
             explain_all_months(conn)
         else:
             # Run the whole story
-            print("1. Creating partitioned table with 6 months of sensor data:")
+            print("1. Creating partitioned table with 6 months of transaction data:")
             setup(conn)
             print("\n2. Running EXPLAIN on one-month query (PARTITION PRUNING):")
             explain_one_month(conn)

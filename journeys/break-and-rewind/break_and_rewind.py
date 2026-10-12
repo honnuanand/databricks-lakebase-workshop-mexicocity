@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Break it, then rewind — delete work orders, then recover via point-in-time restore.
+"""Break it, then rewind, delete trades, then recover via point-in-time restore.
 
 Demonstrates PITR (point-in-time restore) by:
   - capturing the LSN before a destructive DELETE
-  - deleting all work orders on YOUR branch
+  - deleting all trades on YOUR branch (settlements first, for the foreign key)
   - creating a zero-copy PITR branch at the captured LSN
-  - reading the deleted work orders back from the PITR branch
+  - reading the deleted trades back from the PITR branch
   - discarding the PITR branch (zero storage left behind)
 
 Usage:
     python break_and_rewind.py                  # run the whole story with timings
     python break_and_rewind.py --step capture-lsn  # capture the LSN before delete
-    python break_and_rewind.py --step delete       # delete all work orders
+    python break_and_rewind.py --step delete       # delete all trades
     python break_and_rewind.py --step recover      # create PITR branch and recover
     python break_and_rewind.py --step discard      # delete the PITR branch
 
@@ -44,7 +44,7 @@ def _connect_branch(w, project, branch):
         raise RuntimeError(f"branch {branch} has no host (state={state})")
     cred = w.postgres.generate_database_credential(
         endpoint=f"{branch_name(project, branch)}/endpoints/{eid}")
-    schema = os.getenv("LB_SCHEMA", "factory")
+    schema = os.getenv("LB_SCHEMA", "bank")
     conn = psycopg.connect(host=host, port=PG_PORT, dbname=DEFAULT_DB,
                            user=w.current_user.me().user_name, password=cred.token,
                            sslmode="require", autocommit=True, connect_timeout=20)
@@ -53,18 +53,18 @@ def _connect_branch(w, project, branch):
     return conn
 
 
-def _show_work_orders(conn, label):
+def _show_trades(conn, label):
     with conn.cursor() as cur:
-        cur.execute("SELECT count(*) FROM operation")
-        n_ops = cur.fetchone()[0]
-        cur.execute("SELECT wo_id, product_id, qty, status FROM work_order ORDER BY wo_id")
+        cur.execute("SELECT count(*) FROM settlement")
+        n_stl = cur.fetchone()[0]
+        cur.execute("SELECT trade_id, fund_id, qty, status FROM trade ORDER BY trade_id")
         rows = cur.fetchall()
     if not rows:
-        print(f"  [{label}] (no work orders, {n_ops} operations)")
+        print(f"  [{label}] (no trades, {n_stl} settlements)")
     else:
         for row in rows:
             print(f"  [{label}] {row}")
-        print(f"  [{label}] ({len(rows)} work orders, {n_ops} operations)")
+        print(f"  [{label}] ({len(rows)} trades, {n_stl} settlements)")
 
 
 def capture_lsn(w, project, mine):
@@ -77,29 +77,29 @@ def capture_lsn(w, project, mine):
     return lsn
 
 
-def delete_work_orders(w, project, mine):
-    """The 'fat-fingered cleanup': wipe the work orders and their operations.
+def delete_trades(w, project, mine):
+    """The 'fat-fingered cleanup': wipe the trades and their settlements.
 
-    operation rows reference work_order (a foreign key), so a real cleanup has to
+    settlement rows reference trade (a foreign key), so a real cleanup has to
     remove the child rows too. Deleting both is exactly the kind of over-broad
     DELETE this journey is about recovering from."""
     with _connect_branch(w, project, mine) as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM operation")     # children first (FK to work_order)
-            cur.execute("DELETE FROM work_order")
+            cur.execute("DELETE FROM settlement")    # children first (FK to trade)
+            cur.execute("DELETE FROM trade")
         with conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM work_order")
-            wo = cur.fetchone()[0]
-            cur.execute("SELECT count(*) FROM operation")
-            ops = cur.fetchone()[0]
-    if wo == 0 and ops == 0:
-        print(f"  deleted: {wo} work orders and {ops} operations remain (all gone)")
+            cur.execute("SELECT count(*) FROM trade")
+            tr = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM settlement")
+            stl = cur.fetchone()[0]
+    if tr == 0 and stl == 0:
+        print(f"  deleted: {tr} trades and {stl} settlements remain (all gone)")
     else:
-        print(f"  ERROR: {wo} work orders / {ops} operations still remain")
+        print(f"  ERROR: {tr} trades / {stl} settlements still remain")
 
 
 def recover_via_pitr(w, project, mine, restore, lsn):
-    """Create a PITR branch at the given LSN and read the work orders back."""
+    """Create a PITR branch at the given LSN and read the trades back."""
     try:
         w.postgres.get_branch(name=branch_name(project, restore))
         print(f"  restore branch {restore} already exists; deleting first for a clean run")
@@ -118,10 +118,10 @@ def recover_via_pitr(w, project, mine, restore, lsn):
     print(f"  PITR branch created: {restore}")
     print(f"  recovery API returned in {api_ms:.0f} ms; endpoint ACTIVE in ~{waited:.1f}s")
 
-    # Read the work orders from the PITR branch
-    print(f"  Recovered work orders from PITR branch:")
+    # Read the trades from the PITR branch
+    print(f"  Recovered trades from PITR branch:")
     with _connect_branch(w, project, restore) as conn:
-        _show_work_orders(conn, "PITR branch")
+        _show_trades(conn, "PITR branch")
 
 
 def discard(w, project, restore):
@@ -153,7 +153,7 @@ def main():
         lsn = capture_lsn(w, project, mine)
         return
     if args.step == "delete":
-        delete_work_orders(w, project, mine)
+        delete_trades(w, project, mine)
         return
     if args.step == "recover":
         # For the recover step alone, we need to have captured the LSN earlier
@@ -170,13 +170,13 @@ def main():
     # full story
     print("1. Establish the data:")
     with _connect_branch(w, project, mine) as conn:
-        _show_work_orders(conn, "your branch")
+        _show_trades(conn, "your branch")
 
     print("2. Capture LSN (before the mistake):")
     lsn = capture_lsn(w, project, mine)
 
-    print("3. Make the mistake (DELETE all work_orders):")
-    delete_work_orders(w, project, mine)
+    print("3. Make the mistake (DELETE all trades):")
+    delete_trades(w, project, mine)
 
     print("4. Recover via point-in-time restore:")
     recover_via_pitr(w, project, mine, restore, lsn)
@@ -184,7 +184,7 @@ def main():
     print("5. Discard the PITR branch:")
     discard(w, project, restore)
 
-    print("Done. Work orders recovered, branch deleted, zero storage left behind.")
+    print("Done. Trades recovered, branch deleted, zero storage left behind.")
 
 
 if __name__ == "__main__":

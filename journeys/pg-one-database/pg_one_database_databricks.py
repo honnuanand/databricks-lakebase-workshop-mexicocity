@@ -15,8 +15,8 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), '..', '..', 'common', 'scripts'))
 from lakebase import connect, _env
 
-DEMO_TABLE = 'machine_unified_demo'
-SCHEMA = _env('LB_SCHEMA', 'factory')
+DEMO_TABLE = 'account_unified_demo'
+SCHEMA = _env('LB_SCHEMA', 'bank')
 
 print('Ready.')
 
@@ -25,9 +25,9 @@ print('Ready.')
 # MAGIC ## Step 1, Create unified table (4 data types)
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE TABLE machine_unified_demo (
-# MAGIC     machine_id TEXT PRIMARY KEY,
-# MAGIC     plant_id TEXT NOT NULL,
+# MAGIC CREATE TABLE account_unified_demo (
+# MAGIC     account_id TEXT PRIMARY KEY,
+# MAGIC     branch_id TEXT NOT NULL,
 # MAGIC     line TEXT NOT NULL,
 # MAGIC     spec JSONB,
 # MAGIC     embedding VECTOR(64),
@@ -43,8 +43,8 @@ with connect() as conn:
         cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.{DEMO_TABLE}")
         cur.execute(f"""
             CREATE TABLE {SCHEMA}.{DEMO_TABLE} (
-                machine_id TEXT PRIMARY KEY,
-                plant_id TEXT NOT NULL,
+                account_id TEXT PRIMARY KEY,
+                branch_id TEXT NOT NULL,
                 line TEXT NOT NULL,
                 spec JSONB,
                 embedding VECTOR(64),
@@ -55,23 +55,23 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 2, Populate with 1000 machines
+# MAGIC ## Step 2, Populate with 1000 accounts
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO machine_unified_demo(...) SELECT ... FROM generate_series(1, 1000) g
+# MAGIC INSERT INTO account_unified_demo(...) SELECT ... FROM generate_series(1, 1000) g
 # MAGIC ```
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"""
-            INSERT INTO {SCHEMA}.{DEMO_TABLE}(machine_id, plant_id, line, spec, embedding, location)
+            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, branch_id, line, spec, embedding, location)
             SELECT
-                'M-' || g,
-                (ARRAY['PL-DETROIT', 'PL-SHANGHAI', 'PL-FREMONT'])[1 + (g % 3)],
-                (ARRAY['Stamping-A', 'Assembly-1', 'Finishing'])[1 + (g % 3)],
+                'ACCT-' || g,
+                (ARRAY['BR-NYC', 'BR-SFO', 'BR-LON'])[1 + (g % 3)],
+                (ARRAY['Checking', 'Savings', 'Credit'])[1 + (g % 3)],
                 jsonb_build_object(
-                    'type', (ARRAY['CNC', 'Press', 'Robot'])[1 + (g % 3)],
+                    'type', (ARRAY['retail', 'commercial', 'wealth'])[1 + (g % 3)],
                     'year', 2020 + (g % 5),
                     'version', '3.' || (g % 10)
                 ),
@@ -79,26 +79,26 @@ with connect() as conn:
                 ST_MakePoint(-73.0 + (g % 10)::numeric / 100, 45.0 + (g % 10)::numeric / 100)
             FROM generate_series(1, 1000) g
         """)
-        print(f'✓ Populated 1000 machines with all data types')
+        print(f'✓ Populated 1000 accounts with all data types')
 
 # COMMAND ----------
 
 # MAGIC ## Step 3, Run unified query
 # MAGIC
-# MAGIC One query filtering on relational (plant_id), JSON (spec->>'type'), and geospatial (ST_DWithin) columns:
+# MAGIC One query filtering on relational (branch_id), JSON (spec->>'type'), and geospatial (ST_DWithin) columns:
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT
-# MAGIC     machine_id,
-# MAGIC     plant_id,
+# MAGIC     account_id,
+# MAGIC     branch_id,
 # MAGIC     line,
-# MAGIC     (spec->>'type') as machine_type,
-# MAGIC     (spec->>'year')::int as manufacture_year,
+# MAGIC     (spec->>'type') as account_type,
+# MAGIC     (spec->>'year')::int as vintage,
 # MAGIC     ST_Distance(location, ST_GeomFromText('POINT(45 -73)')) as km_from_ref
-# MAGIC FROM machine_unified_demo
+# MAGIC FROM account_unified_demo
 # MAGIC WHERE
-# MAGIC     plant_id = 'PL-DETROIT'
-# MAGIC     AND (spec->>'type') = 'Press'
+# MAGIC     branch_id = 'BR-NYC'
+# MAGIC     AND (spec->>'type') = 'commercial'
 # MAGIC     AND ST_DWithin(location, ST_GeomFromText('POINT(45 -73)'), 1)
 # MAGIC LIMIT 5;
 # MAGIC ```
@@ -108,17 +108,17 @@ with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"""
             SELECT
-                machine_id,
-                plant_id,
+                account_id,
+                branch_id,
                 line,
-                (spec->>'type') as machine_type,
-                (spec->>'year')::int as manufacture_year,
-                (embedding <-> (SELECT embedding FROM {SCHEMA}.{DEMO_TABLE} WHERE machine_id='M-1'))::numeric(6,4) as embedding_distance,
+                (spec->>'type') as account_type,
+                (spec->>'year')::int as vintage,
+                (embedding <-> (SELECT embedding FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id='ACCT-1'))::numeric(6,4) as embedding_distance,
                 ST_Distance(location, ST_MakePoint(-73.0, 45.0)::geometry) * 111.0 as km_from_ref
             FROM {SCHEMA}.{DEMO_TABLE}
             WHERE
-                plant_id = 'PL-DETROIT'
-                AND (spec->>'type') = 'Press'
+                branch_id = 'BR-NYC'
+                AND (spec->>'type') = 'commercial'
                 AND ST_DWithin(location, ST_MakePoint(-73.0, 45.0)::geometry, 0.1)
             ORDER BY embedding_distance, km_from_ref
             LIMIT 5
@@ -128,12 +128,12 @@ with connect() as conn:
 
         print(f'Results (single query, single plan):')
         for row in rows:
-            print(f'  {row[0]:6} | {row[1]:12} | {row[2]:12} | {row[3]:6} | {row[4]:4} | dist={row[5]:.4f} | km={row[6]:.4f}')
+            print(f'  {row[0]:12} | {row[1]:8} | {row[2]:12} | {row[3]:12} | {row[4]:4} | dist={row[5]:.4f} | km={row[6]:.4f}')
 
 # COMMAND ----------
 
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC One table. Four data models. One query. Relational filters on plant_id and line. JSON extraction on spec. Vector and geospatial compute (when pgvector and PostGIS are loaded). No sync between systems, no consistency gaps, no application-layer glue code. One database.
+# MAGIC One table. Four data models. One query. Relational filters on branch_id and line. JSON extraction on spec. Vector and geospatial compute (when pgvector and PostGIS are loaded). No sync between systems, no consistency gaps, no application-layer glue code. One database.
 # MAGIC
 # MAGIC Next: **Your commits are a change feed** shows logical decoding (Preview) as a stream of changes.

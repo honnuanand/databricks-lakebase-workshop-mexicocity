@@ -4,10 +4,10 @@ Use this to check your run. Timings are from our measurements on a warm project;
 close but not identical. The *shape* is what matters: sub-second API calls, endpoint ACTIVE in a
 couple of seconds, production unchanged.
 
-## Step 1, M-204 before
+## Step 1, ACCT-100240 before
 
 ```text
-('M-204', 'healthy', Decimal('91.00'))
+('ACCT-100240', 'watch', Decimal('91.00'))
 ```
 
 ## Step 2, fork
@@ -23,13 +23,13 @@ it again; warm forks are consistently a couple of seconds.
 ## Step 3, diverge on the fork
 
 ```text
-  [fork after change] M-204: status=derated health=70.0
+  [fork after change] ACCT-100240: status=frozen health=70.0
 ```
 
 ## Step 4, your branch is untouched
 
 ```text
-('M-204', 'healthy', Decimal('91.00'))
+('ACCT-100240', 'watch', Decimal('91.00'))
 ```
 
 Identical to Step 1. This is the whole point: the change lives only on the fork.
@@ -40,13 +40,13 @@ Running `python branch_the_brain.py` with no arguments prints the whole story:
 
 ```text
 1. Production (your branch) before:
-  [your branch] M-204: status=healthy health=91.00
+  [your branch] ACCT-100240: status=watch health=91.00
 2. Forking u-alex -> u-alex-exp (zero-copy):
   fork API returned in ~700 ms; endpoint ACTIVE in ~2.4s
 3. Diverge on the fork:
-  [fork after change] M-204: status=derated health=70.0
+  [fork after change] ACCT-100240: status=frozen health=70.0
 4. Your branch is untouched:
-  [your branch] M-204: status=healthy health=91.00
+  [your branch] ACCT-100240: status=watch health=91.00
 5. Discard the fork:
   discarded u-alex-exp
 Done. Production untouched, fork gone, zero storage left behind.

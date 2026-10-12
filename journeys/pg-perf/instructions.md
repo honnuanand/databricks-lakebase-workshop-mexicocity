@@ -33,9 +33,9 @@ to expect is in [`expected.md`](expected.md).
 python pg_perf.py --step setup
 ```
 
-Creates a table with 100k rows where `machine_line` is fully determined by `plant_id` (100% correlated):
-- Plant PL-DETROIT → Stamping-A, Stamping-B, Stamping-C
-- Plant PL-SHANGHAI → Assembly-1, Assembly-2
+Creates a table with 100k rows where `region` is fully determined by `branch_id` (100% correlated):
+- Branch BR-NYC → US-Northeast
+- Branch BR-SFO → US-West
 
 The planner has no knowledge of this correlation yet.
 
@@ -48,11 +48,11 @@ python pg_perf.py --step before
 Run EXPLAIN ANALYZE on a correlated filter:
 
 ```sql
-SELECT id FROM machine_perf_demo
-WHERE plant_id = 'PL-DETROIT' AND machine_line = 'Stamping-A'
+SELECT account_id FROM account_perf_demo
+WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'
 ```
 
-The planner estimates around 15k-20k rows (badly wrong; actual is ~25k). It treats plant and machine_line as
+The planner estimates around 15k-20k rows (badly wrong; actual is ~25k). It treats branch and region as
 independent random columns, so the intersection estimate is tiny. This estimate cascades: the planner chooses
 wrong joins and memory settings downstream.
 
@@ -67,18 +67,18 @@ python pg_perf.py --step stats
 Run:
 
 ```sql
-CREATE STATISTICS machine_perf_stat
-ON plant_id, machine_line
-FROM machine_perf_demo
+CREATE STATISTICS account_perf_stat
+ON branch_id, region
+FROM account_perf_demo
 ```
 
 Then re-analyze:
 
 ```sql
-ANALYZE machine_perf_demo
+ANALYZE account_perf_demo
 ```
 
-This teaches the planner that `plant_id` and `machine_line` are correlated. The statistics capture the
+This teaches the planner that `branch_id` and `region` are correlated. The statistics capture the
 dependency, and the planner uses them from this point forward.
 
 ### Step 4, show the fixed estimate (with statistics)
@@ -90,8 +90,8 @@ python pg_perf.py --step after
 Run the same query again:
 
 ```sql
-SELECT id FROM machine_perf_demo
-WHERE plant_id = 'PL-DETROIT' AND machine_line = 'Stamping-A'
+SELECT account_id FROM account_perf_demo
+WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'
 ```
 
 The estimate now snaps to ~25k, matching the actual rows. The planner's knowledge is tuned. Same data, same table, same query; the difference is the statistics.

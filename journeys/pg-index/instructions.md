@@ -33,11 +33,11 @@ python pg_index.py --step setup
 Creates a 60k-row table with every data type:
 
 ```sql
-CREATE TABLE machine_index_demo (
-    machine_id TEXT PRIMARY KEY,           -- btree (equality lookups)
-    status_code INT NOT NULL,               -- hash (integer equality)
+CREATE TABLE account_index_demo (
+    account_id TEXT PRIMARY KEY,           -- btree (equality lookups)
+    mcc INT NOT NULL,                       -- hash (integer equality)
     spec JSONB DEFAULT '{}'::jsonb,        -- gin (JSON containment)
-    created_at TIMESTAMPTZ NOT NULL,        -- brin (time ranges)
+    opened_at TIMESTAMPTZ NOT NULL,         -- brin (time ranges)
     location POINT,                         -- gist (spatial distance)
     embedding VECTOR(256)                   -- hnsw (vector similarity)
 )
@@ -54,12 +54,12 @@ python pg_index.py --step indexes
 The script creates six indexes:
 
 ```sql
-CREATE INDEX idx_btree_machine_id ON machine_index_demo USING BTREE (machine_id)
-CREATE INDEX idx_hash_status ON machine_index_demo USING HASH (status_code)
-CREATE INDEX idx_gin_spec ON machine_index_demo USING GIN (spec)
-CREATE INDEX idx_brin_created ON machine_index_demo USING BRIN (created_at)
-CREATE INDEX idx_gist_location ON machine_index_demo USING GIST (location)
-CREATE INDEX idx_hnsw_embedding ON machine_index_demo USING HNSW (embedding vector_cosine_ops)
+CREATE INDEX idx_btree_account_id ON account_index_demo USING BTREE (account_id)
+CREATE INDEX idx_hash_mcc ON account_index_demo USING HASH (mcc)
+CREATE INDEX idx_gin_spec ON account_index_demo USING GIN (spec)
+CREATE INDEX idx_brin_opened ON account_index_demo USING BRIN (opened_at)
+CREATE INDEX idx_gist_location ON account_index_demo USING GIST (location)
+CREATE INDEX idx_hnsw_embedding ON account_index_demo USING HNSW (embedding vector_cosine_ops)
 ```
 
 Each access method (AM) is optimized for a different query pattern.
@@ -72,11 +72,11 @@ python pg_index.py --step explain
 
 Runs EXPLAIN on six queries:
 
-1. **BTREE**: `WHERE machine_id = 'M-100'` (exact match) → picks btree
-2. **HASH**: `WHERE status_code = 5` (integer equality) → picks hash
-3. **GIN**: `WHERE spec @> '{"model": "CNC-X1"}` (JSON containment) → picks gin
-4. **BRIN**: `WHERE created_at > now() - interval '90 days'` (time range) → picks brin
-5. **GIST**: `WHERE location <-> point(45, -73) < 1` (spatial distance) → picks gist
+1. **BTREE**: `WHERE account_id = 'ACCT-100'` (exact match) → picks btree
+2. **HASH**: `WHERE mcc = 5` (integer equality) → picks hash
+3. **GIN**: `WHERE spec @> '{"product": "Checking"}` (JSON containment) → picks gin
+4. **BRIN**: `WHERE opened_at > now() - interval '90 days'` (time range) → picks brin
+5. **GIST**: `WHERE location <-> point(40.7549, -73.9840) < 1` (spatial distance) → picks gist
 6. *(HNSW)*: Vector similarity (if pgvector available)
 
 Each EXPLAIN shows the matching index was used.

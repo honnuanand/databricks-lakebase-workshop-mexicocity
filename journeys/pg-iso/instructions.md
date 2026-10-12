@@ -28,7 +28,7 @@ Read on for what happens; the exact output is in [`expected.md`](expected.md).
 
 ### Setup
 
-Creates a demo row: machine with 10 maintenance slots available.
+Creates a demo row: account with 10,000 available credit.
 
 ### Session A: BEGIN + UPDATE
 
@@ -36,7 +36,7 @@ Opens Connection A to your branch, runs:
 
 ```sql
 BEGIN;
-UPDATE machine_isolation_demo SET maintenance_slots = maintenance_slots - 1 WHERE machine_id = 'M-TEST-ISOLATION'
+UPDATE account_isolation_demo SET available_credit = available_credit - 500 WHERE account_id = 'ACCT-TEST-ISOLATION'
 ```
 
 Connection A holds this transaction open (the row is locked).
@@ -46,7 +46,7 @@ Connection A holds this transaction open (the row is locked).
 Opens Connection B and tries:
 
 ```sql
-UPDATE machine_isolation_demo SET maintenance_slots = maintenance_slots - 5 WHERE machine_id = 'M-TEST-ISOLATION'
+UPDATE account_isolation_demo SET available_credit = available_credit - 2500 WHERE account_id = 'ACCT-TEST-ISOLATION'
 ```
 
 **Session B blocks.** It waits on Session A's lock. The script demonstrates the wait.
@@ -65,7 +65,7 @@ Session B's UPDATE instantly proceeds (the lock was released).
 
 ### Final result
 
-The script confirms: slots went from 10 → 9 (Session A) → 4 (Session B).
+The script confirms: available_credit went from 10,000 → 9,500 (Session A) → 7,000 (Session B).
 Both updates landed; neither was lost.
 
 ## Watch the lock in real time

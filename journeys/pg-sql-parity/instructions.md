@@ -9,7 +9,7 @@ There are a few ways to work through the steps. Pick one:
 - **By hand:** follow the numbered steps below, copying each command yourself.
 - **Just see it work:** run `python pg_sql_parity.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
-Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory loaded.
+Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank loaded.
 
 Everything here is a single script you can read: [`./pg_sql_parity.py`](./pg_sql_parity.py). You can run it end to end, or follow the steps by hand to see each piece.
 
@@ -24,20 +24,20 @@ This walks through the entire journey and prints results. Read on for what each 
 
 ## Or step through it by hand
 
-### Step 1, inspect the BOM data model
+### Step 1, inspect the holdings data model
 
-First, look at the schema and a sample of the bill of materials:
+First, look at the schema and a sample of the fund holdings tree:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT parent_id, child_part, qty FROM factory.bom_edge LIMIT 5"
+  "SELECT parent_id, instrument_id, qty FROM bank.holding LIMIT 5"
 ```
 
-This shows the edges of the tree: parent (a product or part) → child (always a part) with a quantity multiplier. The edges are where CONNECT BY / recursive CTE magic lives.
+This shows the edges of the tree: parent (a fund or a sub-fund) to child (an instrument) with a units multiplier. The edges are where CONNECT BY / recursive CTE magic lives.
 
-### Step 2, window functions: rank machines by health
+### Step 2, window functions: rank accounts by health
 
-Window functions run in Postgres exactly as they do in Oracle. Here's a simple one: rank all machines by health, showing each machine's health alongside the rank:
+Window functions run in Postgres exactly as they do in Oracle. Here's a simple one: rank all accounts by health, showing each account's health alongside the rank:
 
 ```bash
 python pg_sql_parity.py --step window
@@ -46,57 +46,57 @@ python pg_sql_parity.py --step window
 The script runs:
 
 ```sql
-SELECT machine_id, plant_id, health_pct,
+SELECT account_id, branch_id, health_pct,
        ROW_NUMBER() OVER (ORDER BY health_pct DESC) as rank,
        RANK() OVER (ORDER BY health_pct DESC) as rank_with_ties,
        LAG(health_pct, 1) OVER (ORDER BY health_pct DESC) as prev_health
-  FROM factory.machine
+  FROM bank.account
  ORDER BY health_pct DESC
  LIMIT 10;
 ```
 
 This is the same `ROW_NUMBER()`, `RANK()`, and `LAG()` you already use. No migration needed.
 
-### Step 3, recursive CTE: explode the BOM
+### Step 3, recursive CTE: explode the holdings tree
 
-Now the meaty one. A recursive CTE builds a tree by starting at a root and recursively following edges. Here, we start with a product (e.g., PRD-GEARBOX-X1) and traverse to every child part, multiplying quantities as we go:
+Now the meaty one. A recursive CTE builds a tree by starting at a root and recursively following edges. Here, we start with a fund (e.g., FUND-GROWTH-A) and traverse to every underlying instrument, multiplying units as we go:
 
 ```bash
-python pg_sql_parity.py --step bom
+python pg_sql_parity.py --step holdings
 ```
 
-The script runs (against a product you specify):
+The script runs (against a fund you specify):
 
 ```sql
-WITH RECURSIVE bom_tree AS (
-  -- Anchor: start with the product
-  SELECT parent_id, child_part, qty as multiplier, 1 as depth
-    FROM factory.bom_edge
-   WHERE parent_id = 'PRD-GEARBOX-X1'
+WITH RECURSIVE holdings_tree AS (
+  -- Anchor: start with the fund
+  SELECT parent_id, instrument_id, qty as multiplier, 1 as depth
+    FROM bank.holding
+   WHERE parent_id = 'FUND-GROWTH-A'
 
   UNION ALL
 
-  -- Recursive: traverse child → grandchild, multiply quantities
-  SELECT e.parent_id, e.child_part, t.multiplier * e.qty, t.depth + 1
-    FROM factory.bom_edge e
-    JOIN bom_tree t ON e.parent_id = t.child_part
+  -- Recursive: traverse holding -> sub-holding, multiply units
+  SELECT h.parent_id, h.instrument_id, t.multiplier * h.qty, t.depth + 1
+    FROM bank.holding h
+    JOIN holdings_tree t ON h.parent_id = t.instrument_id
    WHERE t.depth < 10  -- limit recursion depth to prevent infinite loops
 )
-SELECT child_part, multiplier, depth
-  FROM bom_tree
- ORDER BY depth, child_part;
+SELECT instrument_id, multiplier, depth
+  FROM holdings_tree
+ ORDER BY depth, instrument_id;
 ```
 
-Output shows every part in the BOM (from top-level subassembly down to leaf parts) with the cumulative quantity needed.
+Output shows every instrument in the fund (from the top-level line items down to the leaf instruments) with the cumulative units held.
 
 ### Step 4, Oracle idiom map
 
 Window functions are identical. Recursive CTEs replace CONNECT BY. And a few other common Oracle idioms map directly to Postgres:
 
-- **ROWNUM → LIMIT**: `SELECT * FROM table WHERE ROWNUM <= 10` becomes `SELECT * FROM table LIMIT 10`
-- **NVL → COALESCE**: `NVL(col, default)` is just `COALESCE(col, default)` (they're identical in Postgres)
-- **SYSDATE → now()**: `SYSDATE` becomes `now()` (or `CURRENT_TIMESTAMP`)
-- **CONNECT BY → WITH RECURSIVE**: the tree query above
+- **ROWNUM to LIMIT**: `SELECT * FROM table WHERE ROWNUM <= 10` becomes `SELECT * FROM table LIMIT 10`
+- **NVL to COALESCE**: `NVL(col, default)` is just `COALESCE(col, default)` (they're identical in Postgres)
+- **SYSDATE to now()**: `SYSDATE` becomes `now()` (or `CURRENT_TIMESTAMP`)
+- **CONNECT BY to WITH RECURSIVE**: the tree query above
 
 These are the core pieces. Run them:
 

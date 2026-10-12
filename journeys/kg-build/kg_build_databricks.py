@@ -2,11 +2,11 @@
 # MAGIC %md
 # MAGIC # Build a knowledge graph, step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will load the factory data into an RDF graph, run graph traversal queries, and see how graph queries compare to SQL.
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will load the bank data into an RDF graph, run graph traversal queries, and see how graph queries compare to SQL.
 # MAGIC
 # MAGIC Each step shows the real interface: Python and rdflib for the graph operations, SQL when a step queries the database.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -33,72 +33,80 @@ print("rdflib installed. Ready to load the graph.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, Load the BOM as triples
+# MAGIC ## Step 1, Load the holdings tree as triples
 # MAGIC
-# MAGIC The factory has a bill of materials (BOM): products are made of parts, parts are supplied by suppliers, and machines operate in plants. We convert this into RDF triples, the subject-predicate-object triples that form a knowledge graph.
+# MAGIC The bank has a holdings tree: funds hold instruments (and sub-sleeves that hold more instruments), branches book funds, and counterparties trade instruments. We convert this into RDF triples, the subject-predicate-object triples that form a knowledge graph.
 # MAGIC
-# MAGIC Each triple is a fact: `(product, contains, part)`, `(part, supplied_by, supplier)`, `(machine, operates_in, plant)`.
+# MAGIC Each triple is a fact: `(fund, holds, instrument)`, `(instrument, traded_by, counterparty)`, `(fund, booked_at, branch)`.
 # MAGIC
-# MAGIC The SQL to load products:
+# MAGIC The SQL to load funds:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT product_id, name FROM factory.product
+# MAGIC SELECT fund_id, name FROM bank.fund
 # MAGIC ```
 
 # COMMAND ----------
 
 g = Graph()
-FACTORY = Namespace("http://factory.local/")
+BANK = Namespace("http://bank.local/")
 
 stats = {
-    "products": 0,
-    "parts": 0,
-    "bom_edges": 0,
-    "suppliers": 0,
-    "supplier_edges": 0,
-    "machines": 0,
+    "funds": 0,
+    "instruments": 0,
+    "holdings": 0,
+    "counterparties": 0,
+    "traded_by_edges": 0,
+    "branches": 0,
+    "booked_at_edges": 0,
 }
 
 with connect() as conn:
     with conn.cursor() as cur:
-        # Load products
-        cur.execute("SELECT product_id, name FROM factory.product")
-        for product_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[product_id]), URIRef(FACTORY.name), Literal(name)))
-            stats["products"] += 1
+        # Load funds
+        cur.execute("SELECT fund_id, name FROM bank.fund")
+        for fund_id, name in cur.fetchall():
+            g.add((URIRef(BANK[fund_id]), URIRef(BANK.name), Literal(name)))
+            stats["funds"] += 1
 
-        # Load parts
-        cur.execute("SELECT part_id, name FROM factory.part")
-        for part_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.name), Literal(name)))
-            stats["parts"] += 1
+        # Load instruments
+        cur.execute("SELECT instrument_id, name, kind FROM bank.instrument")
+        for instrument_id, name, kind in cur.fetchall():
+            g.add((URIRef(BANK[instrument_id]), URIRef(BANK.name), Literal(name)))
+            g.add((URIRef(BANK[instrument_id]), URIRef(BANK.kind), Literal(kind)))
+            stats["instruments"] += 1
 
-        # Load BOM edges (parent contains child)
-        cur.execute("SELECT parent_id, child_part, qty FROM factory.bom_edge LIMIT 1000")
-        for parent_id, child_part, qty in cur.fetchall():
-            g.add((URIRef(FACTORY[parent_id]), URIRef(FACTORY.contains), URIRef(FACTORY[child_part])))
-            stats["bom_edges"] += 1
+        # Load holdings edges (parent holds child instrument/sleeve)
+        cur.execute("SELECT parent_id, instrument_id, qty FROM bank.holding LIMIT 1000")
+        for parent_id, instrument_id, qty in cur.fetchall():
+            g.add((URIRef(BANK[parent_id]), URIRef(BANK.holds), URIRef(BANK[instrument_id])))
+            stats["holdings"] += 1
 
-        # Load suppliers
-        cur.execute("SELECT supplier_id, name FROM factory.supplier")
-        for supplier_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[supplier_id]), URIRef(FACTORY.name), Literal(name)))
-            stats["suppliers"] += 1
+        # Load counterparties
+        cur.execute("SELECT counterparty_id, name FROM bank.counterparty")
+        for counterparty_id, name in cur.fetchall():
+            g.add((URIRef(BANK[counterparty_id]), URIRef(BANK.name), Literal(name)))
+            stats["counterparties"] += 1
 
-        # Load supplier relationships
+        # Load counterparty relationships
         try:
-            cur.execute("SELECT part_id, supplier_id FROM factory.part_supplier LIMIT 1000")
-            for part_id, supplier_id in cur.fetchall():
-                g.add((URIRef(FACTORY[part_id]), URIRef(FACTORY.supplied_by), URIRef(FACTORY[supplier_id])))
-                stats["supplier_edges"] += 1
-        except:
+            cur.execute("SELECT instrument_id, counterparty_id FROM bank.trade_counterparty LIMIT 1000")
+            for instrument_id, counterparty_id in cur.fetchall():
+                g.add((URIRef(BANK[instrument_id]), URIRef(BANK.traded_by), URIRef(BANK[counterparty_id])))
+                stats["traded_by_edges"] += 1
+        except Exception:
             pass  # Table may not exist
 
-        # Load machines
-        cur.execute("SELECT machine_id, plant_id FROM factory.machine")
-        for machine_id, plant_id in cur.fetchall():
-            g.add((URIRef(FACTORY[machine_id]), URIRef(FACTORY.operates_in), URIRef(FACTORY[plant_id])))
-            stats["machines"] += 1
+        # Load branches
+        cur.execute("SELECT branch_id, name FROM bank.branch")
+        for branch_id, name in cur.fetchall():
+            g.add((URIRef(BANK[branch_id]), URIRef(BANK.name), Literal(name)))
+            stats["branches"] += 1
+
+        # Load fund booked_at branch edges (from the trade table)
+        cur.execute("SELECT DISTINCT fund_id, branch_id FROM bank.trade")
+        for fund_id, branch_id in cur.fetchall():
+            g.add((URIRef(BANK[fund_id]), URIRef(BANK.booked_at), URIRef(BANK[branch_id])))
+            stats["booked_at_edges"] += 1
 
 print(f"Loaded {len(g)} triples:")
 for key, val in stats.items():
@@ -108,35 +116,35 @@ for key, val in stats.items():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2, Query the graph for a single BOM path
+# MAGIC ## Step 2, Query the graph for a fund's direct holdings
 # MAGIC
-# MAGIC Ask the graph: "which parts are directly contained in product PRD-GEARBOX-X1?"
+# MAGIC Ask the graph: "which instruments are directly held by fund FUND-GROWTH-A?"
 # MAGIC
-# MAGIC This is a traversal of the `contains` relationship. We iterate through the graph's objects for that product and predicate.
+# MAGIC This is a traversal of the `holds` relationship. We iterate through the graph's objects for that fund and predicate.
 
 # COMMAND ----------
 
-product_id = "PRD-GEARBOX-X1"
-product_uri = URIRef(FACTORY[product_id])
+fund_id = "FUND-GROWTH-A"
+fund_uri = URIRef(BANK[fund_id])
 
-parts = []
-for obj in g.objects(product_uri, URIRef(FACTORY.contains)):
-    part_id = str(obj).split("/")[-1]
-    parts.append(part_id)
+instruments = []
+for obj in g.objects(fund_uri, URIRef(BANK.holds)):
+    instrument_id = str(obj).split("/")[-1]
+    instruments.append(instrument_id)
 
-print(f"Parts contained in {product_id}:")
-for part in sorted(parts):
-    print(f"  {part}")
+print(f"Instruments held directly by {fund_id}:")
+for instrument in sorted(instruments):
+    print(f"  {instrument}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 3, Show the equivalent SQL
 # MAGIC
-# MAGIC The same query in SQL is straightforward for a simple containment:
+# MAGIC The same query in SQL is straightforward for a direct holding:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT child_part FROM factory.bom_edge WHERE parent_id = 'PRD-GEARBOX-X1'
+# MAGIC SELECT instrument_id FROM bank.holding WHERE parent_id = 'FUND-GROWTH-A'
 # MAGIC ```
 # MAGIC
 # MAGIC Let's run it and compare.
@@ -145,19 +153,19 @@ for part in sorted(parts):
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute("SELECT child_part FROM factory.bom_edge WHERE parent_id = %s", [product_id])
-        sql_parts = [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT instrument_id FROM bank.holding WHERE parent_id = %s", [fund_id])
+        sql_instruments = [row[0] for row in cur.fetchall()]
 
-print(f"SQL result for {product_id}:")
-for part in sorted(sql_parts):
-    print(f"  {part}")
+print(f"SQL result for {fund_id}:")
+for instrument in sorted(sql_instruments):
+    print(f"  {instrument}")
 
-print(f"\nBoth queries return the same {len(parts)} parts. The graph and SQL are equivalent here.")
-print(f"The difference shows when you ask multi-hop questions like 'products containing a part from supplier S-ACME'.")
+print(f"\nBoth queries return the same {len(instruments)} instruments. The graph and SQL are equivalent here.")
+print(f"The difference shows when you ask multi-hop questions like 'funds holding an instrument traded by CP-GOLDMAN'.")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You converted a relational data model (product-BOM-supplier graph) into an RDF knowledge graph, loaded it into an in-memory store (rdflib), and ran graph traversal queries. For simple single-hop questions, the graph and SQL are equally readable. But the real power emerges with multi-hop queries: the graph stays flat while SQL queries grow joins. Next: **Query a knowledge graph with SPARQL** shows you SPARQL syntax for harder questions.
+# MAGIC You converted a relational data model (fund-holdings-counterparty graph) into an RDF knowledge graph, loaded it into an in-memory store (rdflib), and ran graph traversal queries. For simple single-hop questions, the graph and SQL are equally readable. But the real power emerges with multi-hop queries: the graph stays flat while SQL queries grow joins. Next: **Query a knowledge graph with SPARQL** shows you SPARQL syntax for harder questions.

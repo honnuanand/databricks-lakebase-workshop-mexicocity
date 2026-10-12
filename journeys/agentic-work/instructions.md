@@ -10,7 +10,7 @@ There are a few ways to work through the steps. Pick one:
 - **Just see it work:** run `python agentic_work.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that
-first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
+first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank
 loaded.
 
 Everything here is a single script you can read: [`./agentic_work.py`](./agentic_work.py).
@@ -30,97 +30,99 @@ the exact output to expect is in [`expected.md`](expected.md).
 
 ### Step 1, check the current state
 
-Before the agent acts, see what machines are available and what work orders are pending:
+Before the agent acts, see the account status and its recent transactions:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT machine_id, status, health_pct FROM factory.machine WHERE machine_id='M-204'"
+  "SELECT account_id, line, type, status, health_pct FROM bank.account WHERE account_id='ACCT-100240'"
 
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT wo_id, product_id, qty, status FROM factory.work_order WHERE wo_id='WO-1001'"
+  "SELECT txn_id, amount_usd, anomaly_score, mcc FROM bank.txn WHERE account_id='ACCT-100240' ORDER BY anomaly_score DESC LIMIT 3"
 ```
 
-You should see M-204 is `healthy` and WO-1001 is `released` (waiting to be assigned to a
-machine).
+You should see ACCT-100240 is a `watch` Credit account, and its top transaction carries an
+`anomaly_score` of 8.7 (the fraud signal).
 
-### Step 2, ask the agent to release a work order
+### Step 2, ask the agent to review and act
 
-The agent is an MES assistant deployed on Model Serving that can read machine status and write
-work assignments. Call it:
+The agent is a fraud-ops assistant deployed on Model Serving that can read account risk and
+write a hold. Call it:
 
 ```bash
-python agentic_work.py --step release
+python agentic_work.py --step review
 ```
 
 The script:
 1. Reads the agent's memory from the `agent_memory` table (to avoid double-work).
-2. Builds a tool-calling prompt: "Release WO-1001 to the shop floor."
-3. The agent calls a tool: `get_free_machines()` → SQL SELECT returns available machines.
-4. The agent decides: "Assign WO-1001 to M-204."
-5. The agent calls another tool: `assign_work_order(wo_id, machine_id)` → SQL INSERT adds a
-   row to the `operation` table.
-6. The agent remembers: appends "I assigned WO-1001 to M-204" to its memory.
+2. Builds a tool-calling prompt: "Review ACCT-100240 and act on the fraud signal."
+3. The agent calls a tool: `get_account_risk()` -> SQL SELECT returns status + top anomaly score.
+4. The agent decides: "Place a hold on ACCT-100240."
+5. The agent calls another tool: `place_hold(account_id)` -> SQL UPDATE sets the account status
+   to `frozen` and INSERTs a flag row into the `case_note` table.
+6. The agent remembers: appends "I placed a hold on ACCT-100240" to its memory.
 
 You should see output like:
 
 ```text
 Agent tool calls:
-  - get_free_machines: returns [('M-204', 'healthy', 91.0)]
-  - assign_work_order('WO-1001', 'M-204'): inserted row
-Agent decision: Assign WO-1001 to M-204 for a 2-hour production run.
-Memory after: assigned WO-1001 to M-204
+  - get_account_risk('ACCT-100240'): returns ('watch', 8.7)
+  - place_hold('ACCT-100240'): froze account, wrote case_note flag
+Agent decision: Hold placed on ACCT-100240 due to anomaly score 8.7 on a card-not-present charge.
+Memory after: placed hold on ACCT-100240
 ```
 
-### Step 3, confirm the assignment was written
+### Step 3, confirm the hold was written
 
-Query the operation table to see the assignment:
+Query the account and case_note tables to see the action:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT op_id, wo_id, machine_id, status FROM factory.operation WHERE wo_id='WO-1001'"
+  "SELECT account_id, status FROM bank.account WHERE account_id='ACCT-100240'"
+
+python ../../common/scripts/lakebase.py --sql \
+  "SELECT account_id, category, finding, action FROM bank.case_note WHERE account_id='ACCT-100240' AND action='hold_placed'"
 ```
 
-You should see a row with `wo_id='WO-1001'` and `machine_id='M-204'` and `status='pending'`
-(waiting to start).
+You should see the account `status='frozen'` and one case_note row with `action='hold_placed'`.
 
 ### Step 4, ask the agent the same question again
 
-Now ask the agent to release the *same* work order:
+Now ask the agent to review the *same* account:
 
 ```bash
-python agentic_work.py --step release-again
+python agentic_work.py --step review-again
 ```
 
 The script:
 1. Reads the agent's memory.
-2. Sees "I already assigned WO-1001 to M-204".
-3. Refuses the request: "WO-1001 is already assigned."
+2. Sees "I already placed a hold on ACCT-100240".
+3. Refuses the request: "ACCT-100240 is already on hold."
 
 You should see output like:
 
 ```text
 Agent reads its memory:
-  - I assigned WO-1001 to M-204
-Agent decision: WO-1001 is already assigned to M-204. No double-assignment.
+  - placed hold on ACCT-100240
+Agent decision: ACCT-100240 is already on hold. No duplicate action needed.
 ```
 
 ### Step 5, inspect the shared state
 
-The agent's tools read and write the same tables the warehouse operation does. Query the
-operation table one more time to confirm:
+The agent's tools read and write the same tables the bank's operations do. Query the case_note
+table one more time to confirm:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT wo_id, machine_id, status FROM factory.operation WHERE wo_id='WO-1001'"
+  "SELECT account_id, action FROM bank.case_note WHERE account_id='ACCT-100240' AND action='hold_placed'"
 ```
 
-Still one row (no double-assignment). The agent's decision to not re-assign is backed by SQL
+Still one hold row (no double-action). The agent's decision to not re-hold is backed by SQL
 consistency, not just logic.
 
 ## What you just did
 
 You watched an agent read live data with a tool, decide to take action, and write a state
 change back to the database, all in one turn, with memory that prevents double-work. The
-agent changed the factory's operational state, and the database tracks it. Compare the output
+agent changed the account's operational state, and the database tracks it. Compare the output
 you saw against [`expected.md`](expected.md), and if anything went sideways, [`faq.md`](faq.md)
 has the common causes.

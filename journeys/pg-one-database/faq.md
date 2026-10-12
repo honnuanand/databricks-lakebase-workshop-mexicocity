@@ -30,18 +30,18 @@ and you'll get different results (but the same query structure).
 ## Can I use this pattern in production?
 
 Yes. This is a real pattern:
-- Relational columns: user IDs, timestamps, categories.
-- JSON: flexible attributes (specs that vary per product).
+- Relational columns: account IDs, timestamps, categories.
+- JSON: flexible attributes (specs that vary per account type).
 - Vectors: embeddings for similarity search.
-- Geospatial: store locations, service areas, etc.
+- Geospatial: branch locations, counterparty locations, service areas.
 
-All in one table, all queried together. Common in e-commerce (products with specs + locations + similarity),
-smart manufacturing (machines + specs + locations), and healthcare (patients + attributes + locations).
+All in one table, all queried together. Common in banking (accounts with specs + locations + similarity),
+fintech (customer profiles + embedding-based recommendations), and financial services (counterparties + risk profiles + geo).
 
 ## What about performance? Won't a four-type query be slow?
 
 Not if indexed correctly. The script creates a table; in production you'd add indexes:
-- [BTREE](../../docs/glossary.md) on relational columns (plant_id, line).
+- [BTREE](../../docs/glossary.md) on relational columns (branch_id, line).
 - [GIN](../../docs/glossary.md) on [JSONB](../../docs/glossary.md) (spec).
 - [HNSW](../../docs/glossary.md) on vectors (embedding).
 - [GiST](../../docs/glossary.md) on geospatial (location).
@@ -52,25 +52,25 @@ would be on a single-purpose system.
 ## Should I always put all data types on one table?
 
 No. Use one table when:
-- The data is conceptually one entity (a machine has a location, a spec, an embedding, all part of the machine).
+- The data is conceptually one entity (an account has a location, a spec, an embedding, all part of the account).
 - Queries often join all or most of the types.
 - You want strong consistency and simplicity.
 
 Split into multiple tables if:
-- The data is conceptually separate (machines and suppliers are different entities).
+- The data is conceptually separate (accounts and trades are different entities).
 - Queries rarely need both (then a JOIN is fine and keeps data organized).
 
 This journey shows the unified pattern; [`../pg-iso/`](../pg-iso/) implicitly showed the multi-table pattern
-(machines in one table, availability slots in another).
+(accounts in one table, settlement slots in another).
 
 ## Can I update JSON or vectors in place?
 
 Yes. The same UPDATE syntax works:
 
 ```sql
-UPDATE machine_unified_demo
+UPDATE account_unified_demo
 SET spec = spec || '{"new_field": "value"}'::jsonb
-WHERE machine_id = 'M-123'
+WHERE account_id = 'ACCT-123'
 ```
 
 Vectors can be updated the same way. Geospatial columns (geometry) can also be updated.

@@ -8,15 +8,15 @@
 # MAGIC **Before you start:** finish `00-setup/`.
 # COMMAND ----------
 
-# MAGIC ## Setup — connect
+# MAGIC ## Setup, connect
 # COMMAND ----------
 
 import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), '..', '..', 'common', 'scripts'))
 from lakebase import connect, _env
 
-DEMO_TABLE = 'sensor_readings_partitioned'
-SCHEMA = _env('LB_SCHEMA', 'factory')
+DEMO_TABLE = 'txn_partitioned'
+SCHEMA = _env('LB_SCHEMA', 'bank')
 
 def show_partition_info(cur, query: str):
     cur.execute(f"EXPLAIN (FORMAT JSON) {query}")
@@ -27,18 +27,18 @@ print('Ready.')
 
 # COMMAND ----------
 
-# MAGIC ## Step 1 — Create partitioned table
+# MAGIC ## Step 1, Create partitioned table
 # MAGIC
 # MAGIC Create a RANGE-partitioned table on the month of ts. Then create 6 monthly partitions (Jan–Jun 2024).
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE TABLE sensor_readings_partitioned (
-# MAGIC     reading_id BIGSERIAL,
-# MAGIC     machine_id TEXT NOT NULL,
+# MAGIC CREATE TABLE txn_partitioned (
+# MAGIC     txn_id BIGSERIAL,
+# MAGIC     account_id TEXT NOT NULL,
 # MAGIC     ts TIMESTAMPTZ NOT NULL,
-# MAGIC     temp_c NUMERIC(6,2),
-# MAGIC     vibration_mm_s NUMERIC(6,2),
-# MAGIC     PRIMARY KEY (reading_id, ts)
+# MAGIC     amount_usd NUMERIC(12,2),
+# MAGIC     anomaly_score NUMERIC(6,2),
+# MAGIC     PRIMARY KEY (txn_id, ts)
 # MAGIC ) PARTITION BY RANGE (ts);
 # MAGIC ```
 # COMMAND ----------
@@ -48,12 +48,12 @@ with connect() as conn:
         cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.{DEMO_TABLE} CASCADE")
         cur.execute(f"""
             CREATE TABLE {SCHEMA}.{DEMO_TABLE} (
-                reading_id BIGSERIAL,
-                machine_id TEXT NOT NULL,
+                txn_id BIGSERIAL,
+                account_id TEXT NOT NULL,
                 ts TIMESTAMPTZ NOT NULL,
-                temp_c NUMERIC(6,2),
-                vibration_mm_s NUMERIC(6,2),
-                PRIMARY KEY (reading_id, ts)
+                amount_usd NUMERIC(12,2),
+                anomaly_score NUMERIC(6,2),
+                PRIMARY KEY (txn_id, ts)
             ) PARTITION BY RANGE (ts)
         """)
         
@@ -75,10 +75,10 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 2 — Load data (180k rows, 30k per month)
+# MAGIC ## Step 2, Load data (180k rows, 30k per month)
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO sensor_readings_partitioned(...)
+# MAGIC INSERT INTO txn_partitioned(...)
 # MAGIC SELECT ... FROM generate_series(...)
 # MAGIC ```
 # COMMAND ----------
@@ -86,9 +86,9 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"""
-            INSERT INTO {SCHEMA}.{DEMO_TABLE}(machine_id, ts, temp_c, vibration_mm_s)
+            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, ts, amount_usd, anomaly_score)
             SELECT
-                'M-' || (g % 100),
+                'ACCT-' || (g % 100),
                 '2024-01-01'::date + (g / 100 || ' days')::interval + (g % 3600 || ' seconds')::interval,
                 50.0 + (g % 30),
                 2.0 + (g % 5)::numeric / 10
@@ -98,13 +98,13 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 3 — Show partition pruning (one-month query)
+# MAGIC ## Step 3, Show partition pruning (one-month query)
 # MAGIC
 # MAGIC Query for a single month. Planner prunes 5 of 6 partitions and scans only the matching month.
 # MAGIC
 # MAGIC ```sql
 # MAGIC EXPLAIN
-# MAGIC SELECT COUNT(*) FROM sensor_readings_partitioned
+# MAGIC SELECT COUNT(*) FROM txn_partitioned
 # MAGIC WHERE ts >= '2024-03-01' AND ts < '2024-04-01'
 # MAGIC ```
 # COMMAND ----------
@@ -119,13 +119,13 @@ with connect() as conn:
 
 # COMMAND ----------
 
-# MAGIC ## Step 4 — Show full-range query (no pruning)
+# MAGIC ## Step 4, Show full-range query (no pruning)
 # MAGIC
 # MAGIC Query for all 6 months. Planner cannot prune; all partitions are needed.
 # MAGIC
 # MAGIC ```sql
 # MAGIC EXPLAIN
-# MAGIC SELECT COUNT(*) FROM sensor_readings_partitioned
+# MAGIC SELECT COUNT(*) FROM txn_partitioned
 # MAGIC WHERE ts >= '2024-01-01' AND ts < '2024-07-01'
 # MAGIC ```
 # COMMAND ----------
@@ -142,6 +142,6 @@ with connect() as conn:
 
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC Partitioning scales out: the planner prunes unneeded partitions on targeted queries, reducing I/O. Full-range analytical queries necessarily scan all partitions — those belong in the lakehouse, not the operational database.
+# MAGIC Partitioning scales out: the planner prunes unneeded partitions on targeted queries, reducing I/O. Full-range analytical queries necessarily scan all partitions, those belong in the lakehouse, not the operational database.
 # MAGIC
 # MAGIC Next: **Postgres in your browser** runs Postgres in the browser using PGlite (WebAssembly).

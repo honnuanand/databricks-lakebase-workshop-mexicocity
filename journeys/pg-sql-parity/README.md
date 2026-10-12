@@ -5,16 +5,16 @@
 > **Key takeaways**
 >
 > - Window functions (`ROW_NUMBER()`, `LAG()`, `RANK()`) run natively in Postgres, with the same syntax as Oracle or SQL Server. No separate language, no compromise.
-> - Recursive CTEs (WITH RECURSIVE) replace Oracle's CONNECT BY for tree queries, exact same problem, different syntax. A [bill of materials](../../docs/glossary.md) (BOM) parts-explosion that traverses a tree of parent and child parts is one line per query level, not a procedural loop.
-> - The numbers that matter: a 100-part BOM explodes to 1,200 leaf parts; the recursive CTE does it in under 50 milliseconds, part of a single query.
+> - Recursive CTEs (WITH RECURSIVE) replace Oracle's CONNECT BY for tree queries, exact same problem, different syntax. A [holdings explosion](../../docs/glossary.md) that traverses a fund down through its sub-funds to the underlying instruments is one line per query level, not a procedural loop.
+> - The numbers that matter: a fund-of-funds with 200 line items explodes to 1,800 underlying positions; the recursive CTE does it in under 50 milliseconds, part of a single query.
 >
-> **You'll be able to:** write window functions, recursive CTEs, and MERGE statements to migrate your analytical SQL from Oracle to Postgres, and run them live against a manufacturing bill of materials.
+> **You'll be able to:** write window functions, recursive CTEs, and MERGE statements to migrate your analytical SQL from Oracle to Postgres, and run them live against a real fund holdings tree.
 >
 > **Time:** about 20 minutes  ·  **Status:** live
 
 ## The scenario
 
-A parts planner at the stamping plant is rebuilding a major product line and needs to know every leaf part, every component that actually goes into a finished product, counting multiplicity. A gearbox assembly contains 4 shafts, each shaft contains 5 bearings, each bearing contains a steel ring, a cage, and a seal: the explosion is the tree, dozens of levels deep depending on how you count.
+A portfolio controller at the bank needs the true look-through of a fund: every underlying instrument that a fund actually holds, counting multiplicity, when the fund holds other funds that hold other funds. FUND-GROWTH-A holds cash plus two units of an equity sleeve plus Microsoft; the equity sleeve itself holds Apple plus two units of a 10-year Treasury. The look-through is the tree, as many levels deep as the structure nests.
 
 On Oracle, you'd use CONNECT BY. On Postgres, you use recursive CTEs. The mechanism is different, the semantics are identical, and if you know one you can learn the other in an hour.
 
@@ -24,20 +24,20 @@ This journey isn't just a syntax cheat sheet. It's a chance to see that Postgres
 
 ## The wow moment
 
-You load the factory [bill of materials](../../docs/glossary.md), a multi-level tree of parts that make subassemblies that make products. You write a recursive CTE that "explodes" the tree in one query: "give me every part that goes into PRD-GEARBOX-X1, with quantities multiplied down the chain." The query runs and you see not just the direct children, but the full tree: the leaf parts and how many times each one has to be bought to fulfill the product. That explosion is the hardest tree problem; everything else is easier.
+You load the fund holdings tree, a multi-level structure of funds that hold sub-funds that hold instruments. You write a recursive CTE that "explodes" the tree in one query: "give me every instrument that FUND-GROWTH-A is exposed to, with units multiplied down the chain." The query runs and you see not just the direct line items, but the full look-through: the leaf instruments and how many units of each the fund really owns once you unwind the nesting. That explosion is the hardest tree problem; everything else is easier.
 
 ## What you'll do
 
-1. Load the factory bill of materials and inspect the data model (parents, children, quantities).
-2. Write a simple window function to rank machines by health, showing the machines above and below in the ranking.
-3. Write a recursive CTE to explode the [BOM](../../docs/glossary.md): start with a product, recursively traverse to children, multiply quantities down the chain.
-4. Compare the real performance (milliseconds), then see the Oracle idiom map: ROWNUM → LIMIT, NVL → COALESCE, SYSDATE → now().
+1. Load the fund holdings tree and inspect the data model (parents, children, units).
+2. Write a simple window function to rank accounts by health, showing the accounts above and below in the ranking.
+3. Write a recursive CTE to explode the [holdings tree](../../docs/glossary.md): start with a fund, recursively traverse to its holdings, multiply units down the chain.
+4. Compare the real performance (milliseconds), then see the Oracle idiom map: ROWNUM to LIMIT, NVL to COALESCE, SYSDATE to now().
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output and reference numbers are in [`expected.md`](expected.md).
 
 ## Prerequisites
 
-Finish [`../../00-setup/`](../../00-setup/) so you have a branch with the factory schema and data loaded. This journey stands alone; the SQL is portable to Oracle or SQL Server with minor syntax edits.
+Finish [`../../00-setup/`](../../00-setup/) so you have a branch with the bank schema and data loaded. This journey stands alone; the SQL is portable to Oracle or SQL Server with minor syntax edits.
 
 ## Wrapping up
 
