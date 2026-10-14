@@ -2,9 +2,9 @@
 # MAGIC %md
 # MAGIC # Learning loop - step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will demonstrate a closed-loop learning system: seed maintenance write-ups, extract structured data with AI, route by confidence (high=auto, low=review), simulate human correction, and analyze accuracy and drift.
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will demonstrate a closed-loop learning system: seed analyst case notes, extract structured data with AI, route by confidence (high=auto, low=review), simulate human correction, and analyze accuracy and drift.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -24,29 +24,29 @@ print("Learning loop: seed -> extract -> route -> correct -> analyze")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 - Seed maintenance write-ups
+# MAGIC ## Step 1 - Seed analyst case notes
 # MAGIC
-# MAGIC Load real-world messy maintenance notes. Some clear, some ambiguous. The SQL:
+# MAGIC Load real-world messy fraud/AML case notes. Some clear, some ambiguous. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO bank.case_note (account_id, writeup)
-# MAGIC VALUES ('ACCT-100240', 'Hydraulic line on leg B leaking, found ice on exterior, isolated line, monitor pressure.');
+# MAGIC VALUES ('ACCT-100240', 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.');
 # MAGIC ```
 
 # COMMAND ----------
 
-# Add the ALTER TABLE statement to ensure status column exists
+# Add the status column if it is not there yet (idempotent).
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"ALTER TABLE {TABLE} ADD COLUMN IF NOT EXISTS status TEXT")
 
-# Real factory machines and their maintenance notes
+# Real accounts and their analyst case notes.
 writeups = [
-    ("ACCT-100240", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
-    ("ACCT-300421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
-    ("ACCT-200311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
-    ("ACCT-100235", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
-    ("ACCT-100240", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
+    ("ACCT-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
+    ("ACCT-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
+    ("ACCT-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
+    ("ACCT-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
+    ("ACCT-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
 ]
 
 with connect() as conn:
@@ -55,115 +55,142 @@ with connect() as conn:
         for mid, writeup in writeups:
             cur.execute(f"INSERT INTO {TABLE} (account_id, writeup) VALUES (%s, %s)", [mid, writeup])
 
-print(f"Seeded {len(writeups)} maintenance write-ups from factory machines")
+print(f"Seeded {len(writeups)} analyst case notes")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2 - Show the write-ups
+# MAGIC ## Step 2 - Show the case notes
 # MAGIC
 # MAGIC Query the seeded data. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT account_id, writeup FROM bank.case_note ORDER BY note_id;
+# MAGIC SELECT note_id, account_id, writeup FROM bank.case_note ORDER BY note_id;
 # MAGIC ```
 
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute(f"SELECT account_id, writeup FROM {TABLE} ORDER BY note_id")
+        cur.execute(f"SELECT note_id, account_id, writeup FROM {TABLE} ORDER BY note_id")
         rows = cur.fetchall()
 
-print(f"Maintenance write-ups ({len(rows)} total):")
-for mid, writeup in rows:
-    print(f"  {mid}: {writeup[:70]}..." if len(writeup) > 70 else f"  {mid}: {writeup}")
+print(f"Analyst case notes ({len(rows)} total):")
+for note_id, mid, writeup in rows:
+    short = writeup[:70] + "..." if len(writeup) > 70 else writeup
+    print(f"  {note_id} {mid}: {short}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 - Simulate extraction with confidence routing
+# MAGIC ## Step 3 - Extraction with confidence routing
 # MAGIC
-# MAGIC Extract structured data (system, defect, action, confidence) from each write-up. Route high-confidence to auto-accept, low-confidence to manual review.
+# MAGIC Extract structured data (category, finding, action, confidence) from each case note, then write
+# MAGIC the extraction and routing status back to the same table. Here we use a fixed set of extractions
+# MAGIC so the notebook runs deterministically; the standalone `learning_loop.py` calls the live Claude
+# MAGIC endpoint for the same step. High confidence auto-accepts; low confidence routes to review.
 
 # COMMAND ----------
 
+# One extraction per case note, in note_id order. These mirror what the model returns for notes
+# this clear and this vague: the card-fraud and AML notes are unambiguous, the rest are not.
 extractions = [
-    {"system": "hydraulics", "defect": "line_leak", "action": "isolated", "confidence": 0.95, "status": "auto_accepted"},
-    {"system": "cnc_spindle", "defect": "overheating", "action": "schedule_pump_replace", "confidence": 0.89, "status": "auto_accepted"},
-    {"system": "tool_changer", "defect": "intermittent_actuator", "action": "investigate", "confidence": 0.68, "status": "needs_review"},
-    {"system": "robot_arm", "defect": "slow_homing", "action": "investigate_drive", "confidence": 0.80, "status": "auto_accepted"},
-    {"system": "unknown", "defect": "unknown", "action": "investigate", "confidence": 0.38, "status": "needs_review"},
+    {"category": "fraud",   "finding": "card_compromise",       "action": "froze_and_reissued", "confidence": 0.93},
+    {"category": "AML",     "finding": "possible_structuring",  "action": "referred_to_aml",    "confidence": 0.88},
+    {"category": "dispute", "finding": "double_charge_claim",   "action": "review_settlement",  "confidence": 0.64},
+    {"category": "fraud",   "finding": "possible_card_testing", "action": "hold_for_review",    "confidence": 0.66},
+    {"category": "fraud",   "finding": "unclear",               "action": "investigate",        "confidence": 0.28},
 ]
+
+with connect() as conn:
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT note_id FROM {TABLE} ORDER BY note_id")
+        note_ids = [r[0] for r in cur.fetchall()]
+        for note_id, e in zip(note_ids, extractions):
+            status = "auto_accepted" if e["confidence"] >= CONF_THRESHOLD else "needs_review"
+            e["status"] = status
+            cur.execute(
+                f"UPDATE {TABLE} SET category=%s, finding=%s, action=%s, confidence=%s, status=%s WHERE note_id=%s",
+                [e["category"], e["finding"], e["action"], e["confidence"], status, note_id])
 
 auto_count = sum(1 for e in extractions if e["status"] == "auto_accepted")
 review_count = sum(1 for e in extractions if e["status"] == "needs_review")
 
 print(f"Extraction results:")
-print(f"  Auto-accepted (conf > {CONF_THRESHOLD}): {auto_count}")
-print(f"  Needs review (conf <= {CONF_THRESHOLD}): {review_count}")
+print(f"  Auto-accepted (conf >= {CONF_THRESHOLD}): {auto_count}")
+print(f"  Needs review   (conf <  {CONF_THRESHOLD}): {review_count}")
 
 print(f"\nAuto-accepted entries:")
 for e in extractions:
     if e["status"] == "auto_accepted":
-        print(f"  {e['system']}/{e['defect']}: conf={e['confidence']:.2f}")
+        print(f"  {e['category']}/{e['finding']}: conf={e['confidence']:.2f}")
 
 print(f"\nNeeds review:")
 for e in extractions:
     if e["status"] == "needs_review":
-        print(f"  {e['system']}/{e['defect']}: conf={e['confidence']:.2f}")
+        print(f"  {e['category']}/{e['finding']}: conf={e['confidence']:.2f}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 - Simulate human correction on uncertain entries
+# MAGIC ## Step 4 - Human correction on an uncertain entry
 # MAGIC
-# MAGIC For entries marked 'needs_review', a human corrects them. Update the table with corrected values.
+# MAGIC An analyst reviews the lowest-confidence `needs_review` note and makes its extraction specific.
+# MAGIC The correction writes back to the same row with `status='corrected'`; the AI's original
+# MAGIC extraction and the human's correction live in one place.
 
 # COMMAND ----------
 
-corrections = [
-    {"note_id": 3, "correct_system": "avionics", "correct_defect": "radio_failure", "status": "human_corrected", "confidence": 0.95},
-    {"note_id": 5, "correct_system": "hydraulic", "correct_defect": "unknown_leak", "status": "human_corrected", "confidence": 0.65},
-]
-
-print(f"Human corrections applied ({len(corrections)} entries):")
-for corr in corrections:
-    print(f"  note_id={corr['note_id']}: {corr['correct_system']}/{corr['correct_defect']}, status={corr['status']}")
+with connect() as conn:
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT note_id FROM {TABLE} WHERE status='needs_review' ORDER BY confidence ASC NULLS FIRST LIMIT 1")
+        row = cur.fetchone()
+        if row:
+            note_id = row[0]
+            cur.execute(
+                f"UPDATE {TABLE} SET category=%s, finding=%s, status=%s WHERE note_id=%s",
+                ["fraud", "account_takeover_suspected", "corrected", note_id])
+            print(f"Analyst corrected note_id={note_id}: category=fraud, finding=account_takeover_suspected, status=corrected")
+        else:
+            print("No needs_review entries to correct")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 5 - Analytics: accuracy and confidence distribution
 # MAGIC
-# MAGIC Query the maintenance_log to compute accuracy metrics and confidence distribution.
+# MAGIC Query the same `case_note` table to compute routing counts and confidence stats. No separate
+# MAGIC analytics store: the operational table *is* the analytics source.
 
 # COMMAND ----------
 
-total_entries = len(extractions)
-auto_entries = sum(1 for e in extractions if e["status"] == "auto_accepted")
-review_entries = sum(1 for e in extractions if e["status"] == "needs_review")
-corrected_entries = len(corrections)
+with connect() as conn:
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT status, COUNT(*) FROM {TABLE} WHERE status IS NOT NULL GROUP BY status")
+        by_status = {r[0]: r[1] for r in cur.fetchall()}
+        cur.execute(f"SELECT AVG(confidence) FROM {TABLE} WHERE status='auto_accepted'")
+        avg_auto = cur.fetchone()[0]
+        cur.execute(f"SELECT AVG(confidence) FROM {TABLE} WHERE status='needs_review'")
+        avg_review = cur.fetchone()[0]
+        cur.execute(f"SELECT COUNT(*) FROM {TABLE} WHERE status IS NOT NULL")
+        total = cur.fetchone()[0]
 
-avg_confidence = sum(e["confidence"] for e in extractions) / len(extractions)
-high_conf = sum(1 for e in extractions if e["confidence"] >= CONF_THRESHOLD)
-low_conf = sum(1 for e in extractions if e["confidence"] < CONF_THRESHOLD)
-
-print(f"=== Learning Loop Analytics ===")
-print(f"\nProcessed: {total_entries}")
-print(f"  Auto-accepted: {auto_entries}")
-print(f"  Needs review: {review_entries}")
-print(f"  Human-corrected: {corrected_entries}")
-print(f"\nConfidence Distribution:")
-print(f"  High (>= {CONF_THRESHOLD}): {high_conf} ({100*high_conf/total_entries:.0f}%)")
-print(f"  Low (< {CONF_THRESHOLD}): {low_conf} ({100*low_conf/total_entries:.0f}%)")
-print(f"  Average: {avg_confidence:.2f}")
+print("=== Learning Loop Analytics ===")
+print(f"\nProcessed: {total}")
+print(f"  Auto-accepted: {by_status.get('auto_accepted', 0)}")
+print(f"  Needs review:  {by_status.get('needs_review', 0)}")
+print(f"  Corrected:     {by_status.get('corrected', 0)}")
+if avg_auto is not None:
+    print(f"\nAvg confidence (auto-accepted): {float(avg_auto):.3f}")
+if avg_review is not None:
+    print(f"Avg confidence (needs review):  {float(avg_review):.3f}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC A closed-loop learning system: seed messy data, extract with AI, route by confidence, correct, and analyze. All on one table. As humans correct low-confidence extractions, the system improves: confidence grows, more auto-accepts, fewer reviews. Monitor drift (accuracy over time) to catch model decay.
+# MAGIC A closed-loop learning system: seed messy case notes, extract with AI, route by confidence, correct, and analyze. All on one table. As analysts correct low-confidence extractions, the system improves: confidence grows, more auto-accepts, fewer reviews. Monitor drift (accuracy over time) to catch model decay.
 # MAGIC
 # MAGIC **Next:** PG vector - operational vectors for similarity search on live data.

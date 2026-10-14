@@ -2,15 +2,15 @@
 """Human-in-the-loop learning loop, extract, route, correct, analyze on one table.
 
 Demonstrates the closed-loop pattern:
-  1. Seed maintenance write-ups (free text)
-  2. Run Claude extraction: system/defect/action + confidence
+  1. Seed analyst case notes (free text)
+  2. Run Claude extraction: category/finding/action + confidence
   3. Route by confidence: high → auto_accepted, low → needs_review
   4. Simulate human correction on uncertain entries
   5. Analytics: accuracy, drift, confidence distribution
 
 Usage:
     python learning_loop.py                # run the whole loop
-    python learning_loop.py --step seed    # just seed write-ups
+    python learning_loop.py --step seed    # just seed case notes
     python learning_loop.py --step extract # run extraction
     python learning_loop.py --step correct # simulate correction
     python learning_loop.py --step analytics  # run analytics
@@ -37,14 +37,14 @@ FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 CONF_THRESHOLD = 0.75
 TABLE = "bank.case_note"
 
-# Real-world messy maintenance write-ups on real factory machines. Some clear, some
-# ambiguous, so the AI's confidence score varies and low-confidence ones route to a human.
+# Real-world messy analyst case notes on real accounts. Some clear, some ambiguous, so
+# the AI's confidence score varies and low-confidence ones route to a human reviewer.
 WRITEUPS = [
-    ("WU-001", "ACCT-100240", "Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure."),
-    ("WU-002", "ACCT-300421", "CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM."),
-    ("WU-003", "ACCT-200311", "Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?"),
-    ("WU-004", "ACCT-100235", "Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive."),
-    ("WU-005", "ACCT-100240", "Something off with the thing on the right side of the press, maybe hydraulics? not sure"),
+    ("WU-001", "ACCT-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
+    ("WU-002", "ACCT-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
+    ("WU-003", "ACCT-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
+    ("WU-004", "ACCT-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
+    ("WU-005", "ACCT-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
 ]
 
 
@@ -67,7 +67,7 @@ def _fm_call(messages: list[dict]) -> Optional[str]:
 
 
 def seed():
-    """Seed the maintenance_log table with free-text write-ups."""
+    """Seed the case_note table with free-text analyst notes."""
     with connect() as conn:
         with conn.cursor() as cur:
             # The routing state (auto_accepted / needs_review) is not in the base schema;
@@ -79,7 +79,7 @@ def seed():
                     f"""INSERT INTO {TABLE} (account_id, writeup) VALUES (%s, %s)""",
                     [mid, writeup],
                 )
-    print(f"Seeding maintenance write-ups ({len(WRITEUPS)} entries):")
+    print(f"Seeding analyst case notes ({len(WRITEUPS)} entries):")
     for wid, mid, writeup in WRITEUPS:
         print(f"  - {mid}: {writeup[:60]}...")
     print()
@@ -98,10 +98,11 @@ def extract():
             {
                 "role": "system",
                 "content": (
-                    "You are a maintenance triage assistant. From a free-text write-up, "
-                    "extract system (subsystem affected), defect (the problem), action (what was done), "
-                    "and confidence (0-1, how certain you are the extraction is correct and unambiguous). "
-                    "Respond with ONLY a JSON object: {\"system\": \"...\", \"defect\": \"...\", "
+                    "You are a fraud/AML triage assistant. From a free-text analyst case note, "
+                    "extract category (fraud, AML, dispute, or other), finding (the specific issue), "
+                    "action (what was done), and confidence (0-1, how certain you are the extraction "
+                    "is correct and unambiguous). "
+                    "Respond with ONLY a JSON object: {\"category\": \"...\", \"finding\": \"...\", "
                     "\"action\": \"...\", \"confidence\": 0.X}"
                 ),
             },
@@ -110,29 +111,27 @@ def extract():
 
         response = _fm_call(prompt)
         if response is None:
-            # Fallback if the model endpoint is unavailable: a crude keyword guess so
-            # the routing still demonstrates. Factory subsystems, not aviation.
-            if "leaking" in writeup.lower() or "hydraulic" in writeup.lower():
-                extract_dict = {"system": "hydraulics", "defect": "line_leak", "action": "isolated", "confidence": 0.92}
-            elif "spindle" in writeup.lower() or "coolant" in writeup.lower() or "hot" in writeup.lower():
-                extract_dict = {"system": "cnc_spindle", "defect": "overheating", "action": "schedule_pump_replace", "confidence": 0.89}
-            elif "intermittent" in writeup.lower() or "tool changer" in writeup.lower():
-                extract_dict = {"system": "tool_changer", "defect": "intermittent_actuator", "action": "investigate", "confidence": 0.68}
-            elif "apu" in writeup.lower() or "slow" in writeup.lower():
-                extract_dict = {"system": "apu", "defect": "slow_start", "action": "investigate", "confidence": 0.71}
+            # Fallback if the model endpoint is unavailable: a crude keyword guess so the
+            # routing still demonstrates. Clear notes score high, vague ones low.
+            w = writeup.lower()
+            if "card-not-present" in w or ("card" in w and "froze" in w):
+                extract_dict = {"category": "fraud", "finding": "card_compromise", "action": "froze_and_reissued", "confidence": 0.93}
+            elif "wire" in w or "structuring" in w or "aml" in w:
+                extract_dict = {"category": "AML", "finding": "possible_structuring", "action": "referred_to_aml", "confidence": 0.88}
+            elif "dispute" in w or "posted twice" in w:
+                extract_dict = {"category": "dispute", "finding": "double_charge_claim", "action": "review_settlement", "confidence": 0.64}
+            elif "card testing" in w or "foreign-currency" in w:
+                extract_dict = {"category": "fraud", "finding": "possible_card_testing", "action": "hold_for_review", "confidence": 0.66}
             else:
-                extract_dict = {"system": "unknown", "defect": "unknown", "action": "investigate", "confidence": 0.38}
+                extract_dict = {"category": "other", "finding": "unclear", "action": "investigate", "confidence": 0.28}
         else:
             try:
-                # Parse JSON from response
                 json_start = response.find("{")
                 json_end = response.rfind("}") + 1
-                json_str = response[json_start:json_end]
-                extract_dict = json.loads(json_str)
+                extract_dict = json.loads(response[json_start:json_end])
             except Exception:
-                extract_dict = {"system": "?", "defect": "(parse failed)", "action": "?", "confidence": 0.3}
+                extract_dict = {"category": "?", "finding": "(parse failed)", "action": "?", "confidence": 0.3}
 
-        # Ensure confidence is in [0, 1]
         conf = float(extract_dict.get("confidence", 0.5))
         conf = max(0.0, min(1.0, conf))
         status = "auto_accepted" if conf >= CONF_THRESHOLD else "needs_review"
@@ -140,24 +139,21 @@ def extract():
         with connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    f"""UPDATE {TABLE} SET system=%s, defect=%s, action=%s, confidence=%s, status=%s
+                    f"""UPDATE {TABLE} SET category=%s, finding=%s, action=%s, confidence=%s, status=%s
                        WHERE note_id=%s""",
-                    [extract_dict.get("system", "?"),
-                     extract_dict.get("defect", "?"),
+                    [extract_dict.get("category", "?"),
+                     extract_dict.get("finding", "?"),
                      extract_dict.get("action", "?"),
-                     conf,
-                     status,
-                     note_id],
-                )
+                     conf, status, note_id])
 
-        print(f"  - Log {note_id}: system={extract_dict.get('system', '?')}, "
+        print(f"  - Note {note_id}: category={extract_dict.get('category', '?')}, "
               f"confidence={conf:.2f}, status={status}")
     print()
 
 
 def correct():
     """Simulate a human correction on an uncertain (needs_review) entry."""
-    print(f"Human correction (engineer reviews uncertain entries):")
+    print(f"Human correction (analyst reviews uncertain entries):")
 
     # Pick the lowest-confidence needs_review row and make its extraction specific.
     with connect() as conn:
@@ -173,10 +169,10 @@ def correct():
                 return
             note_id = row[0]
             cur.execute(
-                f"""UPDATE {TABLE} SET system=%s, defect=%s, status=%s WHERE note_id=%s""",
-                ["hydraulics", "press_ram_seal_leak", "corrected", note_id],
+                f"""UPDATE {TABLE} SET category=%s, finding=%s, status=%s WHERE note_id=%s""",
+                ["fraud", "account_takeover_suspected", "corrected", note_id],
             )
-    print(f"  - Log {note_id}: engineer set system=hydraulics, defect=press_ram_seal_leak (was uncertain)")
+    print(f"  - Note {note_id}: analyst set category=fraud, finding=account_takeover_suspected (was uncertain)")
     print()
 
 

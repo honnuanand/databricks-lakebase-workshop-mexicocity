@@ -10,7 +10,7 @@ There are a few ways to work through the steps. Pick one:
 - **Just see it work:** run `python learning_loop.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that
-first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
+first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank
 loaded.
 
 Everything here is a single script you can read: [`./learning_loop.py`](./learning_loop.py).
@@ -28,37 +28,37 @@ does; the exact output to expect is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
-### Step 1, check the maintenance_log table
+### Step 1, check the case_note table
 
-The factory schema includes the `maintenance_log` table (see `common/scripts/factory_schema.sql`).
-This is where free-text maintenance write-ups live, and where the AI extraction lands. Check the
+The bank schema includes the `case_note` table (see `common/scripts/finance_schema.sql`).
+This is where free-text analyst case notes live, and where the AI extraction lands. Check the
 structure:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
   "SELECT column_name, data_type FROM information_schema.columns \
-   WHERE table_name='maintenance_log' ORDER BY ordinal_position"
+   WHERE table_name='case_note' ORDER BY ordinal_position"
 ```
 
-You should see columns: `note_id`, `account_id`, `ts`, `writeup`, `system`, `defect`, `action`,
-`confidence`. The first three are the raw input; the last four are where the AI extraction
-lands.
+You should see columns: `note_id`, `account_id`, `ts`, `writeup`, `category`, `finding`,
+`action`, `confidence`. The first four are the raw input; the last four are where the AI
+extraction lands.
 
-### Step 2, seed with free-text maintenance write-ups
+### Step 2, seed with free-text case notes
 
-These are real-world messy write-ups. Some are clear and unambiguous; others are vague. The AI
-should score its confidence accordingly:
+These are real-world messy analyst notes. Some are clear and unambiguous; others are vague. The
+AI should score its confidence accordingly:
 
 ```bash
 python learning_loop.py --step seed
 ```
 
-The script inserts 5 write-ups:
-1. "Hydraulic line to the bearing housing leaking...", clear and specific.
-2. "CNC spindle running hot...", clear, standard maintenance pattern.
-3. "Tool changer intermittent...", somewhat unclear with a question mark.
-4. "Robot arm slow to home...", clear problem, unclear root cause.
-5. "Something off with the thing on the right side...", very vague and uncertain.
+The script inserts 5 case notes:
+1. ACCT-100240: "Three card-not-present charges overnight... froze the card", clear fraud.
+2. ACCT-300421: "Large outbound wire... just under the reporting threshold", clear AML pattern.
+3. ACCT-200311: "Customer disputes a charge they say posted twice", somewhat unclear.
+4. ACCT-100235: "A few small foreign-currency charges then a larger one", card testing or travel.
+5. ACCT-100240: "Something looked off... maybe the login location? not sure", very vague.
 
 Read them back:
 
@@ -69,62 +69,65 @@ python ../../common/scripts/lakebase.py --sql \
 
 ### Step 3, run AI extraction
 
-Claude reads each write-up and extracts system/defect/action + a confidence score:
+Claude reads each case note and extracts category/finding/action + a confidence score:
 
 ```bash
 python learning_loop.py --step extract
 ```
 
 The script:
-1. For each write-up, calls Claude with a prompt: "Extract system, defect, action from this
-   maintenance note. Respond with JSON."
+1. For each case note, calls Claude with a prompt: "Extract category, finding, action from this
+   fraud/AML note. Respond with JSON."
 2. Claude returns the extraction + a confidence score (0-1).
-3. The script updates each maintenance_log row with the AI extraction.
+3. The script updates each `case_note` row with the AI extraction.
 4. Extractions with confidence > 0.75 get `status = 'auto_accepted'`; others get
    `status = 'needs_review'`.
 
 You should see output like:
 
 ```text
-Extracted 5 maintenance write-ups:
-  1. system=hydraulic line to bearing housing, confidence~0.90, status=auto_accepted
-  2. system=CNC spindle cooling, confidence~0.85, status=auto_accepted
-  3. system=CNC tool changer, confidence~0.60, status=needs_review
-  4. system=robot arm drive, confidence~0.60, status=needs_review
-  5. system=hydraulics (uncertain), confidence~0.25, status=needs_review
+Running AI extraction (5 write-ups):
+  - Note 25: category=fraud, confidence=0.92, status=auto_accepted
+  - Note 26: category=AML, confidence=0.90, status=auto_accepted
+  - Note 27: category=dispute, confidence=0.60, status=needs_review
+  - Note 28: category=fraud, confidence=0.50, status=needs_review
+  - Note 29: category=fraud, confidence=0.30, status=needs_review
 ```
+
+The note IDs and the exact confidences depend on the model and on how many case notes already
+sat in the table; what matters is the split: clear notes auto-accept, ambiguous ones route.
 
 ### Step 4, see the auto-accept/review split
 
-Query the maintenance_log to see which extracted cleanly and which need human review:
+Query the case notes to see which extracted cleanly and which need human review:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT note_id, writeup, system, defect, ROUND(confidence::numeric, 2), status \
-   FROM bank.case_note ORDER BY note_id"
+  "SELECT note_id, writeup, category, finding, ROUND(confidence::numeric, 2), status \
+   FROM bank.case_note WHERE status IS NOT NULL ORDER BY note_id"
 ```
 
-The first two should show `status = 'auto_accepted'` with high confidence (> 0.75). The last
-three should show `status = 'needs_review'` with lower confidence.
+The two clearest notes should show `status = 'auto_accepted'` with high confidence (> 0.75). The
+others should show `status = 'needs_review'` with lower confidence.
 
 ### Step 5, simulate a human correction
 
-An engineer reviews the uncertain entries and corrects the lowest-confidence one. Run:
+An analyst reviews the uncertain entries and corrects the lowest-confidence one. Run:
 
 ```bash
 python learning_loop.py --step correct
 ```
 
 The script identifies the lowest-confidence needs_review row and corrects it:
-- AI said: system=hydraulics (uncertain), defect=vague
-- Human clarifies: system=hydraulics, defect=press_ram_seal_leak (more specific)
+- AI said: category=fraud (uncertain), finding vague
+- Analyst clarifies: category=fraud, finding=account_takeover_suspected (more specific)
 - Updates the row with `status = 'corrected'` and a timestamp.
 
 Check the update:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT note_id, system, defect, status FROM bank.case_note WHERE status='corrected'"
+  "SELECT note_id, category, finding, status FROM bank.case_note WHERE status='corrected'"
 ```
 
 ### Step 6, run analytics
@@ -145,13 +148,13 @@ You should see a summary like:
 
 ```text
 Analytics:
-  Total: 5 extractions
-  Auto-accepted: 2 (confidence >= 0.75)
-  Needs review: 3 initially, 2 after correction
+  Total: 5
+  Auto-accepted: 2
+  Needs review: 2
   Corrected by human: 1
-  Accuracy of auto-accepted: 100% (2 out of 2 were correct)
-  Confidence >= 0.75: average about 0.87
-  Confidence < 0.75: average about 0.5
+  Avg confidence (auto-accepted): 0.910
+  Avg confidence (needs review): 0.550
+  Accuracy of auto-accepted: 100% (no corrections needed)
 ```
 
 ## What you just did

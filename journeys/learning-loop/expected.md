@@ -7,7 +7,7 @@ atomically with confidence and status fields.
 ## Step 1, table structure
 
 ```text
-note_id | account_id | ts | writeup | system | defect | action | confidence
+note_id | account_id | ts | writeup | category | finding | action | confidence
 ```
 
 The raw input (first 4 columns) and the AI extraction (last 4 columns).
@@ -15,38 +15,40 @@ The raw input (first 4 columns) and the AI extraction (last 4 columns).
 ## Step 2, seed
 
 ```text
-(1, 'ACCT-100240', ..., 'Hydraulic line to the bearing housing leaking on the press downstroke, isolated the line, monitor pressure.')
-(2, 'ACCT-300421', ..., 'CNC spindle running hot, thermal alarm at 71C, coolant flow low, replace pump at next PM.')
-(3, 'ACCT-200311', ..., 'Tool changer intermittent on the CNC, last 3 cycles hung; swap the actuator?')
-(4, 'ACCT-100235', ..., 'Robot arm slow to home, ~40s hesitation on startup x2, investigate the drive.')
-(5, 'ACCT-100240', ..., 'Something off with the thing on the right side of the press, maybe hydraulics? not sure')
+(_, 'ACCT-100240', ..., 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.')
+(_, 'ACCT-300421', ..., 'Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML.')
+(_, 'ACCT-200311', ..., 'Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records.')
+(_, 'ACCT-100235', ..., 'A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review.')
+(_, 'ACCT-100240', ..., 'Something looked off on the account this morning, maybe the login location? not sure, flagging it.')
 ```
 
-Five messy, real-world maintenance write-ups from the factory floor.
+Five messy, real-world analyst case notes. The `note_id` values are serial and depend on how many
+notes already sat in the table, so they will not necessarily start at 1.
 
 ## Step 3, extract
 
 ```text
-Extracted 5 maintenance write-ups:
-  1. system=hydraulic line to bearing housing, defect=leak, confidence~0.90, status=auto_accepted
-  2. system=CNC spindle cooling, defect=overheating, confidence~0.85, status=auto_accepted
-  3. system=CNC tool changer, defect=intermittent, confidence~0.60, status=needs_review
-  4. system=robot arm drive, defect=slow response, confidence~0.60, status=needs_review
-  5. system=hydraulics (uncertain), defect=vague, confidence~0.20-0.30, status=needs_review
+Running AI extraction (5 write-ups):
+  - Note 25: category=fraud, confidence=0.92, status=auto_accepted
+  - Note 26: category=AML, confidence=0.90, status=auto_accepted
+  - Note 27: category=dispute, confidence=0.60, status=needs_review
+  - Note 28: category=fraud, confidence=0.50, status=needs_review
+  - Note 29: category=fraud, confidence=0.30, status=needs_review
 ```
 
-The exact field values will vary (Claude's extraction is probabilistic), but the pattern is clear:
-- Entries 1-2: high confidence (over 0.75), auto-accepted
-- Entries 3-5: lower confidence, routed to review
+The exact category/finding values and confidences will vary (Claude's extraction is probabilistic),
+but the pattern is clear:
+- The two clearest notes (card fraud, AML wire): high confidence (over 0.75), auto-accepted
+- The ambiguous notes (dispute, FX charges, the vague login note): lower confidence, routed to review
 
 ## Step 4, after extraction
 
 ```text
-(1, 'Hydraulic line...', 'hydraulic line to bearing housing', 'leak', 0.90, 'auto_accepted')
-(2, 'CNC spindle...', 'CNC spindle cooling', 'overheating', 0.85, 'auto_accepted')
-(3, 'Tool changer...', 'CNC tool changer', 'intermittent', 0.60, 'needs_review')
-(4, 'Robot arm...', 'robot arm drive', 'slow response', 0.60, 'needs_review')
-(5, 'Something off...', 'hydraulics (uncertain)', 'vague', 0.25, 'needs_review')
+(25, 'Three card-not-present...', 'fraud', 'card_compromise', 0.92, 'auto_accepted')
+(26, 'Large outbound wire...', 'AML', 'possible_structuring', 0.90, 'auto_accepted')
+(27, 'Customer disputes...', 'dispute', 'double_charge_claim', 0.60, 'needs_review')
+(28, 'A few small foreign-currency...', 'fraud', 'possible_card_testing', 0.50, 'needs_review')
+(29, 'Something looked off...', 'fraud', 'unclear', 0.30, 'needs_review')
 ```
 
 ## Step 5, after correction
@@ -54,8 +56,8 @@ The exact field values will vary (Claude's extraction is probabilistic), but the
 The script picks the lowest-confidence needs_review row dynamically and corrects it:
 
 ```text
-Before:  system=hydraulics (uncertain), defect=vague, confidence=0.25, status=needs_review
-After:   system=hydraulics, defect=press_ram_seal_leak, confidence=0.25, status=corrected
+Before:  category=fraud, finding=unclear, confidence=0.30, status=needs_review
+After:   category=fraud, finding=account_takeover_suspected, confidence=0.30, status=corrected
 ```
 
 The row is atomically updated; no second table, no sync.
@@ -63,22 +65,14 @@ The row is atomically updated; no second table, no sync.
 ## Step 6, analytics
 
 ```text
-Total extractions: 5
-  auto_accepted: 2 (confidence >= 0.75)
-  needs_review: 3
-  corrected: 1
-
-Confidence >= 0.75 (auto-accepted):
-  count: 2
-  avg confidence: about 0.87
-  all were correct: yes
-
-Confidence < 0.75 (needs_review):
-  count: 3
-  avg confidence: about 0.5
-  human corrected: 1 out of 3
-
-Accuracy: 2 auto-accepted, 0 errors → 100%
+Analytics:
+  Total: 5
+  Auto-accepted: 2
+  Needs review: 2
+  Corrected by human: 1
+  Avg confidence (auto-accepted): 0.910
+  Avg confidence (needs review): 0.550
+  Accuracy of auto-accepted: 100% (no corrections needed)
 ```
 
 The entire learning loop is one table with confidence, status, and audit fields.
@@ -88,30 +82,31 @@ The entire learning loop is one table with confidence, status, and audit fields.
 Running `python learning_loop.py` with no arguments prints the whole story:
 
 ```text
-1. Seeding maintenance write-ups (5 entries):
-  - ACCT-100240: Hydraulic line to the bearing housing leaking...
-  - ACCT-300421: CNC spindle running hot...
-  - ACCT-200311: Tool changer intermittent on the CNC...
-  - ACCT-100235: Robot arm slow to home...
-  - ACCT-100240: Something off with the thing on the right side...
+Seeding analyst case notes (5 entries):
+  - ACCT-100240: Three card-not-present charges overnight to an overseas merc...
+  - ACCT-300421: Large outbound wire to a brand-new beneficiary in a high-ris...
+  - ACCT-200311: Customer disputes a charge they say posted twice; merchant p...
+  - ACCT-100235: A few small foreign-currency charges followed by a larger on...
+  - ACCT-100240: Something looked off on the account this morning, maybe the ...
 
-2. Running AI extraction (Claude reads each write-up):
-  - Entry 1: system=hydraulic line to bearing housing, confidence~0.90, status=auto_accepted
-  - Entry 2: system=CNC spindle cooling, confidence~0.85, status=auto_accepted
-  - Entry 3: system=CNC tool changer, confidence~0.60, status=needs_review
-  - Entry 4: system=robot arm drive, confidence~0.60, status=needs_review
-  - Entry 5: system=hydraulics (uncertain), confidence~0.25, status=needs_review
+Running AI extraction (5 write-ups):
+  - Note 25: category=fraud, confidence=0.92, status=auto_accepted
+  - Note 26: category=AML, confidence=0.90, status=auto_accepted
+  - Note 27: category=dispute, confidence=0.60, status=needs_review
+  - Note 28: category=fraud, confidence=0.50, status=needs_review
+  - Note 29: category=fraud, confidence=0.30, status=needs_review
 
-3. Human correction (engineer reviews uncertain entries):
-  - Entry 5 (lowest confidence): press_ram_seal_leak (corrected from vague)
-  - Status updated to 'corrected'
+Human correction (analyst reviews uncertain entries):
+  - Note 29: analyst set category=fraud, finding=account_takeover_suspected (was uncertain)
 
-4. Analytics (accuracy measurement):
+Analytics:
   Total: 5
-  Auto-accepted: 2 (confidence >= 0.75)
-  Needs review: 3 (then 2 after correction)
-  Corrected: 1
-  Accuracy of auto-accepted: 100%
+  Auto-accepted: 2
+  Needs review: 2
+  Corrected by human: 1
+  Avg confidence (auto-accepted): 0.910
+  Avg confidence (needs review): 0.550
+  Accuracy of auto-accepted: 100% (no corrections needed)
 
 Done. One table is the store, the review queue, the audit trail, and the analytics source.
 ```
@@ -121,14 +116,14 @@ Done. One table is the store, the review queue, the audit trail, and the analyti
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
 | auto-accept threshold | 0.75 confidence | typical ML threshold (tunable) |
-| extractions routed to review | ~40-60% in real data | depends on write-up clarity |
+| extractions routed to review | ~40-60% in real data | depends on note clarity |
 | FM API latency per extraction | 1-2 seconds | single model call, no round-trips |
 | human correction latency | atomic UPDATE | one row, one transaction |
 | accuracy tracking | stored in same table | no data movement, instant analytics |
 
 > **From the field**
-> Real learning loops batch extractions (call the model once per 100 write-ups), cache model
+> Real learning loops batch extractions (call the model once per 100 case notes), cache model
 > responses (avoid re-extracting the same note twice), and implement feedback loops where
 > corrections automatically retrain the model. This journey shows the simplest pattern: one
-> table, one model call per write-up, accuracy measured from SQL. Production systems add
+> table, one model call per note, accuracy measured from SQL. Production systems add
 > async jobs, model versioning, and A/B testing on the same schema.

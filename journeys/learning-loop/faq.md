@@ -20,20 +20,20 @@ source workshop.env
 
 Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 
-## The maintenance_log table doesn't exist
+## The case_note table doesn't exist
 
-The table is part of the factory schema, loaded during setup. If it's missing:
+The table is part of the bank schema, loaded during setup. If it's missing:
 
 1. Check that you're on the right branch: `echo $LB_BRANCH`.
 2. Check the schema loaded: `python lakebase.py --sql "SELECT count(*) FROM bank.account"`.
-3. If bank.account exists but maintenance_log doesn't, run the schema loader:
+3. If bank.account exists but case_note doesn't, run the schema loader:
    ```bash
-   python load_factory.py
+   python ../../common/scripts/load_bank.py
    ```
 
 ## Claude's extraction parsed incorrectly
 
-The script expects Claude to return valid JSON with keys: `system`, `defect`, `action`,
+The script expects Claude to return valid JSON with keys: `category`, `finding`, `action`,
 `confidence`. If the JSON parsing failed, you'll see "(parse failed)" in the output. Possible
 causes:
 
@@ -42,24 +42,25 @@ causes:
 2. **System prompt misinterpreted**: The script sends a specific prompt asking for JSON. Try
    running a manual test:
    ```bash
-   python lakebase.py --fm "Return JSON with keys: system, defect, action, confidence."
+   python lakebase.py --fm "Return JSON with keys: category, finding, action, confidence."
    ```
 3. **Timeout**: If the FM API timed out, the response would be incomplete. Check your network
-   and the endpoint status.
+   and the endpoint status. The script falls back to a crude keyword guess if the endpoint is
+   unavailable, so the routing still demonstrates even without the model.
 
 ## All entries got auto-accepted (or all need review)
 
 The confidence threshold is 0.75. If all extractions scored above that, it may be that Claude is
-being overly confident, or the test write-ups are all clear. If all scored below, the write-ups
+being overly confident, or the test case notes are all clear. If all scored below, the notes
 may be too vague. You can:
 
 1. **Adjust the threshold**: Edit `learning_loop.py`:
    ```python
    CONF_THRESHOLD = 0.60  # changed from 0.75
    ```
-2. **Add ambiguous write-ups**: Edit the WRITEUPS list to include more vague entries.
-3. **Run with different write-ups**: The script uses defaults; you can modify it to accept
-   custom write-ups from stdin or a file.
+2. **Add ambiguous notes**: Edit the WRITEUPS list to include more vague entries.
+3. **Run with different notes**: The script uses defaults; you can modify it to accept
+   custom notes from stdin or a file.
 
 ## A correction didn't stick (the status didn't change to 'corrected')
 
@@ -76,21 +77,21 @@ The script simulates a human correction on the lowest-confidence row. If you see
 
 3. **Check the script logic**: The correction step uses:
    ```python
-   cur.execute(f"UPDATE bank.case_note SET system=%s, defect=%s, status=%s WHERE note_id=%s",
+   cur.execute(f"UPDATE bank.case_note SET category=%s, finding=%s, status=%s WHERE note_id=%s",
                [..., 'corrected', ...])
    ```
    If that's failing, check the note_id and column names.
 
-## I want to run extraction on my own write-ups
+## I want to run extraction on my own case notes
 
-The script hardcodes 5 write-ups. To use your own, edit `learning_loop.py`:
+The script hardcodes 5 case notes. To use your own, edit `learning_loop.py`:
 
 1. Find the WRITEUPS list (near the top).
-2. Replace it with your own:
+2. Replace it with your own (each entry is `(note_id, account_id, writeup)`):
    ```python
    WRITEUPS = [
-       ("entry-1", "Your first maintenance note..."),
-       ("entry-2", "Your second maintenance note..."),
+       ("WU-001", "ACCT-100240", "Your first analyst case note..."),
+       ("WU-002", "ACCT-200311", "Your second analyst case note..."),
    ]
    ```
 3. Re-run the script.
@@ -110,7 +111,7 @@ The analytics step counts by status and computes accuracy. If the numbers don't 
 2. **Check for missing corrections**: The script simulates one correction on the lowest-confidence row. If
    you want to correct more entries, edit the script's `correct()` function.
 3. **Check confidence values**: Accuracy is computed over high-confidence (>= 0.75) entries.
-   If none were auto-accepted, accuracy will be undefined. This is expected if the write-ups
+   If none were auto-accepted, accuracy will be undefined. This is expected if the notes
    are all vague.
 
 ## Why is confidence between 0 and 1?
@@ -121,15 +122,15 @@ confidence (e.g., comparing the model's top-2 hypotheses), but for this journey 
 self-scored confidence directly. You can also post-process it: `confidence = min(max(...),
 1.0)` to clamp outliers.
 
-## Why does the table have both `defect` and `action` columns?
+## Why does the table have both `finding` and `action` columns?
 
 The schema separates:
-- **system**: which subsystem (hydraulic, CNC spindle, tool changer, robot arm, etc.)
-- **defect**: the specific problem (leak, overheating, intermittent, slow response, etc.)
-- **action**: what was done (isolated, replace, investigate, etc.)
+- **category**: the kind of case (fraud, AML, dispute, other)
+- **finding**: the specific issue (card_compromise, possible_structuring, double_charge_claim, etc.)
+- **action**: what was done (froze_and_reissued, referred_to_aml, hold_for_review, etc.)
 
-This separates concerns: the operational team cares about the defect; the maintenance team cares
-about the action; analytics wants to correlate system + defect to see failure patterns.
+This separates concerns: the fraud ops team cares about the finding; case management cares about
+the action; analytics wants to correlate category + finding to see fraud patterns.
 
 In a simpler schema, you might combine them into one `observation` field. The schema here mirrors
-realistic maintenance systems where each concept is tracked separately for analytics.
+realistic investigations systems where each concept is tracked separately for analytics.
