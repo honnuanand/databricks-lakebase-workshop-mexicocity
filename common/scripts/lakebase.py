@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import time
 from typing import Optional
 
@@ -114,6 +115,41 @@ def run_sql(sql: str, project: Optional[str] = None, branch: Optional[str] = Non
         with conn.cursor() as cur:
             cur.execute(sql)
             return cur.fetchall() if cur.description else []
+
+
+def default_branch(user_name: str) -> str:
+    """The workshop's branch name for a user: u-<email name>, e.g.
+    alex.kim@example.com -> u-alex-kim. Lowercase letters, digits, and hyphens only."""
+    name = re.sub(r"[^a-z0-9]+", "-", user_name.split("@")[0].lower()).strip("-")
+    return f"u-{name}"[:63]
+
+
+def notebook_env(dbutils, project: str = "bank", schema: str = "bank") -> dict:
+    """For Databricks notebooks: set LB_PROJECT, LB_BRANCH, LB_SCHEMA from widgets.
+
+    A workspace has no workshop.env, so each notebook calls this once. It adds
+    three widgets at the top of the notebook; LB_BRANCH defaults to your
+    default_branch(), the branch 00-setup/setup_databricks creates. LB_PROFILE
+    stays unset, so the SDK signs in as you automatically."""
+    w = client()
+    if not hasattr(w, "postgres"):
+        import databricks.sdk
+        raise SystemExit(
+            f"databricks-sdk {databricks.sdk.version.__version__} predates the Lakebase API. Run the "
+            f'%pip install "databricks-sdk>=0.120.0" cell and the restart cell above, then rerun this one.')
+    me = w.current_user.me().user_name
+    dbutils.widgets.text("LB_PROJECT", project)
+    dbutils.widgets.text("LB_BRANCH", default_branch(me))
+    dbutils.widgets.text("LB_SCHEMA", schema)
+    env = {k: dbutils.widgets.get(k).strip() for k in ("LB_PROJECT", "LB_BRANCH", "LB_SCHEMA")}
+    missing = [k for k, v in env.items() if not v]
+    if missing:
+        raise SystemExit(f"Fill in {', '.join(missing)} in the widgets at the top of the notebook.")
+    os.environ.update(env)
+    print(f"signed in as {me}")
+    for k, v in env.items():
+        print(f"  {k} = {v}")
+    return env
 
 
 def _main() -> None:
