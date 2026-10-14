@@ -4,7 +4,32 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will create the pgvector extension, add embeddings to instruments, populate them with deterministic vectors, run a similarity search to find comparable instruments, and create an HNSW index for faster lookups at scale.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Run first: install the driver and pick your branch
+# MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
+# MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook.
+# MAGIC `LB_BRANCH` defaults to the branch `00-setup/setup_databricks` created for you. Change a widget
+# MAGIC only if you used a different project or branch name.
+
+# COMMAND ----------
+
+# MAGIC %pip install "databricks-sdk>=0.120.0" "psycopg[binary]==3.3.4"
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import os, sys
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import notebook_env
+notebook_env(dbutils);
 
 # COMMAND ----------
 

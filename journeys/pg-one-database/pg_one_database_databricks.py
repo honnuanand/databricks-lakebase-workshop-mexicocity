@@ -5,7 +5,33 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time. You will build a single table carrying JSON, vectors, and geospatial columns, then run one unified query across all of them.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/`.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Run first: install the driver and pick your branch
+# MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
+# MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook.
+# MAGIC `LB_BRANCH` defaults to the branch `00-setup/setup_databricks` created for you. Change a widget
+# MAGIC only if you used a different project or branch name.
+
+# COMMAND ----------
+
+# MAGIC %pip install "databricks-sdk>=0.120.0" "psycopg[binary]==3.3.4"
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import os, sys
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import notebook_env
+notebook_env(dbutils);
+
 # COMMAND ----------
 
 # MAGIC ## Setup, connect
