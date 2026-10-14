@@ -28,12 +28,12 @@ The policy is created. Queries now apply the filter automatically.
 === Connected as operator_detroit ===
 account_id  branch_id  status  health_pct
 ACCT-100240       BR-NYC  healthy  91.00
-M-301       BR-NYC  derated   89.75
+ACCT-200311       BR-NYC  derated   89.75
 
 === Connected as operator_chicago ===
 account_id  branch_id  status  health_pct
-M-401       PL-CHICAGO  healthy  95.50
-M-405       PL-CHICAGO  down     45.25
+M-401       BR-SFO  healthy  95.50
+M-405       BR-SFO  down     45.25
 ```
 
 Same query (`SELECT * FROM account`), but different rows. Detroit operator sees only Detroit machines; Chicago operator sees only Chicago machines. The RLS policy is filtering automatically.

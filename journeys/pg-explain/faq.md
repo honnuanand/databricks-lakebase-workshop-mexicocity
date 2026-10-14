@@ -54,7 +54,7 @@ This disables sequential scans, forcing the planner to use the index. If the que
 A query plan is a tree. Each node is an operation. Read from the bottom up (the innermost, most specific operation first). For example:
 
 ```
-Seq Scan on sensor_readings
+Seq Scan on txn
   Filter: (account_id = 'ACCT-100240')
 ```
 
@@ -65,11 +65,11 @@ For a more complex plan with joins:
 ```
 Nested Loop
   -> Seq Scan on machine
-  -> Index Scan on sensor_readings
+  -> Index Scan on txn
        Index Cond: (account_id = ...)
 ```
 
-This means: "For each row from the machine table, do an Index Scan on sensor_readings."
+This means: "For each row from the machine table, do an Index Scan on txn."
 
 ## What does "cost" mean in EXPLAIN?
 
@@ -98,7 +98,7 @@ A plan with mostly "Hit" is good (data was cached). A plan with many "Read" mean
 Yes. Use FORMAT JSON:
 
 ```sql
-EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT COUNT(*) FROM sensor_readings WHERE account_id = 'ACCT-100240';
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT COUNT(*) FROM txn WHERE account_id = 'ACCT-100240';
 ```
 
 This returns JSON, which you can pipe to a file or tool for later analysis. Tools like PEV (postgres explain visualizer) and depesz can parse and visualize the plan.

@@ -1,6 +1,6 @@
 # Infer and derive facts, expected results
 
-Use this to check your run. Your product and part counts depend on the factory seed data you
+Use this to check your run. Your product and part counts depend on the bank seed data you
 loaded, but the inference chain and result shapes should match.
 
 ## Step 2, define a simple rule

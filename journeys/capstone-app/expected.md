@@ -37,7 +37,7 @@ Machine ID | Line        | Type   | Status    | Health
 -----------|-------------|--------|-----------|----------
 ACCT-100240      | Stamping-A  | press  | healthy   | 91.0%
 ACCT-100241      | Stamping-A  | press  | derated   | 70.0%
-M-301      | Assembly-B  | robot  | down      | 45.0%
+ACCT-200311      | Assembly-B  | robot  | down      | 45.0%
 ...
 ```
 
@@ -116,7 +116,7 @@ latency between Databricks Apps and Lakebase, but should still feel instant.
 
 ## Step 8, after making a change
 
-If you change a React component (e.g., add a new column to the machine table) and redeploy:
+If you change a React component (e.g., add a new column to the account table) and redeploy:
 
 ```text
 Building frontend...
@@ -137,7 +137,7 @@ After completing all steps, you should have:
 - [ ] App running locally and connecting to Lakebase
 - [ ] App deployed to Databricks Apps
 - [ ] Deployed app visible in workspace → Apps
-- [ ] Machines tab shows machine data
+- [ ] Machines tab shows account data
 - [ ] BOM tab searches and displays part trees
 - [ ] Maintenance tab searches and displays logs
 - [ ] Successful edit and redeploy cycle

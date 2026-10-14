@@ -129,7 +129,7 @@ print(f"Total columns: {len(rows)}")
 # MAGIC %md
 # MAGIC ## Step 4 - Sample data to verify correctness
 # MAGIC
-# MAGIC Query a sample of rows from key tables to verify the schema and data match. The SQL (example for machine table):
+# MAGIC Query a sample of rows from key tables to verify the schema and data match. The SQL (example for account table):
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT * FROM bank.account LIMIT 3;
@@ -137,7 +137,7 @@ print(f"Total columns: {len(rows)}")
 
 # COMMAND ----------
 
-# Sample machine table
+# Sample account table
 rows = run_sql(f"SELECT * FROM {SCHEMA}.machine LIMIT 3")
 print(f"Sample rows from account table:")
 for row in rows:

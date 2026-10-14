@@ -14,7 +14,7 @@
 
 ## The scenario
 
-Your factory runs a mobile app for supervisors to check machine status and case notes. The app is iOS/Android; it can't easily use psycopg or the Lakebase SDK. You need an HTTP endpoint that returns JSON machine data.
+Your bank runs a mobile app for supervisors to check account status and case notes. The app is iOS/Android; it can't easily use psycopg or the Lakebase SDK. You need an HTTP endpoint that returns JSON account data.
 
 The Lakebase Data API provides exactly that: HTTP GET/POST endpoints that execute SQL and return
 JSON, authenticated with Databricks [OAuth](../../docs/glossary.md). Your app sends a bearer token, requests

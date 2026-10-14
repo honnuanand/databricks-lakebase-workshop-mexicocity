@@ -1,6 +1,6 @@
 # Query via REST: the Data API, expected results
 
-Use this to check your run. The exact machine data depends on your factory seed, but the API
+Use this to check your run. The exact account data depends on your bank seed, but the API
 shape and response format should match.
 
 ## Step 1, check if Data API is enabled
@@ -40,14 +40,14 @@ Running `python data_api.py --step get-machines` shows:
 
 ```json
 [
-  {"account_id": "ACCT-100240", "branch_id": "BR-NYC", "line": "Stamping-A", "type": "press", "status": "healthy", "health_pct": 91.0},
-  {"account_id": "ACCT-100241", "branch_id": "BR-NYC", "line": "Stamping-A", "type": "press", "status": "derated", "health_pct": 70.0},
-  {"account_id": "M-301", "branch_id": "PL-CHICAGO", "line": "Assembly-B", "type": "robot", "status": "down", "health_pct": 45.0},
+  {"account_id": "ACCT-100240", "branch_id": "BR-NYC", "line": "Checking", "type": "retail", "status": "good_standing", "health_pct": 91.0},
+  {"account_id": "ACCT-100241", "branch_id": "BR-NYC", "line": "Credit", "type": "retail", "status": "watch", "health_pct": 70.0},
+  {"account_id": "ACCT-200311", "branch_id": "BR-SFO", "line": "Credit", "type": "retail", "status": "frozen", "health_pct": 45.0},
   ...
 ]
 ```
 
-(Number of rows depends on your factory seed.)
+(Number of rows depends on your bank seed.)
 
 ## Step 4, filtered query
 
@@ -56,8 +56,8 @@ Running `python data_api.py --step get-filtered` shows:
 ```json
 [
   {"account_id": "ACCT-100240", "status": "healthy"},
-  {"account_id": "M-201", "status": "healthy"},
-  {"account_id": "M-202", "status": "healthy"}
+  {"account_id": "ACCT-100234", "status": "good_standing"},
+  {"account_id": "ACCT-100235", "status": "good_standing"}
 ]
 ```
 
@@ -80,7 +80,7 @@ SQL:
   Latency: ~15 ms
 
 Same result (12 rows):
-  [("ACCT-100240", "healthy"), ("M-201", "healthy"), ...]
+  [("ACCT-100240", "healthy"), ("ACCT-100234", "healthy"), ...]
 ```
 
 REST is slower due to HTTP overhead, but the difference is usually negligible for user-facing
@@ -93,11 +93,11 @@ Running `python data_api.py --step post-read-only` shows:
 ```text
 POST request (insert):
   POST /api/v1/bank.account
-  Body: {"account_id": "M-999", "branch_id": "PL-TEST", ...}
+  Body: {"account_id": "ACCT-999999", "branch_id": "BR-TEST", ...}
 
 Result:
   201 Created
-  {"account_id": "M-999", "branch_id": "PL-TEST", ...}
+  {"account_id": "ACCT-999999", "branch_id": "BR-TEST", ...}
 ```
 
 If your RLS or permissions prevent writes, you'll see:
@@ -107,7 +107,7 @@ If your RLS or permissions prevent writes, you'll see:
 {"code": "PGRST103", "message": "new row violates row-level security policy"}
 ```
 
-This is expected if you don't have write access to the machine table in your branch.
+This is expected if you don't have write access to the account table in your branch.
 
 ## Full run output
 

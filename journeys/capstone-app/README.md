@@ -6,7 +6,7 @@
 >
 > - A Databricks App is a full-stack web app (React frontend + FastAPI backend) deployed as a managed service on Databricks. You write code locally, push to Databricks, and it runs with built-in auth and scaling.
 > - To connect to Lakebase from an app, the app's [Service Principal](../../docs/glossary.md) (SP) needs the full grant chain: a PostgreSQL role + databricks_auth security label + project CAN_MANAGE permission + a role on the production branch. This is the deepest grant story in the workshop.
-> - You'll build a real manufacturing dashboard: machine status, BOM search, case notes. It uses both Direct SQL (for complex queries) and the Data API (for REST calls), showing when each is appropriate.
+> - You'll build a real manufacturing dashboard: account status, BOM search, case notes. It uses both Direct SQL (for complex queries) and the Data API (for REST calls), showing when each is appropriate.
 >
 > **You'll be able to:** set up a Databricks App's [Service Principal](../../docs/glossary.md) to connect to Lakebase, deploy a working React + FastAPI dashboard on Databricks Apps, and understand the app authentication model.
 >
@@ -15,7 +15,7 @@
 ## The scenario
 
 You've learned Lakebase through journeys. Now you want to ship a real app: a manufacturing
-dashboard where floor supervisors can check machine status, search the BOM, and view maintenance
+dashboard where floor supervisors can check account status, search the BOM, and view maintenance
 logs. The app lives on Databricks Apps (the platform's managed hosting), so it scales with your
 org and integrates with Databricks workspace auth.
 

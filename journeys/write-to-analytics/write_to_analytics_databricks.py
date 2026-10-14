@@ -11,7 +11,7 @@
 # MAGIC the same rows from the lakehouse through a Unity Catalog foreign table on a SQL warehouse. That
 # MAGIC needs a metastore-admin catalog registration, so we show the exact query rather than fake it.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/`. ACCT-100240 is a stamping press on your factory branch.
+# MAGIC **Before you start:** finish `00-setup/`. ACCT-100240 is a retail credit account on your branch.
 
 # COMMAND ----------
 

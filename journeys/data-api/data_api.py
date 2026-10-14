@@ -172,10 +172,10 @@ def main() -> None:
     if args.step == "get-machines" or not args.step:
         print(f"\nFetching machines via REST...")
         try:
-            machines = get_machines(host, token)
+            accounts = get_machines(host, token)
             print(f"  Result: {len(machines)} rows returned")
             if machines:
-                print(f"  Sample: {machines[0]}")
+                print(f"  Sample: {accounts[0]}")
         except Exception as e:
             print(f"  Error: {e}")
         if args.step:
@@ -184,10 +184,10 @@ def main() -> None:
     if args.step == "get-filtered" or not args.step:
         print(f"\nFetching filtered (healthy) machines via REST...")
         try:
-            machines = get_filtered_machines(host, token)
+            accounts = get_filtered_machines(host, token)
             print(f"  Result: {len(machines)} rows returned")
             if machines:
-                print(f"  Sample: {machines[0]}")
+                print(f"  Sample: {accounts[0]}")
         except Exception as e:
             print(f"  Error: {e}")
         if args.step:
@@ -196,7 +196,7 @@ def main() -> None:
     if args.step == "compare-sql":
         print(f"\nComparing REST vs SQL...")
         try:
-            machines = get_filtered_machines(host, token)
+            accounts = get_filtered_machines(host, token)
             print(f"  REST result: {len(machines)} machines")
 
             with connect() as conn:
@@ -214,7 +214,7 @@ def main() -> None:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         data = {
             "account_id": "M-TEST-999",
-            "branch_id": "PL-TEST",
+            "branch_id": "BR-TEST",
             "line": "Test",
             "type": "test",
             "status": "healthy",

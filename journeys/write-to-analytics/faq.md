@@ -37,7 +37,7 @@ Yes, but the setup is different. Streaming Tables with APPLY CHANGES INTO are de
 ## The reverse-ETL write failed
 
 The reverse write (analytics → Postgres) is a direct write to the Postgres database. If it failed:
-- Check that your user has INSERT or UPDATE permission on the sensor_reading table (your branch's grants should allow this).
+- Check that your user has INSERT or UPDATE permission on the txn table (your branch's grants should allow this).
 - If the write timed out, the Postgres connection may have dropped. Re-run the step.
 - If the warehouse query produced no rows, there's nothing to write back; check the compute score step first.
 

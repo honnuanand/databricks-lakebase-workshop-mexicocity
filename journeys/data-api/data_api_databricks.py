@@ -153,11 +153,11 @@ else:
         with httpx.Client(timeout=10) as client_http:
             response = client_http.get(url, headers=headers)
             response.raise_for_status()
-            machines = response.json()
+            accounts = response.json()
             print(f"Result: {len(machines)} machines")
             if machines:
-                print(f"\nFirst machine:")
-                print(f"  {machines[0]}")
+                print(f"\nFirst account:")
+                print(f"  {accounts[0]}")
     except Exception as e:
         print(f"Error: {e}")
 
@@ -184,11 +184,11 @@ else:
         with httpx.Client(timeout=10) as client_http:
             response = client_http.get(url, headers=headers, params=params)
             response.raise_for_status()
-            machines = response.json()
+            accounts = response.json()
             print(f"Result: {len(machines)} healthy machines")
             print(f"\nSample machines:")
-            for machine in machines[:3]:
-                print(f"  {machine}")
+            for account in accounts[:3]:
+                print(f"  {account}")
     except Exception as e:
         print(f"Error: {e}")
 
