@@ -6,7 +6,7 @@
 >
 > - pgvector stores dense embeddings as vector columns on Postgres tables and queries them with
 >   cosine similarity (`<=>`) in the same transaction as your operational data.
-> - Finding the best-fit replacement part by similarity (or the closest warehouse by location
+> - Finding the best-fit comparable instrument by similarity (or the closest warehouse by location
 >   vector) happens in SQL without leaving the database.
 > - pgvector with [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) indexing scales to millions of vectors while staying fast (sub-millisecond
 >   for typical queries).
@@ -14,23 +14,23 @@
 >   at scale), Databricks Vector Search is the platform tool. pgvector complements it for
 >   operational decisions on live data.
 >
-> **You'll be able to:** add embedding vectors to the part table, find the best-fit replacement
-> part for a failure using similarity search, and verify the closest match in a single SQL query.
+> **You'll be able to:** add embedding vectors to the instrument table, find the instruments most
+> similar to a given holding using similarity search, and verify the closest matches in a single SQL query.
 >
 > **Time:** about 20 minutes  ·  **Status:** live
 
 ## The scenario
 
-You're on the factory floor. Machine ACCT-100240 has a bearing failure (bearing reference PT-BEARING-6204).
-The part is backordered from the regular supplier, but you have a warehouse with 50 compatible
-bearings that *feel* similar: same bore size, same load rating, but slightly different outer
-diameter. Instead of waiting, you want to find the best-fit replacement from position using
-*similarity*, not an exact column match.
+A portfolio manager holds INS-AAPL (Apple equity) and wants the instruments most *similar* to it,
+to find a substitute or a hedge if they need to reduce that position. "Similar" is not any one
+column: it is a judgement over the instrument's whole profile, asset kind, sector, risk, how it
+behaves. That is a similarity question, not an exact filter.
 
-On a traditional system, the answer is "query a Vector Search service" (network hop, out-of-process,
-eventual consistency). On Lakebase with pgvector, the answer is: **embed the part spec, store
-the embeddings on the part table, search with `<=>` (cosine similarity) in the same query that
-checks inventory**. Single transaction. No cache miss. The database is the vector search engine.
+On a traditional system, the answer is "query a separate vector search service" (network hop,
+out-of-process, eventually consistent). On Lakebase with pgvector, the answer is: **embed the
+instrument's profile, store the embedding on the instrument row, and search with `<=>` (cosine
+similarity) in the same transaction as your operational data**. No cache miss, no second system.
+The database is the vector search engine.
 
 ## What pgvector actually is
 
@@ -43,7 +43,7 @@ UPDATE instrument SET embedding = ... WHERE ...;  -- populate from a model
 
 SELECT instrument_id, name, spec, embedding <-> query_vector AS distance
 FROM instrument WHERE embedding <=> query_vector WITHIN 0.3
-ORDER BY distance LIMIT 5;  -- find top-5 similar parts within 0.3 cosine distance
+ORDER BY distance LIMIT 5;  -- find top-5 similar instruments within 0.3 cosine distance
 ```
 
 The `<=>` operator computes cosine similarity. The `<->` operator computes L2 distance. With an
@@ -56,27 +56,26 @@ is for **large-scale, batch-synced corpora** (RAG over documentation, product ca
 scale, where latency is not sub-millisecond critical and data is eventually consistent). They
 complement each other:
 
-- **pgvector**: "Is there a similar part in my warehouse right now?" (sub-ms, live)
-- **Vector Search**: "Find all documents in the lakehouse that discuss bearing failures" (ms-scale,
-  batch-synced)
+- **pgvector**: "Which instruments are most similar to the one I hold, right now?" (sub-ms, live)
+- **Vector Search**: "Find all research documents in the lakehouse that discuss this sector"
+  (ms-scale, batch-synced)
 
 This journey shows pgvector. For large corpora, use Vector Search.
 
 ## The wow moment
 
-The beat worth watching: you query for a replacement bearing. The query joins part (with embeddings),
-inventory (warehouse stock), and uses `<=>` to find the closest match in cosine distance. In one
-SQL statement, across three tables, with no network hop, you get: "You have 50 PT-BEARING-6205
-in Warehouse-2. Similarity to the original: 0.92." Then the MES assistant allocates it
-automatically.
+The beat worth watching: you ask for the instruments most similar to INS-AAPL. The query reads the
+instrument embeddings and uses `<=>` to rank the rest by cosine similarity, in one SQL statement,
+in the same database that holds your positions and trades, with no network hop. The nearest
+comparable instruments come back ranked, ready to inform a substitution or hedge.
 
 ## What you'll do
 
-1. Check the part table structure (it's part of the factory schema).
-2. Create the pgvector extension and add an `embedding` column to the part table.
-3. Seed the embedding column: encode part specs as vectors (using a model or a deterministic hash).
-4. Write a similarity search query: find the best-fit replacement part by cosine distance.
-5. Verify the search result against expected similar parts.
+1. Check the instrument table structure (it's instrument of the factory schema).
+2. Create the pgvector extension and add an `embedding` column to the instrument table.
+3. Seed the embedding column: encode instrument specs as vectors (using a model or a deterministic hash).
+4. Write a similarity search query: find the best-fit comparable instrument by cosine distance.
+5. Verify the search result against expected similar instruments.
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); the exact output to check
 against is in [`expected.md`](expected.md).

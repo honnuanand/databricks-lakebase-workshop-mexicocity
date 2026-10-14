@@ -28,16 +28,16 @@ Read on for what each step does; the exact output to expect is in [`expected.md`
 
 ## Or step through it by hand
 
-### Step 1, check the part table
+### Step 1, check the instrument table
 
-The factory schema has a `part` table with specs in a JSONB column. Check it:
+The factory schema has a `instrument` table with specs in a JSONB column. Check it:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT instrument_id, name, part_type FROM bank.instrument LIMIT 5"
+  "SELECT instrument_id, name, kind FROM bank.instrument LIMIT 5"
 ```
 
-You should see parts like `PT-BEARING-6204`, `PT-GEAR-220T`, etc.
+You should see instruments like `INS-AAPL`, `INS-AAPL`, etc.
 
 ### Step 2, enable the pgvector extension
 
@@ -55,7 +55,7 @@ python ../../common/scripts/lakebase.py --sql "SELECT extname FROM pg_extension 
 
 You should see one row: `vector`.
 
-### Step 3, add an embedding column to the part table
+### Step 3, add an embedding column to the instrument table
 
 Add a vector column to store 768-dimensional embeddings (matching typical embedding models):
 
@@ -69,13 +69,13 @@ Check the column was added:
 ```bash
 python ../../common/scripts/lakebase.py --sql \
   "SELECT column_name FROM information_schema.columns \
-   WHERE table_name='part' AND column_name='embedding'"
+   WHERE table_name='instrument' AND column_name='embedding'"
 ```
 
 ### Step 4, populate embeddings
 
 This is where you would normally call an embedding API (e.g., OpenAI text-embedding-3-small) to
-encode each part's spec. For this workshop, we use a deterministic hash-based approach to generate
+encode each instrument's spec. For this workshop, we use a deterministic hash-based approach to generate
 reproducible embeddings:
 
 ```bash
@@ -83,17 +83,17 @@ python pg_vector.py --step embed
 ```
 
 The script:
-1. For each part, reads the spec (JSONB) and name.
+1. For each instrument, reads the spec (JSONB) and name.
 2. Hashes the concatenated text to generate a deterministic "embedding" (a 768-dim vector of
    standardized values derived from the hash).
-3. Updates the part row with the embedding vector.
+3. Updates the instrument row with the embedding vector.
 
 You should see output like:
 
 ```text
-Embedding 12 parts:
-  PT-BEARING-6204: embedded
-  PT-BEARING-6205: embedded
+Embedding 12 instruments:
+  INS-AAPL: embedded
+  INS-MSFT: embedded
   ...
 ```
 
@@ -108,7 +108,7 @@ All rows should have embeddings now.
 
 ### Step 5, write a similarity search query
 
-The key query: find parts similar to a reference part using the `<=>` cosine similarity operator:
+The key query: find instruments similar to a reference instrument using the `<=>` cosine similarity operator:
 
 ```bash
 python pg_vector.py --step search
@@ -118,26 +118,26 @@ The script runs a query like:
 
 ```sql
 SELECT
-  p.instrument_id, p.name, p.part_type,
+  p.instrument_id, p.name, p.kind,
   1 - (p.embedding <=> ref_embedding) AS similarity
 FROM bank.instrument p
 WHERE p.embedding IS NOT NULL
-  AND p.instrument_id != 'PT-BEARING-6204'  -- exclude the original
+  AND p.instrument_id != 'INS-AAPL'  -- exclude the original
 ORDER BY similarity DESC
 LIMIT 5;
 ```
 
-This finds the 5 parts most similar to `PT-BEARING-6204` (by cosine distance). The `<=>` operator
+This finds the 5 instruments most similar to `INS-AAPL` (by cosine distance). The `<=>` operator
 returns normalized distance (0 = identical, 1 = orthogonal). We compute similarity as `1 - distance`
 so higher is better.
 
 You should see output like:
 
 ```text
-Similar parts to PT-BEARING-6204:
-  1. PT-BEARING-6205: similarity=0.95 (same bore, slightly different OD)
-  2. PT-BEARING-6206: similarity=0.88
-  3. PT-BEARING-6208: similarity=0.82
+Similar instruments to INS-AAPL:
+  1. INS-MSFT: similarity=0.95 (same bore, slightly different OD)
+  2. INS-AAPL: similarity=0.88
+  3. INS-AAPL: similarity=0.82
   ...
 ```
 
@@ -161,13 +161,13 @@ Check the index exists:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT indexname FROM pg_indexes WHERE tablename='part' AND indexname LIKE '%embedding%'"
+  "SELECT indexname FROM pg_indexes WHERE tablename='instrument' AND indexname LIKE '%embedding%'"
 ```
 
 ## What you just did
 
-You added pgvector to your Lakebase branch, populated embeddings on the part table, and ran a
-similarity search to find replacement parts in a single SQL query. No network hop, no cache miss,
+You added pgvector to your Lakebase branch, populated embeddings on the instrument table, and ran a
+similarity search to find comparable instruments in a single SQL query. No network hop, no cache miss,
 no eventual consistency, the database is the vector engine.
 
 Compare the output you saw against [`expected.md`](expected.md), and if anything went sideways,

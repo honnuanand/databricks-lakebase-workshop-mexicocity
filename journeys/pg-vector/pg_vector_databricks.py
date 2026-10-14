@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # PG vector - step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will create the pgvector extension, add embeddings to parts, populate them with deterministic vectors, run a similarity search to find replacement parts, and create an HNSW index for faster lookups at scale.
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will create the pgvector extension, add embeddings to instruments, populate them with deterministic vectors, run a similarity search to find comparable instruments, and create an HNSW index for faster lookups at scale.
 # MAGIC
 # MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
 
@@ -32,9 +32,9 @@ print("pgvector initialized")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1 - Check the part table
+# MAGIC ## Step 1 - Check the instrument table
 # MAGIC
-# MAGIC Query the part table to see what we're working with. The SQL:
+# MAGIC Query the instrument table to see what we're working with. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT count(*) FROM bank.instrument;
@@ -48,12 +48,12 @@ with connect() as conn:
         cur.execute("SELECT count(*) FROM bank.instrument")
         count = cur.fetchone()[0]
         cur.execute("SELECT instrument_id, name FROM bank.instrument LIMIT 5")
-        parts = cur.fetchall()
+        instruments = cur.fetchall()
 
-print(f"Checking part table:")
-print(f"  Total parts: {count}")
-print(f"  Sample parts:")
-for p in parts:
+print(f"Checking instrument table:")
+print(f"  Total instruments: {count}")
+print(f"  Sample instruments:")
+for p in instruments:
     print(f"    - {p[0]}: {p[1]}")
 
 # COMMAND ----------
@@ -77,7 +77,7 @@ with connect() as conn:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 - Add embedding column to part table
+# MAGIC ## Step 3 - Add embedding column to instrument table
 # MAGIC
 # MAGIC Add a 768-dimensional vector column. The SQL:
 # MAGIC
@@ -108,13 +108,13 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute("SELECT instrument_id, name, spec FROM bank.instrument ORDER BY instrument_id")
-        parts = cur.fetchall()
+        instruments = cur.fetchall()
 
-print(f"Populating {len(parts)} embeddings:")
+print(f"Populating {len(instruments)} embeddings:")
 
 with connect() as conn:
     with conn.cursor() as cur:
-        for instrument_id, name, spec in parts:
+        for instrument_id, name, spec in instruments:
             text_for_embedding = f"{name} {spec}"
             embedding_str = hash_to_embedding(text_for_embedding, 768)
             cur.execute(
@@ -122,14 +122,14 @@ with connect() as conn:
                 [embedding_str, instrument_id]
             )
 
-print(f"  Updated {len(parts)} parts with embeddings")
+print(f"  Updated {len(instruments)} instruments with embeddings")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 5 - Run similarity search
 # MAGIC
-# MAGIC Find similar parts using cosine distance. The SQL:
+# MAGIC Find similar instruments using cosine distance. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT instrument_id, name, embedding <-> embedding_query AS distance
@@ -162,8 +162,8 @@ with connect() as conn:
         )
         similar_parts = cur.fetchall()
 
-print(f"Query part: {query_part_id} ({query_part_name})")
-print(f"\nMost similar replacement parts:")
+print(f"Query instrument: {query_part_id} ({query_part_name})")
+print(f"\nMost similar comparable instruments:")
 for instrument_id, name, distance in similar_parts:
     print(f"  {instrument_id}: {name} (distance: {distance:.4f})")
 
@@ -197,6 +197,6 @@ with connect() as conn:
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You added pgvector to Lakebase: created embeddings from operational data (part specs), ran similarity search to find replacement parts, and indexed with HNSW for production scale. All on live data, no separate vector database needed. The pattern extends to supply chain (similar suppliers), maintenance (similar failure modes), quality (similar defects) - operational vectors stored in the same Postgres table with your transaction data.
+# MAGIC You added pgvector to Lakebase: created embeddings from operational data (instrument specs), ran similarity search to find comparable instruments, and indexed with HNSW for production scale. All on live data, no separate vector database needed. The pattern extends to supply chain (similar suppliers), maintenance (similar failure modes), quality (similar defects) - operational vectors stored in the same Postgres table with your transaction data.
 # MAGIC
 # MAGIC **Next:** Continue the workshop with more advanced journeys.

@@ -41,7 +41,7 @@ If that fails with a permission error, the extension must be pre-installed by an
 If `ALTER TABLE` failed, check:
 
 1. **Are you on the right branch?** Confirm: `echo $LB_BRANCH`.
-2. **Does the part table exist?** `python lakebase.py --sql "SELECT count(*) FROM bank.instrument"`.
+2. **Does the instrument table exist?** `python lakebase.py --sql "SELECT count(*) FROM bank.instrument"`.
 3. **Do you have ALTER permissions?** If you're on a shared instance/project with restricted
    permissions, you may not be able to alter the table. Check with your instructor.
 
@@ -51,11 +51,11 @@ If the script hangs or takes several seconds, check:
 
 1. **Network latency**: If you're calling an external embedding API (e.g., OpenAI), network
    latency could add up. The script uses deterministic hashes to avoid this.
-2. **Batch size**: The script updates one part at a time. For 1000+ parts, consider batching:
+2. **Batch size**: The script updates one instrument at a time. For 1000+ instruments, consider batching:
    ```sql
    UPDATE bank.instrument SET embedding = ... WHERE ...;  -- all at once
    ```
-3. **Is there a large table scan?** If the part table is huge, the UPDATE could take time. Limit
+3. **Is there a large table scan?** If the instrument table is huge, the UPDATE could take time. Limit
    the scope:
    ```sql
    UPDATE bank.instrument SET embedding = ... WHERE embedding IS NULL;  -- only missing
@@ -65,7 +65,7 @@ If the script hangs or takes several seconds, check:
 
 If the query returned zero rows, check:
 
-1. **Are there embeddings?** Verify at least one part has an embedding:
+1. **Are there embeddings?** Verify at least one instrument has an embedding:
    ```bash
    python lakebase.py --sql "SELECT count(*) FROM bank.instrument WHERE embedding IS NOT NULL"
    ```
@@ -78,8 +78,8 @@ If the query returned zero rows, check:
    ```
    Should return a value close to 1 (exact match with itself).
 
-3. **Is the reference part in the table?** The query filters out the reference part
-   (`WHERE instrument_id != 'PT-BEARING-6204'`). Make sure that part exists and has an embedding.
+3. **Is the reference instrument in the table?** The query filters out the reference instrument
+   (`WHERE instrument_id != 'INS-AAPL'`). Make sure that instrument exists and has an embedding.
 
 ## The similarity scores don't make sense (all 0.5, or all the same)
 
@@ -89,7 +89,7 @@ If all scores are identical or suspiciously similar, the embeddings may not be d
    You should see a vector of floating-point numbers, e.g., `[-0.1, 0.5, ..., 0.02]`.
 
 2. **Are the embeddings reproducible?** The script uses deterministic hashes, so running twice
-   should produce the same embedding for the same part.
+   should produce the same embedding for the same instrument.
 
 3. **Is the cosine operator working?** Test it directly:
    ```bash
@@ -102,7 +102,7 @@ If all scores are identical or suspiciously similar, the embeddings may not be d
 
 The script uses deterministic hashes for reproducibility. To use real embeddings:
 
-1. Call an embedding API for each part spec:
+1. Call an embedding API for each instrument spec:
    ```python
    from databricks.sdk import WorkspaceClient
    w = WorkspaceClient()
@@ -120,10 +120,10 @@ The script uses deterministic hashes for reproducibility. To use real embeddings
 
 The pattern is identical; only the embedding source changes.
 
-## Can I search by a custom vector (not an existing part)?
+## Can I search by a custom vector (not an existing instrument)?
 
-Yes. If you have a query vector (e.g., the spec of a failing bearing), you can search without
-it being a part in the table:
+Yes. If you have a query vector (e.g., the spec of a failing security), you can search without
+it being a instrument in the table:
 
 ```bash
 python lakebase.py --sql \
@@ -137,17 +137,17 @@ Pass the custom vector as a literal `ARRAY[...]::vector(768)`.
 ## Why cosine distance (<=>), not L2 distance (<->)?
 
 Both are supported:
-- **`<=>`** (cosine): magnitude-invariant, good for comparing "direction" (e.g., part specs).
+- **`<=>`** (cosine): magnitude-invariant, good for comparing "direction" (e.g., instrument specs).
 - **`<->`** (L2): Euclidean distance, good for geometric queries (e.g., warehouse locations).
 
-For part similarity, cosine distance is more robust because it ignores magnitude (a large bearing
+For instrument similarity, cosine distance is more robust because it ignores magnitude (a large security
 is still similar to a small one if the proportions are the same). For the warehouse scenario, L2
 would be used to find nearest warehouses by actual coordinates.
 
 ## Why pgvector on Lakebase, not Vector Search?
 
 **pgvector**: single-transaction, in-process, live data, <1ms queries, supports any embedding.
-Best for: operational decisions (is there a replacement part in stock right now?).
+Best for: operational decisions (is there a comparable instrument in stock right now?).
 
 **Vector Search**: large-scale, batch-synced, multi-table, supports hybrid search, Databricks-managed.
 Best for: RAG at scale (search lakehouse documents), large catalogs (millions of products).
