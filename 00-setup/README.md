@@ -58,12 +58,14 @@ trades show up throughout.
 - **Three branches**, run by two business units: `BR-NYC` and `BR-SFO` (operator RetailBank),
   and `BR-LON` (operator GlobalMarkets). Each serves different market segments.
 - **Accounts** across those branches, named `ACCT-100xxx` at NYC, `ACCT-200xxx` at SFO, `ACCT-300xxx` at London.
-  The recurring one to know is **`ACCT-100234`**, a premium account at NYC that you'll track, query, and
-  diagnose across several journeys. When you see `ACCT-100234`, that's the one.
-- **Transactions** flow through each account (deposits, withdrawals, transfers, trades). `ACCT-100234` has
-  a series of transactions you'll analyze through the data journeys.
-- **A holdings hierarchy**: funds composed of instruments composed of individual positions. `FUND-GLOBAL-X1` is a
-  global fund holding several instruments, each with positions; that hierarchy is what the recursive-query and knowledge-graph journeys walk.
+  The recurring one to know is **`ACCT-100240`**, a retail credit account at NYC on a `watch` status that
+  you'll track, query, and diagnose for fraud across several journeys. When you see `ACCT-100240`, that's the one.
+- **Transactions** flow through each account (card charges, transfers, wires). `ACCT-100240` has
+  a series of transactions, including a suspicious high-value one, you'll analyze through the data journeys.
+- **A holdings hierarchy**: funds hold instruments, and some holdings are sleeves (an instrument that
+  itself holds other instruments). `FUND-GROWTH-A` holds Microsoft, cash, and an equity sleeve, and that
+  sleeve in turn holds Apple and a Treasury; that two-level tree is what the recursive-query and
+  knowledge-graph journeys walk.
 - **Trades and settlements** (execution side), **counterparties, custodians, and positions** (the portfolio),
   and **case notes** (free text the AI journeys learn to read).
 
