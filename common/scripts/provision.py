@@ -6,8 +6,8 @@ primary endpoint, then waits until it's ACTIVE and queryable. Idempotent: an
 existing project of the same id is reported as already-live.
 
 Usage:
-    python provision.py --project factory --profile workshop
-    python provision.py --project factory --profile workshop --status   # just check
+    python provision.py --project bank --profile workshop
+    python provision.py --project bank --profile workshop --status   # just check
 
 After it prints ACTIVE, set:  export LB_PROJECT=<project>
 """
@@ -38,7 +38,7 @@ def _endpoint_state(w, project) -> tuple[str, str]:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project", required=True, help="project id, e.g. factory")
+    ap.add_argument("--project", required=True, help="project id, e.g. bank")
     ap.add_argument("--profile", required=True)
     ap.add_argument("--pg-version", type=int, default=17)
     ap.add_argument("--status", action="store_true", help="report state, don't create")

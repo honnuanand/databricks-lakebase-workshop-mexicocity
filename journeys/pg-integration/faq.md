@@ -36,10 +36,10 @@ Check that you're querying the right table. Run:
 
 ```bash
 python lakebase.py --sql \
-  "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_name='machine'"
+  "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_name='account'"
 ```
 
-If the columns don't match the factory_schema.sql, the seed data may not have loaded correctly. Re-run the load (see setup).
+If the columns don't match the finance_schema.sql, the seed data may not have loaded correctly. Re-run the load (see setup).
 
 ## Can I use an ORM like SQLAlchemy?
 

@@ -1,25 +1,21 @@
 <img src="assets/lakebase-lockup.png" alt="Lakebase" height="56">
 
-> ## ✅ Manufacturing edition: ready
+> ## ✅ Finance & banking edition
 >
-> The **manufacturing** edition is complete and verified: all 31 journeys have been run
-> end to end against a live Lakebase, and their expected results reflect real measured output.
-> Work through it on the [`manufacturing`](../../tree/manufacturing) branch.
->
-> **In progress (parallel):** [`finance`](../../tree/finance) and [`healthcare`](../../tree/healthcare)
-> editions, built on this same Lakebase core, so you can learn the same capabilities through
-> whichever domain fits you best. This `main` branch holds the shared core the domain editions
-> build on.
+> This repository is the **finance / banking** edition of the Lakebase Workshop: all 31
+> journeys are authored around a retail-and-markets bank and run end to end against a live
+> Lakebase, with expected results that reflect real measured output.
 
 # Lakebase Workshop
 
-**Build a live factory on Lakebase, then do things to it that a normal database can't survive.**
+**Build a live bank on Lakebase, then do things to it that a normal database can't survive.**
 
-You run a smart-manufacturing operation: plants full of machines, sensors streaming telemetry,
-work orders moving down the line, a bill of materials tying every product to its parts, and a
-supply chain feeding it all. In this workshop that operation is real, it runs on **Lakebase**
-(the operational database built into Databricks), and *you* drive it. Not a slide deck. Not a
-recorded demo. Your own live database, your own commands, your own results to check against.
+You run a bank: branches full of accounts, card and wire transactions streaming in, trades moving
+to settlement, funds that hold instruments through sleeves, counterparties and custodians behind
+them, and analysts writing fraud and AML case notes all day. In this workshop that operation is
+real, it runs on **Lakebase** (the operational database built into Databricks), and *you* drive
+it. Not a slide deck. Not a recorded demo. Your own live database, your own commands, your own
+results to check against.
 
 Lakebase speaks standard PostgreSQL, so the SQL and the drivers you already know just work. But
 the reason this workshop exists is everything Lakebase adds *around* that engine: branch a whole
@@ -31,23 +27,23 @@ By the end you will have, with your own hands:
 
 - **Forked your entire production database in seconds** and diverged it, git-style, then thrown
   the fork away with production untouched.
-- **Deleted a table on purpose** and rewound the whole database to ten seconds ago, with no
+- **Deleted account data on purpose** and rewound the whole database to ten seconds ago, with no
   backup job anywhere in sight.
 - **Scaled compute to zero**, watched the cost meter hit $0, and started it back in seconds.
-- **Written a row through Lakebase and queried it from the lakehouse the same moment** with no
-  pipeline between them, then pushed an analytics score back.
+- **Written a transaction through Lakebase and queried it from the lakehouse the same moment** with
+  no pipeline between them, then pushed a fraud-risk score back.
 - Given two AI agents **one shared memory table** and watched one act on what the other wrote.
 - Run **vector search, geospatial queries, full-text search, JSON documents, and a knowledge
   graph** on the same database that serves your transactions.
-- Exploded a **bill of materials** with one recursive query, and let the graph infer which
-  finished products a recalled part touches.
+- Looked **through a fund's holdings** with one recursive query, and let the graph infer which
+  funds a distressed instrument exposes.
 
 Every one of those is a real Lakebase capability, run against a live instance. Where something
 is a preview or roadmap feature, this workshop says so plainly and shows you the honest path.
 
 ## How it works
 
-You get **your own zero-copy branch** of a shared factory database. A branch is a full,
+You get **your own zero-copy branch** of a shared bank database. A branch is a full,
 isolated copy of the data that costs nothing to create because it's copy-on-write. That means a
 whole room can run this workshop at the same time without stepping on each other, and it means
 you can break things freely and reset in seconds. The branch is itself the first thing you'll
@@ -65,9 +61,9 @@ The path:
 
 Each journey folder holds the same four files, so you always know where to look:
 
-| File              | What it is                                                                        |
-| ----------------- | --------------------------------------------------------------------------------- |
-| `README.md`       | What you'll learn, the factory scenario behind it, and the moment worth watching. |
+| File              | What it is                                                                     |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `README.md`       | What you'll learn, the banking scenario behind it, and the moment worth watching. |
 | `instructions.md` | Numbered, copy-paste steps. Every step says what to run and what you should see.  |
 | `expected.md`     | The real output and timings, so you can check your own results.                   |
 | `faq.md`          | The errors people actually hit, why they happen, and how to recover.              |
@@ -86,26 +82,29 @@ deep on AI, Postgres power, knowledge graphs, and security, ending with an app o
 - **AI on one database** — shared agent memory, a tool-using agent, human-in-the-loop, vectors.
 - **Postgres power, in Lakebase** — SQL parity, JSON, geospatial, search, row-level security,
   the planner, partitioning, and more.
-- **The knowledge graph track** — model factory knowledge as a graph and reason over it.
+- **The knowledge graph track** — model bank knowledge as a graph and reason over it.
 - **Security and access** — customer-managed keys and the REST Data API.
 
 **[See the full journey list and pick your path →](journeys/)**
 
 ## The running example
 
-One factory, reused across every journey so you build familiarity instead of relearning a
+One bank, reused across every journey so you build familiarity instead of relearning a
 schema each time:
 
-- **Plants** in different regions, each with production **lines** and **machines**.
-- **Sensor readings** streaming off every machine (temperature, vibration, rpm, load).
-- **Work orders** and their **operations**, routed across machines and scheduled into time slots.
-- A **bill of materials**: products built from parts, parts built from sub-parts, all the way down.
-- A **supply chain**: suppliers, warehouses, inventory, and shipments feeding the plants.
-- **Maintenance logs**: decades of free-text write-ups the AI journeys learn to read.
+- **Branches** in different regions (NYC, SFO, London), each run by a business unit, holding
+  **accounts** (checking, savings, credit).
+- **Transactions** streaming against every account (amount, merchant category, anomaly score,
+  utilization).
+- **Trades** and their **settlements**, routed across accounts and scheduled into clearing windows.
+- A **holdings tree**: funds built from instruments, with sleeves holding instruments through
+  another level, all the way down.
+- **Counterparties and custodians** behind the instruments, and **positions** tying it together.
+- **Case notes**: free-text fraud and AML write-ups the AI journeys learn to read.
 
 Standard Postgres features (row-level security, vectors, geospatial, JSON, full-text search)
 run here unchanged, and the Lakebase capabilities (branching, point-in-time restore, scale to
-zero, live analytics, Unity Catalog governance) wrap around them. The factory just gives all of
+zero, live analytics, Unity Catalog governance) wrap around them. The bank just gives all of
 it a story you can hold in your head.
 
 ## Ground rules

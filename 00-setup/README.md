@@ -15,12 +15,12 @@ Work through these in order:
 | 2 | [`auth.md`](auth.md) | Log in to your Databricks workspace so the CLI and SDK can act as you. |
 | 3 | [`provision.md`](provision.md) | Create the workshop's Lakebase project (or point at a shared one), so you never touch the live demo. |
 | 4 | [`grants.md`](grants.md) | Grant the access the workshop needs: a Postgres role, schema grants, and the project permission that lets you branch. |
-| 5 | [`your-branch.md`](your-branch.md) | Create your personal zero-copy branch `u-<name>` and load the factory schema onto it. |
+| 5 | [`your-branch.md`](your-branch.md) | Create your personal zero-copy branch `u-<name>` and load the bank schema onto it. |
 | 6 | [`verify.md`](verify.md) | Connect, run `SELECT 1`, and confirm your branch is live and serving. |
 
 ## Why a branch per person
 
-Everyone in the workshop shares one factory database, but you each get your **own branch** of
+Everyone in the workshop shares one bank database, but you each get your **own branch** of
 it. A branch is a full, isolated copy of the data that is free to create because Lakebase
 branches are copy-on-write: nothing is duplicated until you change it. So a whole room can run
 the workshop at the same time, each person breaking and rebuilding their own copy, without
@@ -39,38 +39,36 @@ flowchart LR
   P["Project<br/>(provisioning container)"] --> B["Branch<br/>(zero-copy, copy-on-write)"]
   B --> E["Endpoint<br/>(connectable compute, host:5432)"]
   E --> D["Database<br/>(databricks_postgres)"]
-  D --> S["Schema<br/>(factory)"]
-  S --> T["Tables<br/>(machine, sensor_reading, work_order, ...)"]
+  D --> S["Schema<br/>(bank)"]
+  S --> T["Tables<br/>(account, txn, trade, ...)"]
 ```
 
 A **project** holds everything. Inside it, **branches** are the git-style copies (production is
 the default; yours is `u-<name>`). Each branch exposes an **endpoint**, the compute you actually
 connect to over the Postgres wire. Behind the endpoint is a normal Postgres **database** with a
-**schema** and your factory **tables**.
+**schema** and your bank **tables**.
 
-## Meet the factory
+## Meet the bank
 
-Every journey runs against one running example: a multi-plant smart-manufacturing operation, in
-the `factory` schema. You load it onto your branch in [`your-branch.md`](your-branch.md). Getting
-to know the cast now means the journeys read easily later, because the same machines, parts, and
-orders show up throughout.
+Every journey runs against one running example: a multi-branch financial institution in
+the `bank` schema. You load it onto your branch in [`your-branch.md`](your-branch.md). Getting
+to know the cast now means the journeys read easily later, because the same branches, accounts, and
+trades show up throughout.
 
-- **Three plants**, run by two business units: `PL-DETROIT` and `PL-AUSTIN` (operator NorthAxle),
-  and `PL-MUNICH` (operator EuroDrive). Each has production lines.
-- **Machines** on those lines, named `M-1xx` at Detroit, `M-3xx` at Austin, `M-4xx` at Munich.
-  The recurring one to know is **`M-204`**, a stamping press on Detroit's Stamping-B line. It
-  starts out `healthy` at 91% health, and it's the machine you'll fork, break, re-tag, and
-  diagnose across several journeys. When you see `M-204`, that's the one.
-- **Sensor readings** stream off each machine (temperature, vibration, rpm, load). `M-204` has a
-  vibration reading quietly creeping up, which the maintenance journeys pick up on.
-- **A bill of materials**: products built from parts built from sub-parts. `PRD-GEARBOX-X1` is a
-  gearbox made of a housing, two gear assemblies, and bolts; each gear assembly is a gear plus
-  two bearings. That tree is what the recursive-query and knowledge-graph journeys walk.
-- **Work orders and operations** (the shop floor), **suppliers, warehouses, and inventory** (the
-  supply chain), and **maintenance write-ups** (free text the AI journeys learn to read).
+- **Three branches**, run by two business units: `BR-NYC` and `BR-SFO` (operator RetailBank),
+  and `BR-LON` (operator GlobalMarkets). Each serves different market segments.
+- **Accounts** across those branches, named `ACCT-100xxx` at NYC, `ACCT-200xxx` at SFO, `ACCT-300xxx` at London.
+  The recurring one to know is **`ACCT-100234`**, a premium account at NYC that you'll track, query, and
+  diagnose across several journeys. When you see `ACCT-100234`, that's the one.
+- **Transactions** flow through each account (deposits, withdrawals, transfers, trades). `ACCT-100234` has
+  a series of transactions you'll analyze through the data journeys.
+- **A holdings hierarchy**: funds composed of instruments composed of individual positions. `FUND-GLOBAL-X1` is a
+  global fund holding several instruments, each with positions; that hierarchy is what the recursive-query and knowledge-graph journeys walk.
+- **Trades and settlements** (execution side), **counterparties, custodians, and positions** (the portfolio),
+  and **case notes** (free text the AI journeys learn to read).
 
 You don't need to memorize any of this. It's seeded for you, and each journey reintroduces the
-few rows it touches. `M-204` is just the character worth remembering.
+few rows it touches. `ACCT-100234` is just the character worth remembering.
 
 ## When you're done
 

@@ -9,8 +9,8 @@ here.
   - `lakebase.py` — connect to your branch and run SQL. Journey scripts import from this.
   - `provision.py` — provision a Lakebase project (used by `00-setup/`).
   - `branch.py` — create, check, reset, or delete your branch (used by `00-setup/`).
-  - `load_factory.py` — load the factory schema and seed onto your branch.
-  - `factory_schema.sql` / `factory_seed.sql` — the running-example schema and data.
+  - `load_bank.py` — load the bank schema and seed onto your branch.
+  - `finance_schema.sql` / `finance_seed.sql` — the running-example schema and data.
 - **`notebooks/`** — any notebook shared across journeys. A notebook specific to one journey
   lives in that journey's folder instead.
 

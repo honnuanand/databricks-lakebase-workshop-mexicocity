@@ -71,8 +71,8 @@ w = WorkspaceClient(profile="your-profile")   # see Authentication below
 
 ```python
 w.postgres.create_project(
-    project=Project(spec=ProjectSpec(display_name="factory", pg_version=17)),
-    project_id="factory",
+    project=Project(spec=ProjectSpec(display_name="bank", pg_version=17)),
+    project_id="bank",
 )
 ```
 
@@ -81,9 +81,9 @@ w.postgres.create_project(
 
 ```python
 w.postgres.create_branch(
-    parent="projects/factory",
+    parent="projects/bank",
     branch=Branch(spec=BranchSpec(
-        source_branch="projects/factory/branches/production",
+        source_branch="projects/bank/branches/production",
         no_expiry=True,
     )),
     branch_id="u-alex",
@@ -94,7 +94,7 @@ w.postgres.create_branch(
 **List a branch's endpoints** (to find the host and check readiness):
 
 ```python
-eps = list(w.postgres.list_endpoints(parent="projects/factory/branches/u-alex"))
+eps = list(w.postgres.list_endpoints(parent="projects/bank/branches/u-alex"))
 ep = eps[0]
 host = ep.status.hosts.host                 # the host:5432 you connect to
 state = ep.status.current_state.value       # "ACTIVE" when ready  ← see gotcha below
@@ -104,7 +104,7 @@ state = ep.status.current_state.value       # "ACTIVE" when ready  ← see gotch
 
 ```python
 cred = w.postgres.generate_database_credential(
-    endpoint="projects/factory/branches/u-alex/endpoints/primary")
+    endpoint="projects/bank/branches/u-alex/endpoints/primary")
 token = cred.token
 ```
 

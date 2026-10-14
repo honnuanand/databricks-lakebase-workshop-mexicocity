@@ -18,14 +18,14 @@ single way** (the last section), so success looks identical no matter which door
 
 1. In your Databricks workspace, open **Compute** and find the **Lakebase / Postgres** section
    (labeled Lakebase Postgres, Beta).
-2. Click **Create**, choose a **project** (Autoscaling), name it `factory`, and pick Postgres 17.
+2. Click **Create**, choose a **project** (Autoscaling), name it `bank`, and pick Postgres 17.
 3. Create it. The project appears with a `production` branch and a primary compute endpoint, and
    moves to a running state in a few seconds.
 
 Good when you want to *see* the object model on screen. When it's running, set the id:
 
 ```bash
-export LB_PROJECT=factory
+export LB_PROJECT=bank
 ```
 
 ## Option 2, the Databricks CLI
@@ -36,13 +36,13 @@ directly:
 ```bash
 databricks postgres create-project \
   --profile "$LB_PROFILE" \
-  --json '{"project_id": "factory", "spec": {"display_name": "factory", "pg_version": 17}}'
+  --json '{"project_id": "bank", "spec": {"display_name": "bank", "pg_version": 17}}'
 ```
 
 Then set the id:
 
 ```bash
-export LB_PROJECT=factory
+export LB_PROJECT=bank
 ```
 
 > **Tip**
@@ -55,19 +55,19 @@ export LB_PROJECT=factory
 The script calls the SDK and polls until the project is ACTIVE, printing honest timings:
 
 ```bash
-python ../common/scripts/provision.py --project factory --profile "$LB_PROFILE"
+python ../common/scripts/provision.py --project bank --profile "$LB_PROFILE"
 ```
 
 ```text
 create_project API returned in ~800 ms
-project factory production endpoint ACTIVE in ~3.7s
+project bank production endpoint ACTIVE in ~3.7s
   host: <something>.database.cloud.databricks.com
 
-Now run:  export LB_PROJECT=factory
+Now run:  export LB_PROJECT=bank
 ```
 
 ```bash
-export LB_PROJECT=factory
+export LB_PROJECT=bank
 ```
 
 > **From the field**
@@ -86,7 +86,7 @@ python ../common/scripts/provision.py --project "$LB_PROJECT" --profile "$LB_PRO
 ```
 
 ```text
-project factory production endpoint ACTIVE in ~0.0s
+project bank production endpoint ACTIVE in ~0.0s
   host: <something>.database.cloud.databricks.com
 ```
 

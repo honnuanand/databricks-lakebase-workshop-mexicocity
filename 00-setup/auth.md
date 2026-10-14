@@ -41,7 +41,7 @@ and `LB_BRANCH` in the next two steps):
 
 ```bash
 export LB_PROFILE=workshop
-export LB_SCHEMA=factory
+export LB_SCHEMA=bank
 ```
 
 > **Tip**

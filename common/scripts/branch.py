@@ -8,7 +8,7 @@ whole room can each have their own without colliding.
 Usage:
     python branch.py --create        # create u-<name> off production (idempotent), wait ACTIVE
     python branch.py --status        # show your branch's endpoint state + host
-    python branch.py --reset         # drop and recreate your branch (fresh start), then reload factory
+    python branch.py --reset         # drop and recreate your branch (fresh start), then reload bank
     python branch.py --delete        # drop your branch (leaves nothing behind)
 
 Env: LB_PROFILE, LB_PROJECT, LB_BRANCH (see 00-setup/).
@@ -50,7 +50,7 @@ def create(reload: bool = False) -> None:
     host, _, state = branch_endpoint(w, project, branch)
     print(f"branch {branch} is {state} in ~{waited:.1f}s  (host {host})")
     if reload:
-        _reload_factory()
+        _reload_bank()
 
 
 def status() -> None:
@@ -83,11 +83,11 @@ def reset() -> None:
     create(reload=True)
 
 
-def _reload_factory() -> None:
+def _reload_bank() -> None:
     # import here so create/status don't require the SQL files
-    from load_factory import main as load_main
+    from load_bank import main as load_main
     import sys
-    sys.argv = ["load_factory.py"]
+    sys.argv = ["load_bank.py"]
     load_main()
 
 

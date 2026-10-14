@@ -8,7 +8,7 @@ its shape exactly.
 
 Everything specific to a journey lives IN that journey's folder: its four docs, its notebooks,
 and its script. `common/` holds ONLY what is shared across journeys (`lakebase.py`, `provision.py`,
-`branch.py`, `load_factory.py`, `factory_schema.sql`, `factory_seed.sql`). A journey never reaches
+`branch.py`, `load_bank.py`, `finance_schema.sql`, `finance_seed.sql`). A journey never reaches
 into `common/` for its own artifact; it reaches in only for the shared helper.
 
 A journey script imports the shared helper with a path bootstrap at the top:
@@ -50,19 +50,19 @@ onto everything; represent each step in its real interface:
 - A step that is **both** (run SQL and interpret the result in code): show both.
 
 Judge per step: "what is this operation actually?" Keep any SQL copy-pasteable and real against
-the `factory` schema, never pseudocode.
+the `bank` schema, never pseudocode.
 
-**Notebooks must read cold — introduce the factory nouns inline.** A learner may open a notebook
-directly, without the README or `00-setup/`'s "Meet the factory" intro. So the FIRST time a
+**Notebooks must read cold — introduce the bank nouns inline.** A learner may open a notebook
+directly, without the README or `00-setup/`'s "Meet the bank" intro. So the FIRST time a
 notebook names a specific entity, give a one-line gloss inline, don't assume reading order:
 
-- First mention of `M-204`: "M-204, a stamping press on Detroit's Stamping-B line (it starts out
-  `healthy` at 91% health)".
-- First mention of a product/part/BOM: "PRD-GEARBOX-X1, a gearbox built from a housing, two gear
-  assemblies, and bolts".
-- Same for a work order, plant, supplier, etc.: one clause the first time, bare id after.
+- First mention of `ACCT-100240`: "ACCT-100240, a retail credit account at the NYC branch (it
+  starts out on a `watch` status at 91% health)".
+- First mention of a fund/instrument/holdings tree: "FUND-GROWTH-A, which holds Microsoft, cash,
+  and an equity sleeve that in turn holds Apple and a Treasury".
+- Same for a trade, branch, counterparty, etc.: one clause the first time, bare id after.
 
-Keep it to a clause, not a re-teach; the full cast lives in `00-setup/`'s "Meet the factory".
+Keep it to a clause, not a re-teach; the full cast lives in `00-setup/`'s "Meet the bank".
 
 ## Deliverables per journey
 
@@ -71,7 +71,7 @@ Each `journeys/<slug>/` folder needs four docs + the step-by-step notebooks + th
 1. **README.md**, book-style. Structure:
    - `# <Title>`
    - A hero block (see below).
-   - `## The scenario`, open with a concrete manufacturing situation, NOT a definition.
+   - `## The scenario`, open with a concrete banking situation, NOT a definition.
    - Build the concept with prose; explain the mechanism.
    - `## The wow moment`, the single beat worth watching.
    - `## What you'll do`, a short numbered preview (steps live in instructions.md).
@@ -120,12 +120,12 @@ Prefer plain words where an acronym is not the actual feature name. Keep names t
 - Numbers, not adjectives. Name the catch honestly.
 - Close with a short "Wrapping up" that connects to the next journey.
 
-## The running example (use these tables, do not invent aviation nouns)
+## The running example (use these tables, do not invent other nouns)
 
-A multi-plant smart factory. Schema in `common/scripts/factory_schema.sql`, seed in
-`factory_seed.sql`. Core tables: `plant`, `machine`, `sensor_reading`, `product`, `part`,
-`bom_edge` (the BOM tree), `work_order`, `operation` (routing/scheduling), `supplier`,
-`warehouse`, `inventory`, `part_supplier`, `maintenance_log`, `agent_memory`. Journeys that need
+A retail-and-markets bank. Schema in `common/scripts/finance_schema.sql`, seed in
+`finance_seed.sql`. Core tables: `branch`, `account`, `txn`, `fund`, `instrument`,
+`holding` (the holdings tree), `trade`, `settlement` (clearing/scheduling), `counterparty`,
+`custodian`, `position`, `trade_counterparty`, `case_note`, `agent_memory`. Journeys that need
 scale (pg-explain, pg-index, pg-partition) or an extension (pgvector, PostGIS) create their own
 data/columns on top of the seed, self-contained, and clean up or use their own tables.
 
@@ -152,12 +152,13 @@ Env vars the helper reads: `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` 
 - preview journeys (pg-cdc): logical decoding is roadmap on Lakebase; label it clearly and give
   the honest Postgres-capability preview, not a false "live on Lakebase" claim.
 
-## Source material (mirror structure, re-map nouns to manufacturing)
+## Source material (mirror structure, re-map nouns to banking)
 
 The pitch app `../lakebase-pitch` has the real SQL/story: `backend/story.py`,
 `backend/*_service.py`, `frontend/src/cannedQueries.ts`, `frontend/src/journeys.ts` (the beats
 per journey). The book `../lakebase-book/lb-book` has conceptual explanations. Reuse both; swap
-aviation nouns (aircraft/tail/engine) for factory nouns (machine/part/work order).
+the source's domain nouns for banking nouns (account/instrument/trade). See
+`docs/FINANCE-REMAP.md` for the full manufacturing-to-banking table map.
 
 ## Build status
 

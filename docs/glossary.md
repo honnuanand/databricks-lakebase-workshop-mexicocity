@@ -49,21 +49,20 @@ Lakebase is real PostgreSQL, so the standard Postgres machinery is all here.
 | **CDC** (change data capture) | Reading a stream of every insert, update, and delete as they happen, off the write-ahead log. |
 | **Live data flow** | Running operational and analytical work against one database copy, with no pipeline or sync lag: write through Lakebase, read the same rows from the lakehouse the same moment. |
 
-## Manufacturing (the running example)
+## Banking (the running example)
 
-The workshop's factory. See [Meet the factory](../00-setup/#meet-the-factory) in setup for the
+The workshop's bank. See [Meet the bank](../00-setup/#meet-the-bank) in setup for the
 full cast.
 
 | Term | What it means |
 | ---- | ------------- |
-| **MES** (manufacturing execution system) | The operational system that runs the shop floor: work orders, routing, machine status. In this workshop, Lakebase plays that role. |
-| **BOM** (bill of materials) | The tree of parts that make up a product: a product is built from parts, built from sub-parts, all the way down. |
-| **Digital twin** | A live data model of a physical asset (here, a machine or plant) kept in sync with its real state. |
-| **Work order** | An instruction to produce a quantity of a product, made up of routing steps (operations) run on machines. |
-| **Operation** | One routing step of a work order, scheduled onto a machine for a time window. |
-| **OEE** (overall equipment effectiveness) | A standard measure of how well a machine is used: availability, performance, and quality. |
-| **OT / IT** | Operational technology (machines and sensors on the floor) versus information technology (analytics and business systems). Live data flow connects them. |
-| **Predictive maintenance** | Using sensor data to predict a failure before it happens, so you service a machine before it breaks. |
+| **Core banking** | The operational system that runs accounts, transactions, and balances. In this workshop, Lakebase plays that role. |
+| **Holdings tree** | The tree of instruments that make up a fund: a fund holds instruments, some of which are sleeves that themselves hold instruments, all the way down. |
+| **Sleeve** | An instrument that is itself a basket of other instruments (a fund-of-funds building block); it makes the holdings tree more than one level deep. |
+| **Trade / settlement** | A trade is an instruction to buy or sell an instrument; its settlement is the clearing step scheduled into a time window. |
+| **Counterparty / custodian** | The counterparty is the other side of a trade or the issuer behind an instrument; the custodian is the institution that holds the assets. |
+| **Fraud / AML** | Fraud is unauthorized use of an account; AML (anti-money-laundering) is detecting illicit movement of funds, for example structuring just under a reporting threshold. |
+| **Exposure** | How much a fund (or the bank) stands to lose if a given instrument or counterparty goes bad; the knowledge-graph journeys derive it by look-through. |
 
 ## Security
 

@@ -15,23 +15,23 @@ branch OK, SELECT 1 -> 1
 If you see `1`, your environment can authenticate, resolve your branch's endpoint, generate a
 credential, and run SQL. That's the whole chain the journeys depend on.
 
-## Look at your factory
+## Look at your bank
 
 Run a real query against the seeded data:
 
 ```bash
 python ../common/scripts/lakebase.py --sql \
-  "SELECT plant_id, count(*) AS machines FROM factory.machine GROUP BY plant_id ORDER BY plant_id"
+  "SELECT branch_id, count(*) AS accounts FROM bank.account GROUP BY branch_id ORDER BY branch_id"
 ```
 
 ```text
-('PL-AUSTIN', 2)
-('PL-DETROIT', 4)
-('PL-MUNICH', 2)
+('BR-LON', 2)
+('BR-NYC', 4)
+('BR-SFO', 2)
 ```
 
-Three plants, eight machines. That's the smart factory you'll spend the rest of the workshop
-branching, breaking, querying, and reasoning over.
+Three branches, eight accounts. That's the bank you'll spend the rest of the workshop
+branching, querying, and reasoning over.
 
 ## Troubleshooting
 

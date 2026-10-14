@@ -7,7 +7,7 @@ bottom.
 Two rules for any agenda:
 
 - **[`00-setup/`](../00-setup/) always comes first** (about 20 minutes). It provisions each
-  learner's branch and loads the factory. Nothing runs without it.
+  learner's branch and loads the bank. Nothing runs without it.
 - **Budget about 15 minutes per journey** hands-on (10 for a quick one, 20 for the AI or app
   journeys). Add a few minutes between journeys for questions.
 

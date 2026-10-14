@@ -1,7 +1,7 @@
 # 5 · Your branch
 
 This is where the workshop actually begins. You'll create your own zero-copy branch off the
-shared `production`, and load the factory onto it. Every journey runs here.
+shared `production`, and load the bank onto it. Every journey runs here.
 
 ## Name your branch
 
@@ -17,9 +17,9 @@ full environment is now:
 
 ```bash
 export LB_PROFILE=workshop
-export LB_PROJECT=factory
+export LB_PROJECT=bank
 export LB_BRANCH=u-alex
-export LB_SCHEMA=factory
+export LB_SCHEMA=bank
 ```
 
 ## Create it
@@ -43,40 +43,40 @@ compute endpoint reached `ACTIVE` in about two seconds.
 > data is ready almost immediately, and attaching compute you can connect to takes the couple of
 > seconds. No full-database copy is ever made.
 
-## Load the factory
+## Load the bank
 
 Put the schema and seed data onto your branch:
 
 ```bash
-python ../common/scripts/load_factory.py
+python ../common/scripts/load_bank.py
 ```
 
 ```text
 Loading schema ...
 Seeding data ...
 Done. Row counts:
-  plant                 3 rows
-  machine               8 rows
-  sensor_reading        5 rows
-  product               2 rows
-  part                  5 rows
-  bom_edge              5 rows
-  work_order            2 rows
-  operation             3 rows
-  supplier              3 rows
-  warehouse             2 rows
-  inventory             5 rows
-  part_supplier         3 rows
-  maintenance_log       4 rows
+  branch                3 rows
+  account               8 rows
+  txn                  31 rows
+  fund                  2 rows
+  instrument            5 rows
+  holding               5 rows
+  trade                 2 rows
+  settlement            3 rows
+  counterparty          3 rows
+  custodian             2 rows
+  position              5 rows
+  trade_counterparty    3 rows
+  case_note            24 rows
   agent_memory          0 rows
 ```
 
-Your factory is live on your branch.
+Your bank is live on your branch.
 
 ## If you ever want a clean slate
 
 Any journey can leave your branch in whatever state you like, because it's yours. To start over,
-reset drops your branch and rebuilds it fresh from production, then reloads the factory:
+reset drops your branch and rebuilds it fresh from production, then reloads the bank:
 
 ```bash
 python ../common/scripts/branch.py --reset
@@ -85,7 +85,7 @@ python ../common/scripts/branch.py --reset
 > **Tip**
 > `--reset` is your safety net. Throughout the workshop you'll delete data, break things, and run
 > destructive SQL on purpose. None of it touches anyone else, and reset always brings you back to
-> a known-good factory in seconds.
+> a known-good bank in seconds.
 
 ---
 
