@@ -64,12 +64,12 @@ For a more complex plan with joins:
 
 ```
 Nested Loop
-  -> Seq Scan on machine
+  -> Seq Scan on account
   -> Index Scan on txn
        Index Cond: (account_id = ...)
 ```
 
-This means: "For each row from the machine table, do an Index Scan on txn."
+This means: "For each row from the account table, do an Index Scan on txn."
 
 ## What does "cost" mean in EXPLAIN?
 

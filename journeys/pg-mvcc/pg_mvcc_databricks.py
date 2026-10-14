@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -37,11 +37,11 @@ print("connected; schema:", SCHEMA)
 
 # COMMAND ----------
 
-machines = run_sql("SELECT account_id FROM bank.account LIMIT 1")
-if not machines:
-    print("No machines found")
+accounts = run_sql("SELECT account_id FROM bank.account LIMIT 1")
+if not accounts:
+    print("No accounts found")
 else:
-    account_id = machines[0][0]
+    account_id = accounts[0][0]
     sql = """
     SELECT xmin, xmax, ctid, account_id, health_pct
       FROM bank.account
@@ -70,11 +70,11 @@ else:
 
 # COMMAND ----------
 
-machines = run_sql("SELECT account_id FROM bank.account LIMIT 1")
-if not machines:
-    print("No machines found")
+accounts = run_sql("SELECT account_id FROM bank.account LIMIT 1")
+if not accounts:
+    print("No accounts found")
 else:
-    account_id = machines[0][0]
+    account_id = accounts[0][0]
 
     with connect() as conn:
         with conn.cursor() as cur:
@@ -110,23 +110,23 @@ else:
 # MAGIC Run multiple UPDATEs and watch the dead tuple count grow. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine';
+# MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'account';
 # MAGIC -- Run multiple UPDATEs
 # MAGIC UPDATE bank.account SET health_pct = health_pct + 1.0 WHERE account_id = %s  -- repeat 10 times
 # MAGIC ```
 
 # COMMAND ----------
 
-machines = run_sql("SELECT account_id FROM bank.account LIMIT 1")
-if not machines:
-    print("No machines found")
+accounts = run_sql("SELECT account_id FROM bank.account LIMIT 1")
+if not accounts:
+    print("No accounts found")
 else:
-    account_id = machines[0][0]
+    account_id = accounts[0][0]
 
     with connect() as conn:
         with conn.cursor() as cur:
             # Before UPDATEs
-            cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine'")
+            cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'account'")
             before = cur.fetchone()
             print("Before UPDATEs:")
             if before:
@@ -139,7 +139,7 @@ else:
             print("\nAfter 10 UPDATEs:")
 
             # After UPDATEs
-            cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine'")
+            cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'account'")
             after = cur.fetchone()
             if after:
                 print(f"  n_live_tup={after[0]}, n_dead_tup={after[1]}")
@@ -154,9 +154,9 @@ else:
 # MAGIC Run VACUUM to remove dead tuples and reclaim space. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine';
+# MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'account';
 # MAGIC VACUUM bank.account;
-# MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine'
+# MAGIC SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'account'
 # MAGIC ```
 
 # COMMAND ----------
@@ -164,7 +164,7 @@ else:
 with connect() as conn:
     with conn.cursor() as cur:
         # Before VACUUM
-        cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine'")
+        cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'account'")
         before = cur.fetchone()
         print("Before VACUUM:")
         if before:
@@ -175,7 +175,7 @@ with connect() as conn:
         print("\nRunning VACUUM...")
 
         # After VACUUM
-        cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'machine'")
+        cur.execute("SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'account'")
         after = cur.fetchone()
         print("\nAfter VACUUM:")
         if after:

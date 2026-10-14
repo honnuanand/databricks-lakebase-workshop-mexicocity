@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -106,7 +106,7 @@ with connect() as conn:
 # MAGIC Create a B-tree index on account_id. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE INDEX idx_sensor_machine_id ON bank.txn (account_id);
+# MAGIC CREATE INDEX idx_txn_account_id ON bank.txn (account_id);
 # MAGIC ANALYZE bank.txn
 # MAGIC ```
 
@@ -115,7 +115,7 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute("""
-        CREATE INDEX idx_sensor_machine_id
+        CREATE INDEX idx_txn_account_id
           ON bank.txn (account_id)
         """)
         cur.execute("ANALYZE bank.txn")

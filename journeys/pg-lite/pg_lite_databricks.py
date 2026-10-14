@@ -27,7 +27,7 @@
 # MAGIC In the HTML editor's SQL pane, type or paste:
 # MAGIC
 # MAGIC ```sql
-# MAGIC CREATE TABLE machines (
+# MAGIC CREATE TABLE accounts (
 # MAGIC     id TEXT PRIMARY KEY,
 # MAGIC     status TEXT,
 # MAGIC     health NUMERIC
@@ -40,17 +40,17 @@
 # MAGIC ## Step 3 — Insert data
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO machines VALUES
-# MAGIC     ('ACCT-100240', 'healthy', 91.5),
-# MAGIC     ('ACCT-100241', 'derated', 72.0),
-# MAGIC     ('M-206', 'maintenance', 45.0);
+# MAGIC INSERT INTO accounts VALUES
+# MAGIC     ('ACCT-100240', 'good_standing', 91.5),
+# MAGIC     ('ACCT-100241', 'watch', 72.0),
+# MAGIC     ('ACCT-100242', 'frozen', 45.0);
 # MAGIC ```
 # COMMAND ----------
 
 # MAGIC ## Step 4 — Query the data
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT * FROM machines WHERE health > 70;
+# MAGIC SELECT * FROM accounts WHERE health > 70;
 # MAGIC ```
 # MAGIC
 # MAGIC Results appear instantly in the browser. No server round-trip.
@@ -64,7 +64,7 @@
 # MAGIC     status,
 # MAGIC     health,
 # MAGIC     ROW_NUMBER() OVER (ORDER BY health DESC) as rank
-# MAGIC FROM machines
+# MAGIC FROM accounts
 # MAGIC ORDER BY rank;
 # MAGIC ```
 # COMMAND ----------
@@ -74,8 +74,8 @@
 # MAGIC ```sql
 # MAGIC SELECT
 # MAGIC     status,
-# MAGIC     jsonb_agg(jsonb_build_object('id', id, 'health', health)) as machines
-# MAGIC FROM machines
+# MAGIC     jsonb_agg(jsonb_build_object('id', id, 'health', health)) as accounts
+# MAGIC FROM accounts
 # MAGIC GROUP BY status;
 # MAGIC ```
 # COMMAND ----------
@@ -83,7 +83,7 @@
 # MAGIC ## Step 7 — Try upsert (ON CONFLICT)
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO machines VALUES ('ACCT-100240', 'operational', 99.0)
+# MAGIC INSERT INTO accounts VALUES ('ACCT-100240', 'good_standing', 99.0)
 # MAGIC ON CONFLICT (id) DO UPDATE SET health = 99.0;
 # MAGIC ```
 # COMMAND ----------

@@ -94,13 +94,13 @@ with connect() as conn:
 # MAGIC ## Step 3, Make committed writes
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO machine_cdc_demo VALUES ('M-100', 'operational', 99.5);
+# MAGIC INSERT INTO account_cdc_demo VALUES ('ACCT-100', 'good_standing', 99.5);
 # MAGIC COMMIT;
 # MAGIC
-# MAGIC UPDATE machine_cdc_demo SET status = 'maintenance' WHERE account_id = 'M-001';
+# MAGIC UPDATE account_cdc_demo SET status = 'frozen' WHERE account_id = 'ACCT-001';
 # MAGIC COMMIT;
 # MAGIC
-# MAGIC DELETE FROM machine_cdc_demo WHERE account_id = 'M-003';
+# MAGIC DELETE FROM account_cdc_demo WHERE account_id = 'ACCT-003';
 # MAGIC COMMIT;
 # MAGIC ```
 # COMMAND ----------
@@ -108,13 +108,13 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         # Each transaction auto-commits in this connection
-        cur.execute(f"INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES ('M-100', 'operational', 99.5)")
+        cur.execute(f"INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES ('ACCT-100', 'good_standing', 99.5)")
         print(f'✓ INSERT committed')
-        
-        cur.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET status = 'maintenance' WHERE account_id = 'M-001'")
+
+        cur.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET status = 'frozen' WHERE account_id = 'ACCT-001'")
         print(f'✓ UPDATE committed')
-        
-        cur.execute(f"DELETE FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'M-003'")
+
+        cur.execute(f"DELETE FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'ACCT-003'")
         print(f'✓ DELETE committed')
         print(f'\n  Each COMMIT flushes a record to the slot')
 

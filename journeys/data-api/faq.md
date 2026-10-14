@@ -46,7 +46,7 @@ The table or schema doesn't exist, or the Data API endpoint path is wrong. Check
   ```bash
   python lakebase.py --sql "SELECT 1 FROM bank.account LIMIT 1"
   ```
-- Is the schema `factory`? If you use a different schema, update the script.
+- Is the schema `bank`? If you use a different schema, update the script.
 
 ### `Request timeout` or `connection refused`
 
