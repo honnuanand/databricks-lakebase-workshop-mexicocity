@@ -57,7 +57,7 @@ Seeding data ...
 Done. Row counts:
   branch                3 rows
   account               8 rows
-  txn                  31 rows
+  txn                   5 rows
   fund                  2 rows
   instrument            5 rows
   holding               5 rows
@@ -67,11 +67,14 @@ Done. Row counts:
   custodian             2 rows
   position              5 rows
   trade_counterparty    3 rows
-  case_note            24 rows
+  case_note             4 rows
   agent_memory          0 rows
 ```
 
-Your bank is live on your branch.
+Your bank is live on your branch. Those are the counts right after a fresh load. Some journeys
+add rows as you run them (the write-to-analytics journey inserts transactions, the learning-loop
+journey rewrites case notes), so `txn` and `case_note` grow on a branch you have worked through;
+a `--reset` brings them back to the baseline above.
 
 ## If you ever want a clean slate
 
