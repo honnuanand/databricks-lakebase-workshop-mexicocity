@@ -20,6 +20,7 @@ import os
 import time
 
 from databricks.sdk.service.postgres import Branch, BranchSpec
+from databricks.sdk.common.types.fieldmask import FieldMask
 
 from lakebase import client, branch_name, branch_endpoint, wait_active, _env
 
@@ -69,7 +70,7 @@ def delete() -> None:
         w.postgres.update_branch(
             name=branch_name(project, branch),
             branch=Branch(spec=BranchSpec(is_protected=False)),
-            update_mask="spec.is_protected")
+            update_mask=FieldMask(field_mask=['spec.is_protected']))
     except Exception:
         pass
     w.postgres.delete_branch(name=branch_name(project, branch))

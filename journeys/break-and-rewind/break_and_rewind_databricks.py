@@ -19,6 +19,7 @@ import os, sys, time
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import client, branch_name, branch_endpoint, wait_active, _env, PG_PORT, DEFAULT_DB
 from databricks.sdk.service.postgres import Branch, BranchSpec
+from databricks.sdk.common.types.fieldmask import FieldMask
 import psycopg
 
 PROJECT = os.environ["LB_PROJECT"]
@@ -138,7 +139,7 @@ if tr == 0 and stl == 0:
 # Clean up any stale recovery branch from a prior run
 try:
     w.postgres.update_branch(name=branch_name(PROJECT, RESTORE),
-        branch=Branch(spec=BranchSpec(is_protected=False)), update_mask="spec.is_protected")
+        branch=Branch(spec=BranchSpec(is_protected=False)), update_mask=FieldMask(field_mask=['spec.is_protected']))
     w.postgres.delete_branch(name=branch_name(PROJECT, RESTORE))
     time.sleep(2)
 except Exception:
@@ -191,7 +192,7 @@ print("\nThe deleted data is intact. Every byte is as it was before the mistake.
 # COMMAND ----------
 
 w.postgres.update_branch(name=branch_name(PROJECT, RESTORE),
-    branch=Branch(spec=BranchSpec(is_protected=False)), update_mask="spec.is_protected")
+    branch=Branch(spec=BranchSpec(is_protected=False)), update_mask=FieldMask(field_mask=['spec.is_protected']))
 w.postgres.delete_branch(name=branch_name(PROJECT, RESTORE))
 print(f"Discarded {RESTORE}")
 print("\nRecovery complete. The PITR branch is gone, your original branch is unchanged, and recovery data left zero storage behind.")

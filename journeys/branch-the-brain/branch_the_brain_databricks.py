@@ -24,6 +24,7 @@ import os, sys, time
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import client, branch_name, branch_endpoint, wait_active
 from databricks.sdk.service.postgres import Branch, BranchSpec
+from databricks.sdk.common.types.fieldmask import FieldMask
 import psycopg
 
 PROJECT = os.environ["LB_PROJECT"]
@@ -84,7 +85,7 @@ with connect_branch(MINE) as c, c.cursor() as cur:
 
 try:
     w.postgres.update_branch(name=branch_name(PROJECT, EXP),
-        branch=Branch(spec=BranchSpec(is_protected=False)), update_mask="spec.is_protected")
+        branch=Branch(spec=BranchSpec(is_protected=False)), update_mask=FieldMask(field_mask=['spec.is_protected']))
     w.postgres.delete_branch(name=branch_name(PROJECT, EXP)); time.sleep(2)
 except Exception:
     pass
@@ -129,7 +130,7 @@ with connect_branch(MINE) as c, c.cursor() as cur:
 # COMMAND ----------
 
 w.postgres.update_branch(name=branch_name(PROJECT, EXP),
-    branch=Branch(spec=BranchSpec(is_protected=False)), update_mask="spec.is_protected")
+    branch=Branch(spec=BranchSpec(is_protected=False)), update_mask=FieldMask(field_mask=['spec.is_protected']))
 w.postgres.delete_branch(name=branch_name(PROJECT, EXP))
 print("discarded", EXP)
 print("branches now:", [b.branch_id for b in w.postgres.list_branches(parent=f"projects/{PROJECT}")])

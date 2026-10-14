@@ -24,6 +24,7 @@ import time
 
 import psycopg
 from databricks.sdk.service.postgres import Branch, BranchSpec
+from databricks.sdk.common.types.fieldmask import FieldMask
 
 import os, sys
 # The shared Lakebase helper lives in common/scripts/. Make it importable
@@ -90,7 +91,7 @@ def discard(w, project, exp):
     try:
         w.postgres.update_branch(name=branch_name(project, exp),
                                  branch=Branch(spec=BranchSpec(is_protected=False)),
-                                 update_mask="spec.is_protected")
+                                 update_mask=FieldMask(field_mask=['spec.is_protected']))
     except Exception:
         pass
     w.postgres.delete_branch(name=branch_name(project, exp))
