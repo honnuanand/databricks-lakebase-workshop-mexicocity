@@ -37,6 +37,8 @@ def run_roles():
                     print(f"  created role: {role}")
                 cur.execute(f"GRANT USAGE ON SCHEMA bank TO {role}")
                 cur.execute(f"GRANT SELECT ON bank.account TO {role}")
+                # the policy's USING clause reads bank.branch, so the role needs SELECT on it too
+                cur.execute(f"GRANT SELECT ON bank.branch TO {role}")
                 # membership so we can SET ROLE into it to demonstrate enforcement
                 cur.execute(f'GRANT {role} TO "{me}"')
             print("  granted schema/table SELECT and membership to all business unit roles")

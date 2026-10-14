@@ -27,13 +27,13 @@ The policy is created. Queries now apply the filter automatically.
 ```text
 === Connected as operator_detroit ===
 account_id  branch_id  status  health_pct
-ACCT-100240       BR-NYC  healthy  91.00
-ACCT-200311       BR-NYC  derated   89.75
+ACCT-100240       BR-NYC  good_standing  91.00
+ACCT-200311       BR-NYC  watch   89.75
 
 === Connected as operator_chicago ===
 account_id  branch_id  status  health_pct
-M-401       BR-SFO  healthy  95.50
-M-405       BR-SFO  down     45.25
+ACCT-200310       BR-SFO  good_standing  95.50
+ACCT-200311       BR-SFO  frozen     45.25
 ```
 
 Same query (`SELECT * FROM account`), but different rows. Detroit operator sees only Detroit machines; Chicago operator sees only Chicago machines. The RLS policy is filtering automatically.
@@ -41,7 +41,7 @@ Same query (`SELECT * FROM account`), but different rows. Detroit operator sees 
 ## Step 4, query plan shows policy
 
 ```text
-Seq Scan on machine  (cost=0.00..23.50 rows=2 width=100)
+Seq Scan on account  (cost=0.00..23.50 rows=2 width=100)
   Filter: (branch_id = 'BR-NYC'::text)
 ```
 

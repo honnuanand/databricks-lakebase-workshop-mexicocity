@@ -33,7 +33,7 @@ SELECT * FROM bank.account;
 
 ## Can I use RLS with JOINS?
 
-Yes. The RLS policy applies to the table it's defined on. If you join account and work_order, both tables must have compatible policies, or the policy on one table applies:
+Yes. The RLS policy applies to the table it's defined on. If you join account and trade, both tables must have compatible policies, or the policy on one table applies:
 
 ```sql
 SELECT m.account_id, w.trade_id
@@ -42,7 +42,7 @@ SELECT m.account_id, w.trade_id
  WHERE m.branch_id = current_setting('app.current_operator_plant');
 ```
 
-The filter on machine propagates (machine.branch_id restricted) but work_order rows are unfiltered unless work_order also has an RLS policy on branch_id.
+The filter on account propagates (account.branch_id restricted) but trade rows are unfiltered unless trade also has an RLS policy on branch_id.
 
 ## What if I want column-level masking, not just row-level?
 
