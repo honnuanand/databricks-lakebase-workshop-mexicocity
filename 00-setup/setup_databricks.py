@@ -81,12 +81,19 @@ branch.create()
 
 # MAGIC %md
 # MAGIC ## 5. Load the bank onto your branch
-# MAGIC Schema + seed data (idempotent, so rerunning is safe).
+# MAGIC Schema + seed data. If your branch already has the bank, this skips the load and just shows
+# MAGIC the row counts, so rerunning the notebook doesn't add duplicate transactions.
 
 # COMMAND ----------
 
 import load_bank
-load_bank.main()
+with connect() as conn:
+    loaded = load_bank.is_loaded(conn)
+if loaded:
+    print("The bank is already loaded on your branch, so the load was skipped.")
+    load_bank.main(["--check"])
+else:
+    load_bank.main([])
 
 # COMMAND ----------
 

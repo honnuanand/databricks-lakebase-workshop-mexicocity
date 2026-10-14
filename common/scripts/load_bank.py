@@ -2,12 +2,16 @@
 """Load the bank schema + seed data onto YOUR branch (finance edition).
 
 Runs finance_schema.sql then finance_seed.sql against the branch resolved from
-your environment (LB_PROJECT / LB_BRANCH). Idempotent: DDL is CREATE ... IF NOT
-EXISTS and the seed uses ON CONFLICT DO NOTHING, so re-running is safe.
+your environment (LB_PROJECT / LB_BRANCH). DDL is CREATE ... IF NOT EXISTS and
+the seed uses ON CONFLICT DO NOTHING, but txn and case_note have BIGSERIAL ids, so
+re-loading adds duplicate rows to those two. Check is_loaded() first.
 
 Usage:
     python load_bank.py           # load schema + seed
     python load_bank.py --check   # just report row counts (no load)
+
+From a notebook, pass an empty argv so argparse ignores the kernel's arguments:
+    load_bank.main([])
 """
 from __future__ import annotations
 
@@ -37,10 +41,21 @@ def _counts(conn) -> None:
                 print(f"  {t:20} (missing: {str(e)[:40]})")
 
 
-def main() -> None:
+def is_loaded(conn) -> bool:
+    """True if the bank schema already has accounts on this branch."""
+    schema = os.getenv("LB_SCHEMA", "bank")
+    with conn.cursor() as cur:
+        cur.execute("SELECT to_regclass(%s)", [f"{schema}.account"])
+        if cur.fetchone()[0] is None:
+            return False
+        cur.execute(f"SELECT count(*) FROM {schema}.account")
+        return cur.fetchone()[0] > 0
+
+
+def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="report row counts only")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     with connect() as conn:
         if args.check:
