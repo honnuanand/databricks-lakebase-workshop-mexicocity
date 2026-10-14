@@ -232,5 +232,11 @@ for agent_id, role, content in final_memory:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC Two agents shared state in one governed Lakebase table without a message queue, cache, or orchestration. Each agent read the table, responded with context, and appended its turn. The pattern is: read, compute, append. Perfect for multi-agent coordination in banking: fraud advisor, operations, collections, disputes - all consulting the same governed table.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in the Agent developers track:** <a href="$../agentic-work/agentic_work_databricks">Tool-Calling Agents →</a>
 # MAGIC
-# MAGIC **Next:** Agentic work - an agent that reads live account and transaction data, places a hold, and refuses to double-act based on memory.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

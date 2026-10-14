@@ -202,5 +202,11 @@ else:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC An agent with function calling used a Lakebase table as its memory: read account risk, place a hold, remember the action. On the second call, it read its prior memory and refused to double-hold. This pattern scales to complex workflows: fraud, AML, collections, disputes - all agents consulting the same table for idempotent, coordinated action.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in the Agent developers track:** <a href="$../learning-loop/learning_loop_databricks">Human Review of AI Output →</a>
 # MAGIC
-# MAGIC **Next:** Learning loop - read free-text fraud/AML case notes, extract with confidence, route by threshold, correct, and analyze on one table.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

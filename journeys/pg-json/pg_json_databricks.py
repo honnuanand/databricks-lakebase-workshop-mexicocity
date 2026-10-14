@@ -180,5 +180,11 @@ for row in rows:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC You mastered JSONB: the containment operator (@>) for semantic matching, path extraction (#>>) and key checks (?) for drill-down, and GIN indexes for speed. Postgres gives you flexibility of schema-less storage with the power of a relational query engine.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in the App developers track:** <a href="$../pg-vector/pg_vector_databricks">Vector Similarity Search →</a>
 # MAGIC
-# MAGIC Next: **Geospatial queries** use PostGIS to find branches, custodians, and counterparties within a distance, nearest neighbors, and spatial indexes.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

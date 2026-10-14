@@ -213,5 +213,11 @@ with connect() as conn:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC Feature stores work by materializing, computing offline, and serving online, fast lookups at prediction time. Materialize aggregates from raw events into a dedicated table, indexed for speed. Serve means primary-key lookups, single-digit-millisecond latency, no computation at prediction time. Same database for both; no sync between systems.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **You've finished the Agent developers track.**
 # MAGIC
-# MAGIC Next: **One query, every type** builds a single table with JSON, vectors, and geospatial data.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

@@ -110,5 +110,9 @@ for row in run_sql("SELECT branch_id, count(*) FROM bank.account GROUP BY branch
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC You're set. Head to `journeys/` and start with **Branch the brain**. Each journey's
-# MAGIC `<name>_databricks.py` notebook calls `notebook_env(dbutils)` the same way this one did.
+# MAGIC ---
+# MAGIC You're set. **Next in Part 1:** <a href="$../journeys/branch-the-brain/branch_the_brain_databricks">Database Branching →</a>
+# MAGIC
+# MAGIC Or open the <a href="$../START_HERE">table of contents</a> to see Part 1 and both Part 2 tracks.
+# MAGIC Every journey notebook begins with the same install and widget cells, and the widgets default to
+# MAGIC the branch you just created.

@@ -18,6 +18,16 @@ Work through these in order:
 | 5 | [`your-branch.md`](your-branch.md) | Create your personal zero-copy branch `u-<name>` and load the bank schema onto it. |
 | 6 | [`verify.md`](verify.md) | Connect, run `SELECT 1`, and confirm your branch is live and serving. |
 
+## Working only in Databricks?
+
+You don't need a laptop, the CLI, or `workshop.env`. Your instructor does steps 3 and 4 once, before
+the session: create the project and grant your group `CAN_MANAGE` on it. Then open
+[`setup_databricks`](setup_databricks.py) in the workspace and run it top to bottom. It installs the
+Postgres driver, creates your branch, loads the bank, and runs `SELECT 1`. After that, follow the
+[`START_HERE`](../START_HERE.py) notebook at the top of the repo: Part 1, then one of the two Part 2
+tracks. Each journey notebook starts with the same install and widget cells, and ends with a link to
+the next one.
+
 ## Why a branch per person
 
 Everyone in the workshop shares one bank database, but you each get your **own branch** of

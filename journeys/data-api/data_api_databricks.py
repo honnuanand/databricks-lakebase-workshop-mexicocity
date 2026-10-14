@@ -262,3 +262,11 @@ else:
 # MAGIC - OAuth tokens expire in 1 hour; refresh before making long-running scripts.
 # MAGIC - The Data API respects row-level security (RLS) and role-based access control (RBAC) from your Lakebase config.
 # MAGIC - For bulk operations or complex joins, direct SQL is faster than multiple REST calls.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in the App developers track:** <a href="$../capstone-app/capstone_app_databricks">Building a Databricks App on Lakebase →</a>
+# MAGIC
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

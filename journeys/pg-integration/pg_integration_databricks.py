@@ -180,5 +180,14 @@ for row in rows:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC Lakebase is standard Postgres. You queried the system catalog (information_schema) exactly as you would on Postgres, discovered the full schema, built a schema map that a BI tool would build, and verified data correctness. Any Postgres client, ORM, or BI tool works unmodified.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **You've finished Part 1.** For Part 2, choose one track:
 # MAGIC
-# MAGIC **Next:** Agent memory - two agents share state in one governed Lakebase table.
+# MAGIC - App developers: <a href="$../pg-json/pg_json_databricks">JSON Data with JSONB →</a>
+# MAGIC - Agent developers: <a href="$../agent-memory/agent_memory_databricks">Shared Agent Memory →</a>
+# MAGIC
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

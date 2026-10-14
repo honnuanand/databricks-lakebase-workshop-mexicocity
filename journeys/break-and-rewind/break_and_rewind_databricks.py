@@ -230,5 +230,11 @@ print("\nRecovery complete. The PITR branch is gone, your original branch is unc
 # MAGIC Point-in-time restore on Lakebase is seconds-scale and copy-on-write. You deleted live data, branched at a past LSN to recover it, read the unchanged rows back, and discarded the recovery branch without touching production or leaving recovery storage behind.
 # MAGIC
 # MAGIC The key insight: traditional Postgres PITR means base backups and WAL replay, taking minutes to hours. Lakebase PITR is branching, so it is seconds. The page server holds about 30 days of history, so you can recover from mistakes days ago, not just seconds ago.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in Part 1:** <a href="$../write-to-analytics/write_to_analytics_databricks">Lakebase Data in the Lakehouse →</a>
 # MAGIC
-# MAGIC **Next:** Scale to zero, idle compute auto-suspends to 0/hr and wakes on the next query.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

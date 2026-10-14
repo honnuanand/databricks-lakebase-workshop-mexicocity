@@ -197,5 +197,11 @@ print("Those two approaches cover most production search use cases.")
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC You mastered three search patterns: full-text search (FTS) with `to_tsvector()` and ranking, fuzzy matching with pg_trgm for typo tolerance, and GIN indexes for speed. Real search on production data.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in the App developers track:** <a href="$../pg-booking/pg_booking_databricks">Preventing Overlapping Schedules →</a>
 # MAGIC
-# MAGIC Next: **Row-level security** enforces multi-tenant access control so each user sees only their authorized accounts.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

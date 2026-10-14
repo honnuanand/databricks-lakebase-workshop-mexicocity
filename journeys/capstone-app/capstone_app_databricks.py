@@ -218,3 +218,11 @@ print("The app updates live. Refresh your browser and see the change.")
 # MAGIC - Redeploy with `bash deploy.sh` after making changes.
 # MAGIC
 # MAGIC For production apps, you would add error handling, monitoring, logging, and role-based feature flags. The capstone-app is your template.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **You've finished the App developers track.**
+# MAGIC
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

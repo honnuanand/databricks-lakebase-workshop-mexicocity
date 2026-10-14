@@ -182,5 +182,11 @@ with connect() as conn:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC You created a GiST exclusion constraint that prevents overlapping time ranges for the same account. This constraint is checked at the database level, not the application level, so no double-booking is possible.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in the App developers track:** <a href="$../data-api/data_api_databricks">Lakebase Data API →</a>
 # MAGIC
-# MAGIC Next: **Watch the planner** uses EXPLAIN ANALYZE to understand when indexes matter.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

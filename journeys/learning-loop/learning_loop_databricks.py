@@ -217,5 +217,11 @@ if avg_review is not None:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC A closed-loop learning system: seed messy case notes, extract with AI, route by confidence, correct, and analyze. All on one table. As analysts correct low-confidence extractions, the system improves: confidence grows, more auto-accepts, fewer reviews. Monitor drift (accuracy over time) to catch model decay.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in the Agent developers track:** <a href="$../pg-vector/pg_vector_databricks">Vector Similarity Search →</a>
 # MAGIC
-# MAGIC **Next:** PG vector - operational vectors for similarity search on live data.
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

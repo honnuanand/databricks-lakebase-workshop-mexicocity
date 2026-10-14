@@ -164,5 +164,12 @@ print("branches now:", [b.branch_id for b in w.postgres.list_branches(parent=f"p
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC Branching a live database is seconds-scale and near-free, because it is copy-on-write. You
-# MAGIC forked, froze an account, and discarded without touching your source data. Next: **Break it,
-# MAGIC then rewind** points this same machinery at the past.
+# MAGIC forked, froze an account, and discarded without touching your source data.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in Part 1:** <a href="$../break-and-rewind/break_and_rewind_databricks">Point-in-Time Restore →</a>
+# MAGIC
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

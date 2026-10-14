@@ -223,5 +223,14 @@ with connect() as conn:
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC You added pgvector to Lakebase: created embeddings from operational data (instrument specs), ran similarity search to rank comparable instruments, and indexed with HNSW for production scale. All on live data, no separate vector database needed. (The workshop embeds with a reproducible hash, so the rankings are not financially meaningful; swap in a real embedding model for semantic neighbours.) The pattern extends across the bank: similar counterparties, similar funds by holdings profile, similar transactions for fraud clustering - operational vectors stored in the same Postgres table as your transaction data.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next**, depending on your track:
 # MAGIC
-# MAGIC **Next:** Continue the workshop with more advanced journeys.
+# MAGIC - App developers: <a href="$../pg-search/pg_search_databricks">Full-Text and Fuzzy Search →</a>
+# MAGIC - Agent developers: <a href="$../pg-features/pg_features_databricks">Online Feature Serving →</a>
+# MAGIC
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

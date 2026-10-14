@@ -124,4 +124,12 @@ print("scored + wrote back:", row)
 # MAGIC
 # MAGIC One copy of the data served both the operational write and the analytics-derived fraud score, with
 # MAGIC no pipeline between them. In a full setup the lakehouse reads the same rows through a UC foreign
-# MAGIC catalog. Next: **Fits your landscape**, pointing standard Postgres tools at Lakebase.
+# MAGIC catalog.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in Part 1:** <a href="$../scale-to-zero/scale_to_zero_databricks">Scale to Zero →</a>
+# MAGIC
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

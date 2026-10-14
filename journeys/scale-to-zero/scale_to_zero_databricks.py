@@ -130,4 +130,12 @@ print(f"branch {MINE} endpoint is now {st}")
 # MAGIC
 # MAGIC Idle Lakebase compute costs nothing, automatically, and wakes on demand in about two seconds
 # MAGIC (a cold wake measured about 1.7s on a live run; a warm query is faster). You pay only when you
-# MAGIC serve. Next: **One copy, both directions** shows operational and analytical work on one copy.
+# MAGIC serve.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC **Next in Part 1:** <a href="$../pg-integration/pg_integration_databricks">Connecting Postgres Tools →</a>
+# MAGIC
+# MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>
