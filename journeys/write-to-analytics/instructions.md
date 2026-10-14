@@ -11,7 +11,9 @@ There are a few ways to work through the steps. Pick one:
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
-This journey combines Postgres operations with Databricks workspace integration. You'll need a Unity Catalog and a SQL warehouse to run the full end-to-end. If you don't, the script will walk you through the forward path (write → read via foreign table) and show you where the reverse path (analytics → write back) happens.
+The operational round trip (write, score, write back, read) runs live on your branch. The
+lakehouse read of the same rows is an explainer (it needs the database registered as a Unity
+Catalog catalog, a metastore-admin action), so the script shows that query rather than faking it.
 
 Everything here is a single script you can read: [`./write_to_analytics.py`](./write_to_analytics.py).
 You can run it end to end, or follow the steps by hand to see each piece.
@@ -23,24 +25,13 @@ cd journeys/write-to-analytics
 python write_to_analytics.py
 ```
 
-The script checks your workspace setup, walks the forward path (write through Postgres, read from lakehouse), and optionally walks the reverse path if you have warehouse permission. Read on for what each step does; the exact output to expect is in [`expected.md`](expected.md).
+Read on for what each step does; the exact output to expect is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
-### Step 1, establish baseline sensor data
+### Step 1, write a transaction through Lakebase (OLTP)
 
-Confirm sensor_reading has a few baseline readings on Postgres:
-
-```bash
-python ../../common/scripts/lakebase.py --sql \
-  "SELECT account_id, ts, temp_c, anomaly_score FROM bank.txn WHERE account_id='ACCT-100240' ORDER BY ts DESC LIMIT 3"
-```
-
-You'll see recent readings from ACCT-100240. This is your baseline.
-
-### Step 2, write a new sensor reading through Postgres
-
-Insert a new reading (simulating a live sensor report):
+Insert a new card transaction, a $2,200 charge on ACCT-100240 with a high anomaly score:
 
 ```bash
 python write_to_analytics.py --step write
@@ -49,53 +40,47 @@ python write_to_analytics.py --step write
 The script runs:
 
 ```sql
-INSERT INTO bank.txn (account_id, ts, temp_c, anomaly_score, rpm, util_pct)
-VALUES ('ACCT-100240', now(), 67.3, 4.2, 1165, 81.0);
+INSERT INTO bank.txn (account_id, ts, amount_usd, anomaly_score, mcc, util_pct)
+VALUES ('ACCT-100240', now(), 2200.00, 8.7, 6011, 92.0)
+RETURNING txn_id;
 ```
 
-The script captures the insert timestamp.
+A millisecond operational write. The script keeps the new `txn_id`.
 
-### Step 3, query from the lakehouse immediately
+### Step 2, compute a fraud-risk score and write it back
 
-The forward-ETL path requires a foreign table. If you have a Unity Catalog set up, the script will:
-- Create a managed external table in UC that maps to the sensor_reading table
-- Run a lakehouse SQL query against that table
-- Show the new row visible in the foreign table
+Score the transaction from its anomaly score and the account's utilization, and write the score
+back onto the same row:
 
 ```bash
-python write_to_analytics.py --step read-forward
+python write_to_analytics.py --step score
 ```
 
-If you don't have UC or warehouse permission, the script will show you the SQL and skip execution.
-
-### Step 4, compute a risk score on the lakehouse
-
-Analytics runs a simulated query to compute a failure-risk score based on recent vibration and temperature trends:
-
-```bash
-python write_to_analytics.py --step compute-score
-```
-
-The script runs (or shows) a query like:
+The script runs:
 
 ```sql
-SELECT account_id, 
-       ROUND(100 * (anomaly_score / 10.0 + temp_c / 100.0), 1) AS failure_risk_pct
-FROM txn
-WHERE account_id = 'ACCT-100240' AND ts > now() - interval '1 hour'
+UPDATE bank.txn
+SET fraud_risk = ROUND(100 * (anomaly_score / 10.0 + util_pct / 100.0), 1)
+WHERE txn_id = <the id from step 1>;
 ```
 
-The result is a failure_risk_pct value.
+Then reads the row back. The operational path now serves an analytics-derived value (`fraud_risk`)
+at transaction latency.
 
-### Step 5, write the score back to Postgres
+### Step 3, the lakehouse read (explainer)
 
-The reverse-ETL path writes the computed score back to the sensor_reading table (or a separate risk_score table if you prefer):
+The full run prints the exact query you would run on a SQL warehouse to read the same rows from
+the lakehouse, once the database is registered as a Unity Catalog online catalog:
 
-```bash
-python write_to_analytics.py --step write-reverse
+```sql
+SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk
+FROM <catalog>.bank.txn
+WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;
 ```
 
-The script updates the sensor_reading row with a computed failure_risk field (or creates a separate risk_score row).
+The transaction you wrote in Step 1 appears there immediately, the same copy, no pipeline.
+Registering the catalog needs CREATE CATALOG on the metastore (see [`faq.md`](faq.md)); the
+workshop shows the query rather than faking its output.
 
 ### Step 6, read the score from Postgres
 
