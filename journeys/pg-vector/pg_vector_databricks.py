@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will create the pgvector extension, add embeddings to instruments, populate them with deterministic vectors, run a similarity search to find comparable instruments, and create an HNSW index for faster lookups at scale.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -197,6 +197,6 @@ with connect() as conn:
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You added pgvector to Lakebase: created embeddings from operational data (instrument specs), ran similarity search to find comparable instruments, and indexed with HNSW for production scale. All on live data, no separate vector database needed. The pattern extends to supply chain (similar suppliers), maintenance (similar failure modes), quality (similar defects) - operational vectors stored in the same Postgres table with your transaction data.
+# MAGIC You added pgvector to Lakebase: created embeddings from operational data (instrument specs), ran similarity search to rank comparable instruments, and indexed with HNSW for production scale. All on live data, no separate vector database needed. (The workshop embeds with a reproducible hash, so the rankings are not financially meaningful; swap in a real embedding model for semantic neighbours.) The pattern extends across the bank: similar counterparties, similar funds by holdings profile, similar transactions for fraud clustering - operational vectors stored in the same Postgres table as your transaction data.
 # MAGIC
 # MAGIC **Next:** Continue the workshop with more advanced journeys.

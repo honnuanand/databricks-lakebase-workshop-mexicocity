@@ -71,7 +71,7 @@ comparable instruments come back ranked, ready to inform a substitution or hedge
 
 ## What you'll do
 
-1. Check the instrument table structure (it's instrument of the factory schema).
+1. Check the instrument table structure (the `instrument` table of the bank schema).
 2. Create the pgvector extension and add an `embedding` column to the instrument table.
 3. Seed the embedding column: encode instrument specs as vectors (using a model or a deterministic hash).
 4. Write a similarity search query: find the best-fit comparable instrument by cosine distance.
@@ -83,7 +83,7 @@ against is in [`expected.md`](expected.md).
 ## Prerequisites
 
 Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect. This journey
-is self-contained; it uses the factory tables but doesn't depend on prior journeys. You'll run
+is self-contained; it uses the bank tables but doesn't depend on prior journeys. You'll run
 SQL directly (no Python script needed), so you can follow along in a SQL client or the script
 examples.
 

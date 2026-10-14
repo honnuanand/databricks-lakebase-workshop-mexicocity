@@ -10,7 +10,7 @@ There are a few ways to work through the steps. Pick one:
 - **Just see it work:** run `python pg_vector.py` from this folder to execute the whole thing at once. Fast, but you learn the most from the notebook.
 
 Run these on your own branch. If you haven't done [`../../00-setup/`](../../00-setup/), do that
-first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the factory
+first; you need `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set, and the bank
 loaded.
 
 Most of this journey is SQL. The script [`./pg_vector.py`](./pg_vector.py)
@@ -30,14 +30,15 @@ Read on for what each step does; the exact output to expect is in [`expected.md`
 
 ### Step 1, check the instrument table
 
-The factory schema has a `instrument` table with specs in a JSONB column. Check it:
+The bank schema has an `instrument` table with specs in a JSONB column. Check it:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
   "SELECT instrument_id, name, kind FROM bank.instrument LIMIT 5"
 ```
 
-You should see instruments like `INS-AAPL`, `INS-AAPL`, etc.
+You should see the 5 seed instruments: `INS-AAPL` (Apple, equity), `INS-MSFT` (Microsoft, equity),
+`INS-CASH-USD` (cash), `INS-SLEEVE-EQ` (ETF), and `INS-UST-10Y` (Treasury bond).
 
 ### Step 2, enable the pgvector extension
 
@@ -91,10 +92,12 @@ The script:
 You should see output like:
 
 ```text
-Embedding 12 instruments:
+Embedding 5 instruments:
   INS-AAPL: embedded
+  INS-CASH-USD: embedded
   INS-MSFT: embedded
-  ...
+  INS-SLEEVE-EQ: embedded
+  INS-UST-10Y: embedded
 ```
 
 Query to confirm:
@@ -127,19 +130,26 @@ ORDER BY similarity DESC
 LIMIT 5;
 ```
 
-This finds the 5 instruments most similar to `INS-AAPL` (by cosine distance). The `<=>` operator
-returns normalized distance (0 = identical, 1 = orthogonal). We compute similarity as `1 - distance`
-so higher is better.
+This ranks the other instruments by closeness to `INS-AAPL`. The `<=>` operator returns cosine
+*distance* (0 = identical direction, 1 = orthogonal, up to 2 = opposite). We compute similarity as
+`1 - distance` so higher is better; with hash embeddings that value can go slightly negative when
+two vectors point apart.
 
 You should see output like:
 
 ```text
-Similar instruments to INS-AAPL:
-  1. INS-MSFT: similarity=0.95 (same bore, slightly different OD)
-  2. INS-AAPL: similarity=0.88
-  3. INS-AAPL: similarity=0.82
-  ...
+Running similarity search:
+  Reference instrument: INS-AAPL
+  Top comparable instruments:
+    1. INS-UST-10Y: similarity=0.11 (US Treasury 10Y, bond)
+    2. INS-SLEEVE-EQ: similarity=0.03 (Equity Sleeve, etf)
+    3. INS-MSFT: similarity=-0.09 (Microsoft Corp, equity)
+    4. INS-CASH-USD: similarity=-0.22 (US Dollar Cash, cash)
 ```
+
+The ranking here is driven by the hash embedding, not real financial resemblance, so do not read
+meaning into "the Treasury is closest to Apple". With a real embedding model the same query returns
+semantically meaningful neighbours. See [`expected.md`](expected.md) for the honesty note in full.
 
 ### Step 6, optional: create an HNSW index
 
