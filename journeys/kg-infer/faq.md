@@ -20,20 +20,19 @@ pip install rdflib
 
 If the script says "inferred 0 triples," the rule may not have matched your graph structure. Check:
 
-1. Does the recalled part actually exist in the graph?
+1. Does the distressed instrument actually exist in the graph?
    ```bash
-   python kg_infer.py --step list-parts
+   python kg_infer.py --step list-instruments
    ```
-   Pick a part that exists and recall it.
+   Pick an instrument that exists and mark it distressed (edit `DISTRESSED` near the top of the
+   script if you want a different one than INS-AAPL).
 
-2. Does that part appear in any bom_edge entries?
-   ```bash
-   python kg_infer.py --step inspect-part PT-BEARING-6204
-   ```
-   If the part has no edges, the rule has nothing to infer from.
+2. Does that instrument appear in any `holding` edges? If no fund holds it (directly or through a
+   sleeve), the rule has nothing to infer from. The default INS-AAPL is held through INS-SLEEVE-EQ
+   by FUND-GROWTH-A, so it does fire.
 
-3. Is the rule syntax correct? The script prints the rule before applying it; check that it
-   matches the triple pattern in your graph.
+3. Is the rule pattern right? The script prints the rule (`--step rule-simple`) before applying it;
+   check that it matches the triple pattern in your graph.
 
 ### `Missing required env var LB_PROFILE`
 
@@ -43,7 +42,7 @@ Set your environment variables (see [`../../00-setup/auth.md`](../../00-setup/au
 export LB_PROFILE=<your-profile>
 export LB_PROJECT=<project-id>
 export LB_BRANCH=<branch-id>
-export LB_SCHEMA=factory
+export LB_SCHEMA=bank
 ```
 
 ## Concept clarifications
@@ -68,28 +67,28 @@ true, then Y logically follows." The main differences:
 - Triggers can have side effects (updates, deletes); rule consequences are pure logical
   derivations (new triples).
 
-For the manufacturing use case, rules are cleaner: you state the logic once, and it applies
-consistently across all your data.
+For the banking use case, rules are cleaner: you state the exposure logic once, and it applies
+consistently across all your holdings, however deeply nested.
 
 ### Can I define conditional rules?
 
 Yes. Rules can include filters:
 
 ```
-(?product contains ?part) (?part safety_critical true) -> (?product needs_certification true)
+(?fund contains ?instrument) (?instrument high_yield true) -> (?fund flagged_for_review true)
 ```
 
-This rule only fires for safety-critical parts. You can also combine multiple conditions:
+This rule only fires for high-yield instruments. You can also combine multiple conditions:
 
 ```
-(?product contains ?part) (?part recalled true) (?product production_status in_use) -> (?product requires_recall_action true)
+(?fund contains ?instrument) (?instrument distressed true) (?fund mandate conservative) -> (?fund breach_candidate true)
 ```
 
 ### What happens if rules conflict?
 
 [RDF](../../docs/glossary.md) entailment is monotonic: rules can only add new triples, never remove them. So conflicts
-aren't possible in the traditional sense. However, you can have contradictory facts (e.g., a part
-marked both safe and recalled). [OWL](../../docs/glossary.md) (the full ontology language) has consistency checking to
+aren't possible in the traditional sense. However, you can have contradictory facts (e.g., an
+instrument marked both performing and distressed). [OWL](../../docs/glossary.md) (the full ontology language) has consistency checking to
 catch these; rdflib's basic inference doesn't. For production use, consider using a full OWL
 reasoner if you need consistency validation.
 
@@ -111,21 +110,24 @@ For this workshop, we're demonstrating the concept with a small graph.
 To see the rule text:
 
 ```bash
-python kg_infer.py --step rule-simple --verbose
+python kg_infer.py --step rule-simple
 ```
 
-To see which triples were inferred:
+To see the triple counts before and after entailment (how many new facts were inferred):
 
 ```bash
-python kg_infer.py --step entail --show-inferred
+python kg_infer.py --step entail
 ```
 
-This prints each new triple as it's derived, so you can trace the reasoning.
-
-To inspect the graph before and after:
+It prints `Triples before`, `Triples after`, and `Inferred: N new triples`. To list the
+instruments the graph knows about (so you can pick one to mark distressed):
 
 ```bash
-python kg_infer.py --step entail --inspect-before --inspect-after
+python kg_infer.py --step list-instruments
 ```
 
-This shows node and triple counts before and after entailment.
+To see the exposed funds after inference:
+
+```bash
+python kg_infer.py --step query-after
+```

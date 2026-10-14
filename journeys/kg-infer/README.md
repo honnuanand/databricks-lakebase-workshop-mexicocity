@@ -5,25 +5,28 @@
 > **Key takeaways**
 >
 > - Knowledge graphs support inference: state a rule (if X is true, then Y must be true), and the graph automatically derives new facts you never stored. This uses [RDF Schema](../../docs/glossary.md) (RDFS) or [Web Ontology Language](../../docs/glossary.md) (OWL) rules for reasoning.
-> - A practical rule for manufacturing: "if a part is recalled, then all products containing that part are affected." State this once; the graph applies it to every product.
+> - A practical rule for a bank: "if an instrument is distressed, then every fund that holds it is exposed." State this once; the graph applies it to every fund, following holdings through sleeves transitively.
 > - This is analogous to database triggers or materialized views, but expressed as declarative logic (RDF/OWL) instead of procedural code. The graph does the work.
 >
-> **You'll be able to:** define [RDFS](../../docs/glossary.md)/[OWL](../../docs/glossary.md) rules on your manufacturing graph, apply them to derive facts (like "product X is affected by recall"), and see how entailment makes implicit relationships explicit.
+> **You'll be able to:** define [RDFS](../../docs/glossary.md)/[OWL](../../docs/glossary.md) rules on your holdings graph, apply them to derive facts (like "fund X is exposed to a distressed instrument"), and see how entailment makes implicit relationships explicit.
 >
 > **Time:** about 20 minutes  ·  **Status:** live
 
 ## The scenario
 
-A part, PT-BEARING-6204, is recalled due to a defect. Your system stored: "PT-BEARING-6204 is
-in bom_edge as child of FUND-GROWTH-A." But nobody explicitly stored "FUND-GROWTH-A is
-affected by the recall."
+An instrument, INS-AAPL, becomes distressed (say its issuer is downgraded, or the position is
+flagged). Your system stored the structure: "INS-AAPL is held inside INS-SLEEVE-EQ, and
+INS-SLEEVE-EQ is held by FUND-GROWTH-A." But nobody explicitly stored "FUND-GROWTH-A is exposed to
+INS-AAPL."
 
-That's an inference: if FUND-GROWTH-A contains PT-BEARING-6204, and PT-BEARING-6204 is recalled,
-then FUND-GROWTH-A must be affected. A knowledge graph with rules lets you state this logic
-once, then apply it automatically to all products.
+That's an inference: if FUND-GROWTH-A holds INS-SLEEVE-EQ, and INS-SLEEVE-EQ holds INS-AAPL, and
+INS-AAPL is distressed, then FUND-GROWTH-A must be exposed. A knowledge graph with rules lets you
+state this logic once, then apply it automatically to all funds, no matter how deep the holding
+sits.
 
 This is the difference between a static fact database and a reasoning system. You store the
-structure; the graph reasons about it.
+structure; the graph reasons about it. For a risk desk, "which funds are exposed to this name?" is
+a question you want answered by entailment, not by a hand-written join that forgets about sleeves.
 
 ## What knowledge graph inference is
 
@@ -34,30 +37,32 @@ follow.
 Example rule:
 
 ```text
-if (X contains Y) and (Y is_recalled) then (X is_affected_by_recall)
+if (X contains Y) and (Y is_distressed) then (X is_exposed)
 ```
 
-When you add this rule to the graph and assert that PT-BEARING-6204 is_recalled, the graph
-automatically infers that FUND-GROWTH-A is_affected_by_recall, without you explicitly inserting
-that triple.
+Because `contains` is transitive (a fund that holds a sleeve, and the sleeve holds an instrument,
+holds the instrument), the rule chains down the tree. When you add this rule and assert that
+INS-AAPL is_distressed, the graph automatically infers that FUND-GROWTH-A is_exposed, without you
+explicitly inserting that triple.
 
-This is particularly powerful for supply-chain analysis, compliance, and impact assessment. You
-define the business logic once; the graph applies it to all your data.
+This is particularly powerful for exposure analysis, compliance, and impact assessment. You define
+the business logic once; the graph applies it to all your data.
 
 ## The wow moment
 
-You write a simple rule: "if a part is recalled, all products containing it are affected." Add
-one recalled part to the graph. Run a query for "which products are affected?" and see products
-show up in the results that you never explicitly marked as affected. The graph inferred it.
+You write a simple rule: "if an instrument is distressed, every fund holding it is exposed." Mark
+one instrument distressed, an instrument that no fund holds *directly*, only through a sleeve. Run
+a query for "which funds are exposed?" and FUND-GROWTH-A shows up even though you never stored that
+link. The graph walked the holdings tree two hops down and inferred it.
 
 ## What you'll do
 
 1. Build the graph from the previous journeys (or rebuild it here).
-2. Define a simple rule: "part → contains → product; part is recalled → product is affected."
-3. Assert that one part is recalled.
-4. Query: "which products are affected by this recall?" and see the inferred results.
-5. Add a second rule and watch the entailment chain apply: part recalled → subassembly affected
-   → finished product affected.
+2. Define a simple rule: "fund contains instrument; instrument distressed → fund exposed."
+3. Assert that one instrument (INS-AAPL) is distressed.
+4. Query: "which funds are exposed to this instrument?" and see the inferred results.
+5. See the entailment chain apply through the sleeve: instrument distressed → sleeve holding it
+   reached → fund exposed.
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); expected output is in
 [`expected.md`](expected.md).
@@ -77,6 +82,5 @@ pip install rdflib
 ## Wrapping up
 
 Inference is the final piece of knowledge graphs: structure + relationships + logic = reasoning.
-For manufacturing, this is the foundation for impact analysis, compliance, and what-if
-scenarios. You've now seen the full progression: build the graph, query it, and reason over it
-to derive conclusions.
+For a bank, this is the foundation for exposure analysis, compliance, and what-if scenarios. You've
+now seen the full progression: build the graph, query it, and reason over it to derive conclusions.

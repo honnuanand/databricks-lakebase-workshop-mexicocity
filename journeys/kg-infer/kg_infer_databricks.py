@@ -2,9 +2,9 @@
 # MAGIC %md
 # MAGIC # Infer and derive facts, step by step
 # MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will define business logic as forward-chaining inference rules on a knowledge graph, then apply entailment to derive new facts automatically. This is how you express "if this part is recalled, then any product containing it is affected", and let the graph reason about consequences.
+# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will define business logic as forward-chaining inference rules on a knowledge graph, then apply entailment to derive new facts automatically. This is how you express "if this instrument is distressed, then any fund holding it is exposed", and let the graph reason about the consequences, following holdings through sleeves transitively.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -30,118 +30,114 @@ print("rdflib ready. Loading the graph...")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, Load the graph from the factory
+# MAGIC ## Step 1, Load the graph from the bank
+# MAGIC
+# MAGIC Funds and instruments become typed nodes; each `holding` row becomes a `contains` edge. A
+# MAGIC sleeve is an instrument that itself holds other instruments, so `contains` forms a tree.
 
 # COMMAND ----------
 
 g = Graph()
-FACTORY = Namespace("http://bank.local/")
+BANK = Namespace("http://bank.local/")
 
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute("SELECT fund_id, name FROM bank.fund")
         for fund_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[fund_id]), URIRef(FACTORY.name), Literal(name)))
+            g.add((URIRef(BANK[fund_id]), URIRef(BANK.type), URIRef(BANK.Fund)))
+            g.add((URIRef(BANK[fund_id]), URIRef(BANK.name), Literal(name)))
 
         cur.execute("SELECT instrument_id, name FROM bank.instrument")
         for instrument_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[instrument_id]), URIRef(FACTORY.name), Literal(name)))
-
-        cur.execute("SELECT counterparty_id, name FROM bank.counterparty")
-        for counterparty_id, name in cur.fetchall():
-            g.add((URIRef(FACTORY[counterparty_id]), URIRef(FACTORY.name), Literal(name)))
+            g.add((URIRef(BANK[instrument_id]), URIRef(BANK.type), URIRef(BANK.Instrument)))
+            g.add((URIRef(BANK[instrument_id]), URIRef(BANK.name), Literal(name)))
 
         cur.execute("SELECT parent_id, instrument_id FROM bank.holding LIMIT 1000")
         for parent_id, instrument_id in cur.fetchall():
-            g.add((URIRef(FACTORY[parent_id]), URIRef(FACTORY.contains), URIRef(FACTORY[instrument_id])))
-
-        try:
-            cur.execute("SELECT instrument_id, counterparty_id FROM bank.trade_counterparty LIMIT 1000")
-            for instrument_id, counterparty_id in cur.fetchall():
-                g.add((URIRef(FACTORY[instrument_id]), URIRef(FACTORY.supplied_by), URIRef(FACTORY[counterparty_id])))
-        except:
-            pass
+            g.add((URIRef(BANK[parent_id]), URIRef(BANK.contains), URIRef(BANK[instrument_id])))
 
 print(f"Graph loaded: {len(g)} triples")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2, Define a business rule: if a part is recalled, products containing it are affected
+# MAGIC ## Step 2, Define a business rule: if an instrument is distressed, funds holding it are exposed
 
 # COMMAND ----------
 
 # The rule expressed in natural language:
-# "If a product contains a part, and that part is recalled, then the product is affected."
+# "If a fund holds an instrument, and that instrument is distressed, then the fund is exposed."
+# 'contains' is transitive, so the rule chains down through sleeves.
 
 rule_text = """
-(?product <http://bank.local/contains> ?part)
-(?part <http://bank.local/recalled> ?status)
--> (?product <http://bank.local/affected_by_recall> true)
+(?fund <http://bank.local/contains> ?instrument)
+(?instrument <http://bank.local/distressed> true)
+-> (?fund <http://bank.local/exposed> true)
 """
 
 print("Rule defined:")
-print("  If (product contains part) AND (part is recalled)")
-print("  Then (product is affected by recall)")
+print("  If (fund holds instrument) AND (instrument is distressed)")
+print("  Then (fund is exposed)")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, Mark a part as recalled
+# MAGIC ## Step 3, Mark an instrument as distressed
 # MAGIC
-# MAGIC Add a fact to the graph: part PT-BEARING-6204 is recalled.
+# MAGIC Add a fact to the graph: INS-AAPL is distressed. Note that no fund holds INS-AAPL *directly*,
+# MAGIC only through INS-SLEEVE-EQ, so a naive one-hop lookup would miss the exposure.
 
 # COMMAND ----------
 
-recalled_part = "PT-BEARING-6204"
-g.add((URIRef(FACTORY[recalled_part]), URIRef(FACTORY.recalled), Literal(True)))
+distressed_instrument = "INS-AAPL"
+g.add((URIRef(BANK[distressed_instrument]), URIRef(BANK.distressed), Literal(True)))
 
-print(f"Marked {recalled_part} as recalled.")
+print(f"Marked {distressed_instrument} as distressed.")
 print(f"Graph now has {len(g)} triples.")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4, Query for affected products BEFORE inference
+# MAGIC ## Step 4, Query for exposed funds BEFORE inference
 # MAGIC
-# MAGIC Ask: "which products are marked as affected by a recall?"
+# MAGIC Ask: "which funds are marked as exposed?"
 # MAGIC
-# MAGIC The answer is empty, because we never explicitly added any product as affected. We only marked a part as recalled.
+# MAGIC The answer is empty, because we never explicitly added any fund as exposed. We only marked an instrument as distressed.
 
 # COMMAND ----------
 
 query = """
-SELECT ?product WHERE {
-  ?product <http://bank.local/affected_by_recall> ?status .
+SELECT ?fund WHERE {
+  ?fund <http://bank.local/exposed> ?status .
 }
 """
 
 results = g.query(query)
-affected_before = [str(row["product"]).split("/")[-1] for row in results]
+exposed_before = [str(row["fund"]).split("/")[-1] for row in results]
 
-print(f"Products affected (before inference): {affected_before}")
+print(f"Funds exposed (before inference): {exposed_before}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 5, Apply inference
 # MAGIC
-# MAGIC Use forward chaining to apply the rule. The reasoner looks for all facts matching the rule's premises, and adds new facts (the conclusion) for each match.
+# MAGIC Use forward chaining to apply the rule. The reasoner walks `contains` transitively from each fund and marks it exposed if it reaches a distressed instrument anywhere in its holdings tree.
 
 # COMMAND ----------
 
 triples_before = len(g)
 
-# Collect all recalled parts (subjects of recalled = true)
-recalled_parts = {s for s, o in g.subject_objects(URIRef(FACTORY.recalled))
-                  if o == Literal(True)}
+# Collect all distressed instruments (subjects of distressed = true)
+distressed = {s for s, o in g.subject_objects(URIRef(BANK.distressed))
+              if o == Literal(True)}
 
-print(f"Found {len(recalled_parts)} recalled parts: {[str(p).split('/')[-1] for p in recalled_parts]}")
+print(f"Found {len(distressed)} distressed instruments: {[str(p).split('/')[-1] for p in distressed]}")
 
-# For each product, walk contains* and mark it affected if it reaches a recalled part
+# For each fund, walk contains* and mark it exposed if it reaches a distressed instrument
 def reaches(node, targets, seen=None):
     seen = seen or set()
-    for child in g.objects(node, URIRef(FACTORY.contains)):
+    for child in g.objects(node, URIRef(BANK.contains)):
         if child in targets:
             return True
         if child not in seen:
@@ -150,52 +146,52 @@ def reaches(node, targets, seen=None):
                 return True
     return False
 
-# Iterate over all products and mark affected ones
-product_count = 0
-for product in g.subjects(URIRef(FACTORY.type), URIRef(FACTORY.Product)):
-    product_count += 1
-    if reaches(product, recalled_parts):
-        g.add((product, URIRef(FACTORY.affected_by_recall), Literal(True)))
+# Iterate over all funds and mark exposed ones
+fund_count = 0
+for fund in g.subjects(URIRef(BANK.type), URIRef(BANK.Fund)):
+    fund_count += 1
+    if reaches(fund, distressed):
+        g.add((fund, URIRef(BANK.exposed), Literal(True)))
 
 triples_after = len(g)
 derived = triples_after - triples_before
 
 print(f"Inference applied.")
-print(f"  Checked {product_count} products")
+print(f"  Checked {fund_count} funds")
 print(f"  Derived {derived} new triples.")
 print(f"  Graph now has {triples_after} triples (was {triples_before}).")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6, Query for affected products AFTER inference
+# MAGIC ## Step 6, Query for exposed funds AFTER inference
 # MAGIC
-# MAGIC Ask the same question again: "which products are affected?"
+# MAGIC Ask the same question again: "which funds are exposed?"
 # MAGIC
-# MAGIC Now the answer is populated with products that contain the recalled part.
+# MAGIC Now the answer is populated with funds that hold the distressed instrument, directly or through a sleeve.
 
 # COMMAND ----------
 
 results = g.query(query)
-affected_after = [str(row["product"]).split("/")[-1] for row in results]
+exposed_after = [str(row["fund"]).split("/")[-1] for row in results]
 
-print(f"Products affected (after inference):")
-if affected_after:
-    for product in sorted(affected_after):
-        print(f"  {product}")
+print(f"Funds exposed (after inference):")
+if exposed_after:
+    for fund in sorted(exposed_after):
+        print(f"  {fund}")
 else:
     print("  (no results)")
 
-print(f"\nTotal affected: {len(affected_after)} products derived from the recall of {recalled_part}")
+print(f"\nTotal exposed: {len(exposed_after)} funds derived from the distress of {distressed_instrument}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You defined a business rule as a logical implication (if-then), asserted a single fact (a part is recalled), and used forward chaining to derive all consequences. The inference engine automatically found all products containing that part and marked them as affected. In production, this pattern helps you:
+# MAGIC You defined a business rule as a logical implication (if-then), asserted a single fact (an instrument is distressed), and used forward chaining to derive all consequences. The inference engine automatically found every fund holding that instrument, even two hops down through a sleeve, and marked it exposed. In production, this pattern helps you:
 # MAGIC
-# MAGIC - Keep facts separate from rules. You record what you know (part recalled); the rules compute impact.
+# MAGIC - Keep facts separate from rules. You record what you know (instrument distressed); the rules compute exposure.
 # MAGIC - Scale reasoning. One rule can trigger thousands of derived facts from a single assertion.
 # MAGIC - Maintain auditability. The derived facts are traceable back to the rule and the assertion.
 # MAGIC

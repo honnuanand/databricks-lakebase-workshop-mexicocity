@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Knowledge graph inference: define rules and derive new facts.
 
-Demonstrates RDF inference/entailment: state that "if a part is recalled,
-all products containing it are affected," then let the graph infer which
-products are affected.
+Demonstrates RDF inference/entailment: state that "if an instrument is distressed,
+every fund that holds it (directly or through a sleeve) is exposed," then let the
+graph infer which funds are exposed, following the holdings tree transitively.
 
 Usage:
-    python kg_infer.py                     # full inference demo
-    python kg_infer.py --step rule-simple  # define simple rule
-    python kg_infer.py --step entail       # apply entailment
-    python kg_infer.py --step query-after  # query inferred facts
+    python kg_infer.py                        # full inference demo
+    python kg_infer.py --step rule-simple     # define the simple rule
+    python kg_infer.py --step distress        # assert one distressed instrument
+    python kg_infer.py --step entail          # apply entailment
+    python kg_infer.py --step query-after     # query inferred (exposed) funds
 """
 from __future__ import annotations
 
@@ -25,31 +26,42 @@ try:
 except ImportError:
     raise ImportError("rdflib not installed. Run: pip install rdflib")
 
+BANK = Namespace("http://bank.local/")
+
+# The instrument we will mark distressed. INS-AAPL sits two hops below FUND-GROWTH-A
+# (fund -> INS-SLEEVE-EQ -> INS-AAPL), so the entailment has to walk the tree to find it.
+DISTRESSED = "INS-AAPL"
+
 
 def load_graph() -> Graph:
-    """Load factory schema into RDF graph."""
+    """Load the bank holdings structure into an RDF graph.
+
+    Funds and instruments become typed nodes; each `holding` row becomes a
+    `contains` edge from the parent (a fund or a sleeve instrument) to the held
+    instrument. A sleeve is an instrument that itself contains other instruments,
+    so `contains` forms a tree we can reason over transitively.
+    """
     g = Graph()
-    FACTORY = Namespace("http://bank.local/")
 
     with connect() as conn:
         with conn.cursor() as cur:
-            # Load products
+            # Load funds
             cur.execute("SELECT fund_id FROM bank.fund LIMIT 100")
             for (fund_id,) in cur.fetchall():
-                g.add((URIRef(FACTORY[fund_id]), URIRef(FACTORY.type), URIRef(FACTORY.Product)))
+                g.add((URIRef(BANK[fund_id]), URIRef(BANK.type), URIRef(BANK.Fund)))
 
-            # Load parts
+            # Load instruments
             cur.execute("SELECT instrument_id FROM bank.instrument LIMIT 100")
             for (instrument_id,) in cur.fetchall():
-                g.add((URIRef(FACTORY[instrument_id]), URIRef(FACTORY.type), URIRef(FACTORY.Part)))
+                g.add((URIRef(BANK[instrument_id]), URIRef(BANK.type), URIRef(BANK.Instrument)))
 
-            # Load BOM edges
+            # Load holding edges (parent contains instrument)
             cur.execute("SELECT parent_id, instrument_id FROM bank.holding LIMIT 500")
             for parent_id, instrument_id in cur.fetchall():
                 g.add((
-                    URIRef(FACTORY[parent_id]),
-                    URIRef(FACTORY.contains),
-                    URIRef(FACTORY[instrument_id])
+                    URIRef(BANK[parent_id]),
+                    URIRef(BANK.contains),
+                    URIRef(BANK[instrument_id])
                 ))
 
     return g
@@ -58,18 +70,21 @@ def load_graph() -> Graph:
 def simple_rule_example() -> str:
     """Show the simple rule pattern."""
     return """
-    Rule: if (product contains part) and (part recalled) then (product affected_by_recall)
+    Rule: if (fund holds instrument) and (instrument distressed) then (fund exposed)
 
     In logic:
-        (?product factory:contains ?part) AND (?part factory:recalled true)
-            => (?product factory:affected_by_recall true)
+        (?fund bank:contains ?instrument) AND (?instrument bank:distressed true)
+            => (?fund bank:exposed true)
+
+    'contains' is transitive here: a fund that holds a sleeve, and the sleeve holds the
+    instrument, means the fund holds the instrument. So the rule chains down the tree.
     """
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Knowledge graph inference with rules")
-    ap.add_argument("--step", choices=["load", "rule-simple", "recall-part", "query-before",
-                                       "entail", "query-after", "rule-chain", "list-parts"],
+    ap.add_argument("--step", choices=["load", "rule-simple", "distress", "query-before",
+                                       "entail", "query-after", "rule-chain", "list-instruments"],
                     help="run a specific step")
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
@@ -84,51 +99,48 @@ def main() -> None:
         g = load_graph()
 
     if args.step == "rule-simple" or not args.step:
-        print("\nDefining rule: part recalled → product affected")
+        print("\nDefining rule: instrument distressed → fund exposed")
         print(simple_rule_example())
         if args.step:
             return
 
-    if args.step == "recall-part" or not args.step:
-        FACTORY = Namespace("http://bank.local/")
-        print("\nMarking PT-BEARING-6204 as recalled...")
+    if args.step == "distress" or not args.step:
+        print(f"\nMarking {DISTRESSED} as distressed...")
         g.add((
-            URIRef(FACTORY["PT-BEARING-6204"]),
-            URIRef(FACTORY.recalled),
+            URIRef(BANK[DISTRESSED]),
+            URIRef(BANK.distressed),
             Literal(True)
         ))
-        print("  Asserted: PT-BEARING-6204 recalled=true")
+        print(f"  Asserted: {DISTRESSED} distressed=true")
         if args.step:
             return
 
     if args.step == "query-before" or not args.step:
-        print("\nQuery (before inference): which products are affected?")
-        FACTORY = Namespace("http://bank.local/")
-        affected = []
-        for subj in g.subjects(URIRef(FACTORY.affected_by_recall), Literal(True)):
+        print("\nQuery (before inference): which funds are exposed?")
+        exposed = []
+        for subj in g.subjects(URIRef(BANK.exposed), Literal(True)):
             fund_id = str(subj).split("/")[-1]
-            affected.append(fund_id)
-        print(f"  Products affected: {affected if affected else '[]'}")
+            exposed.append(fund_id)
+        print(f"  Funds exposed: {exposed if exposed else '[]'}")
         if args.step:
             return
 
     if args.step == "entail" or not args.step:
         print("\nApplying entailment...")
-        FACTORY = Namespace("http://bank.local/")
 
-        # Forward-chaining for the rule: a product is affected if it contains a recalled
-        # part ANYWHERE in its bill-of-materials tree (directly or via subassemblies).
-        # `contains` chains parent->child, so we walk it transitively from each product.
+        # Forward-chaining for the rule: a fund is exposed if it holds a distressed
+        # instrument ANYWHERE in its holdings tree (directly or through a sleeve).
+        # `contains` chains parent->child, so we walk it transitively from each fund.
         count_before = len(g)
 
-        # 1. collect the recalled parts (subjects of `recalled = true`)
-        recalled_parts = {s for s, o in g.subject_objects(URIRef(FACTORY.recalled))
-                          if o == Literal(True)}
+        # 1. collect the distressed instruments (subjects of `distressed = true`)
+        distressed = {s for s, o in g.subject_objects(URIRef(BANK.distressed))
+                      if o == Literal(True)}
 
-        # 2. for every product, walk contains* and mark it affected if it reaches a recalled part
+        # 2. for every fund, walk contains* and mark it exposed if it reaches a distressed instrument
         def reaches(node, targets, seen=None):
             seen = seen or set()
-            for child in g.objects(node, URIRef(FACTORY.contains)):
+            for child in g.objects(node, URIRef(BANK.contains)):
                 if child in targets:
                     return True
                 if child not in seen:
@@ -137,9 +149,9 @@ def main() -> None:
                         return True
             return False
 
-        for product in g.subjects(URIRef(FACTORY.type), URIRef(FACTORY.Product)):
-            if reaches(product, recalled_parts):
-                g.add((product, URIRef(FACTORY.affected_by_recall), Literal(True)))
+        for fund in g.subjects(URIRef(BANK.type), URIRef(BANK.Fund)):
+            if reaches(fund, distressed):
+                g.add((fund, URIRef(BANK.exposed), Literal(True)))
 
         count_after = len(g)
         print(f"  Triples before: {count_before}")
@@ -149,34 +161,32 @@ def main() -> None:
             return
 
     if args.step == "query-after" or not args.step:
-        print("\nQuery (after inference): which products are affected?")
-        FACTORY = Namespace("http://bank.local/")
-        affected = []
-        for subj in g.subjects(URIRef(FACTORY.affected_by_recall), Literal(True)):
+        print("\nQuery (after inference): which funds are exposed?")
+        exposed = []
+        for subj in g.subjects(URIRef(BANK.exposed), Literal(True)):
             fund_id = str(subj).split("/")[-1]
-            if fund_id.startswith("PRD-"):
-                affected.append(fund_id)
-        print(f"  Products affected:")
-        for product in sorted(affected):
-            print(f"    {product}")
+            if fund_id.startswith("FUND-"):
+                exposed.append(fund_id)
+        print(f"  Funds exposed:")
+        for fund in sorted(exposed):
+            print(f"    {fund}")
 
     if args.step == "rule-chain":
-        print("\nDefining chain rule: affected parts → affected assemblies")
+        print("\nDefining chain rule: exposed sleeve → exposed fund")
         print("""
-        Rule: if (assembly part_of product) and (part recalled) then (assembly affected)
+        Rule: if (fund contains sleeve) and (sleeve exposed) then (fund exposed)
         """)
 
-    if args.step == "list-parts":
-        print("Parts in graph:")
-        FACTORY = Namespace("http://bank.local/")
-        parts = set()
-        for subj in g.subjects(URIRef(FACTORY.type), URIRef(FACTORY.Part)):
+    if args.step == "list-instruments":
+        print("Instruments in graph:")
+        instruments = set()
+        for subj in g.subjects(URIRef(BANK.type), URIRef(BANK.Instrument)):
             instrument_id = str(subj).split("/")[-1]
-            parts.add(instrument_id)
-        for instrument_id in sorted(parts)[:20]:  # Show first 20
+            instruments.add(instrument_id)
+        for instrument_id in sorted(instruments)[:20]:  # Show first 20
             print(f"  {instrument_id}")
-        if len(parts) > 20:
-            print(f"  ... and {len(parts) - 20} more")
+        if len(instruments) > 20:
+            print(f"  ... and {len(instruments) - 20} more")
 
 
 if __name__ == "__main__":

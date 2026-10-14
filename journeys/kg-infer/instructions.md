@@ -23,8 +23,8 @@ cd journeys/kg-infer
 python kg_infer.py
 ```
 
-This builds the graph, defines inference rules, and shows derived facts. Read on for what each
-step does; expected output is in [`expected.md`](expected.md).
+This builds the graph, defines the inference rule, and shows the derived facts. Read on for what
+each step does; expected output is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
@@ -34,46 +34,47 @@ step does; expected output is in [`expected.md`](expected.md).
 python kg_infer.py --step load
 ```
 
-This loads the same BOM, supplier, and machine relationships from Lakebase.
+This loads the funds, instruments, and holding edges from Lakebase. Each `holding` row becomes a
+`contains` edge; a sleeve instrument that holds other instruments makes the graph a tree.
 
-### Step 2, define a simple rule
+### Step 2, define the simple rule
 
-Define the rule: "if a part is recalled, and a product contains that part, then the product is
-affected by the recall."
+Define the rule: "if an instrument is distressed, and a fund holds that instrument, then the fund
+is exposed."
 
 ```bash
 python kg_infer.py --step rule-simple
 ```
 
-In [RDF](../../docs/glossary.md)/[OWL](../../docs/glossary.md) logic (using rdflib's forward-chaining rules):
+In [RDF](../../docs/glossary.md)/[OWL](../../docs/glossary.md) logic (forward-chaining):
 
-```python
-rule = rdflib.plugin.get('rules:BFPR', rdflib.plugin.Plugin)(graph)
-rule += rdflib.plugin.get('rules:BFPR', rdflib.plugin.Plugin).Rule(
-    "(?product contains ?part) (?part recalled true) -> (?product affected_by_recall true)"
-)
+```text
+(?fund contains ?instrument) (?instrument distressed true) -> (?fund exposed true)
 ```
 
-The script prints the rule being added.
+`contains` is transitive, so the rule chains down through sleeves. The script prints the rule.
 
-### Step 3, assert a recalled part
+### Step 3, assert a distressed instrument
 
-Mark a specific part as recalled:
+Mark a specific instrument as distressed:
 
 ```bash
-python kg_infer.py --step recall-part
+python kg_infer.py --step distress
 ```
 
 The script adds a triple:
 
 ```
-(PT-BEARING-6204, recalled, true)
+(INS-AAPL, distressed, true)
 ```
 
-### Step 4, query for affected products (without inference)
+INS-AAPL is held only *through* INS-SLEEVE-EQ, not directly by any fund, so a naive one-hop lookup
+would miss its exposure. That is the point.
 
-Before applying the rule, ask: "which products are affected?" The answer is empty, because you
-never explicitly marked any product as affected.
+### Step 4, query for exposed funds (without inference)
+
+Before applying the rule, ask: "which funds are exposed?" The answer is empty, because you never
+explicitly marked any fund as exposed.
 
 ```bash
 python kg_infer.py --step query-before
@@ -82,22 +83,22 @@ python kg_infer.py --step query-before
 Output:
 
 ```text
-Products affected (before inference): []
+Funds exposed: []
 ```
 
 ### Step 5, apply entailment
 
-Now apply the inference rule. The graph computes all logical consequences of the facts you
-stated plus the rules you defined.
+Now apply the inference rule. The graph computes all logical consequences of the facts you stated
+plus the rule you defined, walking `contains` transitively.
 
 ```bash
 python kg_infer.py --step entail
 ```
 
-The script prints how many new triples were derived. For a single recalled part in a BOM with
-multiple products containing it, you'll see 1-5 new triples depending on the graph depth.
+The script prints how many new triples were derived. For INS-AAPL distressed in this holdings tree
+you'll see 1 new triple (FUND-GROWTH-A exposed).
 
-### Step 6, query for affected products (after inference)
+### Step 6, query for exposed funds (after inference)
 
 Now ask the same question:
 
@@ -108,27 +109,26 @@ python kg_infer.py --step query-after
 Output:
 
 ```text
-Products affected (after inference):
+Funds exposed:
   FUND-GROWTH-A
-  PRD-MOTOR-ASSEMBLY-2HP
 ```
 
-These are the products inferred to be affected because they contain the recalled part.
+FUND-GROWTH-A is inferred to be exposed because it holds INS-AAPL through INS-SLEEVE-EQ.
+FUND-INCOME-B holds nothing in this tree, so it stays unexposed, the correct contrast.
 
-### Step 7, multi-rule entailment
+### Step 7, the entailment chain
 
-Add a second rule: "if a product is part of a larger assembly, and the product is affected, then
-the assembly is affected."
+The `--step rule-chain` option prints the chaining rule in words:
 
 ```bash
 python kg_infer.py --step rule-chain
 ```
 
-Now apply entailment again. The graph will chain the rules: recalled part → product affected →
-assembly affected.
+The chain is already what Step 5 computed: instrument distressed → the sleeve that holds it is on
+the path → the fund that holds the sleeve is exposed. The transitive walk *is* the multi-hop rule.
 
 ## What you just did
 
-You defined business logic as rules on the graph, then let the graph reason about your
-manufacturing data to derive conclusions you never explicitly stored. Compare your output to
-[`expected.md`](expected.md); if anything went wrong, check [`faq.md`](faq.md).
+You defined business logic as a rule on the graph, then let the graph reason about your holdings
+data to derive an exposure you never explicitly stored, following the tree through a sleeve.
+Compare your output to [`expected.md`](expected.md); if anything went wrong, check [`faq.md`](faq.md).

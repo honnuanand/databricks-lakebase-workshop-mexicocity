@@ -1,21 +1,31 @@
 # Infer and derive facts, expected results
 
-Use this to check your run. Your product and part counts depend on the bank seed data you
-loaded, but the inference chain and result shapes should match.
+Use this to check your run. Your fund and instrument counts depend on the bank seed data you
+loaded, but the inference chain and result shapes should match. The numbers below are for the
+default bank seed (2 funds, 5 instruments, 5 holding edges).
 
-## Step 2, define a simple rule
+## Step 2, define the simple rule
 
 The script prints:
 
 ```text
-Rule defined: if (product contains part) and (part recalled) then (product affected_by_recall)
-Rule added to graph.
+Defining rule: instrument distressed → fund exposed
+
+    Rule: if (fund holds instrument) and (instrument distressed) then (fund exposed)
+
+    In logic:
+        (?fund bank:contains ?instrument) AND (?instrument bank:distressed true)
+            => (?fund bank:exposed true)
+
+    'contains' is transitive here: a fund that holds a sleeve, and the sleeve holds the
+    instrument, means the fund holds the instrument. So the rule chains down the tree.
 ```
 
-## Step 3, assert a recalled part
+## Step 3, assert a distressed instrument
 
 ```text
-Marked PT-BEARING-6204 as recalled.
+Marking INS-AAPL as distressed...
+  Asserted: INS-AAPL distressed=true
 ```
 
 ## Step 4, query before inference
@@ -23,49 +33,52 @@ Marked PT-BEARING-6204 as recalled.
 Running `python kg_infer.py --step query-before` shows:
 
 ```text
-Products affected (before inference): []
+Funds exposed: []
 ```
 
-No products are marked as affected because you haven't asserted any directly, only that one part
-is recalled.
+No funds are marked exposed because you haven't asserted any directly, only that one instrument is
+distressed.
 
 ## Step 5, apply entailment
 
 Running `python kg_infer.py --step entail` shows:
 
 ```text
-Entailment applied.
-New triples inferred: 3
+Applying entailment...
+  Triples before: 13
+  Triples after: 14
+  Inferred: 1 new triples
 ```
 
-The number depends on how many products contain the recalled part, directly or indirectly.
+One new triple: FUND-GROWTH-A is exposed. The graph reached INS-AAPL by walking FUND-GROWTH-A →
+INS-SLEEVE-EQ → INS-AAPL. FUND-INCOME-B holds nothing, so nothing is inferred for it. The count of
+inferred triples depends on how many funds hold the distressed instrument, directly or through a
+sleeve.
 
 ## Step 6, query after inference
 
 Running `python kg_infer.py --step query-after` shows:
 
 ```text
-Products affected (after inference):
+Funds exposed:
   FUND-GROWTH-A
-  PRD-MOTOR-ASSEMBLY-2HP
-  PRD-PUMP-SERIES-A
 ```
 
-These are all products that contain the recalled part (directly or in a subassembly). The graph
-inferred them.
+FUND-GROWTH-A was inferred to be exposed because it holds INS-AAPL two hops down, through the
+equity sleeve. The graph inferred it; you never stored that link.
 
-## Step 7, multi-rule entailment
+## Step 7, the entailment chain
 
-Running `python kg_infer.py --step rule-chain` shows:
+Running `python kg_infer.py --step rule-chain` prints the chaining rule in words:
 
 ```text
-Chain rule defined: if (assembly part_of product) and (part recalled) then (assembly affected_by_recall)
-Entailment applied.
-New triples inferred (chain): 2
+Defining chain rule: exposed sleeve → exposed fund
+
+        Rule: if (fund contains sleeve) and (sleeve exposed) then (fund exposed)
 ```
 
-If your BOM has assemblies (parts that are themselves part of larger products), the chain rule
-derives that those assemblies are also affected.
+The chain is exactly what Step 5 computed: the transitive `contains` walk *is* the multi-hop rule.
+INS-AAPL distressed → INS-SLEEVE-EQ is on the path → FUND-GROWTH-A exposed.
 
 ## Full run output
 
@@ -73,46 +86,35 @@ Running the script end to end:
 
 ```text
 Loading graph...
-  Loaded 250 triples
+  Loaded 12 triples
 
-Rule 1: part recalled -> product affected
-  Rule defined.
+Defining rule: instrument distressed → fund exposed
+  [rule text]
 
-Mark PT-BEARING-6204 as recalled.
+Marking INS-AAPL as distressed...
+  Asserted: INS-AAPL distressed=true
 
-Products affected (before inference): []
+Query (before inference): which funds are exposed?
+  Funds exposed: []
 
-Applying entailment (rule 1)...
-  Inferred 3 new triples.
+Applying entailment...
+  Triples before: 13
+  Triples after: 14
+  Inferred: 1 new triples
 
-Products affected (after inference):
-  FUND-GROWTH-A
-  PRD-MOTOR-ASSEMBLY-2HP
-  PRD-PUMP-SERIES-A
-
-Chain rule: affected parts -> affected assemblies
-  Rule defined.
-
-Applying entailment (rule 2)...
-  Inferred 2 new triples.
-
-Final affected products:
-  FUND-GROWTH-A
-  PRD-MOTOR-ASSEMBLY-2HP
-  PRD-PUMP-SERIES-A
-  PRD-TOP-LEVEL-ASSEMBLY
-
-Done. Inference complete.
+Query (after inference): which funds are exposed?
+  Funds exposed:
+    FUND-GROWTH-A
 ```
 
 ## The numbers that matter
 
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
-| triples before entailment | 250+ | the base graph |
-| triples inferred by one rule | 1-10 | depends on BOM fanout (how many products contain the part) |
-| query latency after entailment | <20 ms | reasoning adds overhead, but still fast for factory-scale graphs |
-| rule chaining depth | 2-5 levels | deeper chains (part → subassembly → assembly → product) catch more affected items |
+| triples before entailment | 12 (default seed) | the base graph (funds + instruments + holding edges) |
+| triples inferred by the rule | 1 (default seed) | depends on holdings fanout (how many funds reach the instrument) |
+| query latency after entailment | <20 ms | reasoning adds overhead, but still fast at this scale |
+| entailment depth | transitive (unbounded) | deeper holding trees (fund → sleeve → sub-sleeve → instrument) are all caught by the recursive walk |
 
 > **Note**
 > For production use, entailment can be expensive if you have many rules and a large graph.
