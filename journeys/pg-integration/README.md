@@ -14,7 +14,7 @@
 
 ## The scenario
 
-You're the architect picking a database for the factory's operational system. The MES, the shop floor, the supply-chain apps, they all have existing integrations: SQLAlchemy, JDBC, Tableau, dbt, Metabase. If you pick a proprietary database, those integrations break. You need adapters, shims, consultants.
+You're the architect picking a database for the bank's operational system. The core banking platform, the fraud engine, the risk and reporting apps, they all have existing integrations: SQLAlchemy, JDBC, Tableau, dbt, Metabase. If you pick a proprietary database, those integrations break. You need adapters, shims, consultants.
 
 You pitch Lakebase to the team. The answer you need is simple: will the tools we already use just work?
 
@@ -29,14 +29,14 @@ Lakebase advertises itself as Postgres 16 on the wire. When a client connects, i
 
 ## The wow moment
 
-The beat worth watching: you run a single SQL query against the information_schema, the same query a BI tool runs, and it maps your entire factory schema: 26 tables, 133 columns, all relationships. No Databricks SDK, no Lakebase-specific plumbing. Just Postgres.
+The beat worth watching: you run a single SQL query against the information_schema, the same query a BI tool runs, and it maps your entire bank schema, every table and column and type, in one pass. (You'll see the 14 bank tables plus whatever earlier journeys and extensions added, for example PostGIS's `geometry_columns` views, exactly what a real BI tool would discover on a live branch.) No Databricks SDK, no Lakebase-specific plumbing. Just Postgres.
 
 > **From the field**
 > The honest scope: Lakebase is wire-compatible Postgres, so standard introspection works. Some advanced Postgres features (logical decoding for [change data capture](../../docs/glossary.md) (CDC)) are on the Lakebase roadmap. You won't find every exotic extension ([PostGIS](../../docs/glossary.md), [pgvector](../../docs/glossary.md), etc.) immediately, but the governance (Unity Catalog) wraps the whole database without needing a separate auth layer. ORMs and BI tools that target Postgres 16 work unmodified. This is about eliminating lock-in, not about getting everything Postgres ever had.
 
 ## What you'll do
 
-1. Query the information_schema to discover all tables in the factory schema.
+1. Query the information_schema to discover all tables in the bank schema.
 2. Query information_schema to discover all columns and their types.
 3. Build a simple schema map (tables → columns → types), exactly what a BI tool does.
 4. Confirm the data is accurate by sampling a row from one table.

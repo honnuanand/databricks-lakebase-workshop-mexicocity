@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will query the Postgres information_schema to discover tables, columns, and types, then verify that standard Postgres clients, ORMs, and BI tools work unmodified on Lakebase.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
 
 # COMMAND ----------
 
@@ -30,7 +30,7 @@ print(f"Schema: {SCHEMA}")
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT table_name FROM information_schema.tables
-# MAGIC WHERE table_schema='factory' ORDER BY table_name;
+# MAGIC WHERE table_schema='bank' ORDER BY table_name;
 # MAGIC ```
 
 # COMMAND ----------
@@ -52,7 +52,7 @@ for table in tables:
 # MAGIC ```sql
 # MAGIC SELECT table_name, column_name, data_type
 # MAGIC FROM information_schema.columns
-# MAGIC WHERE table_schema='factory'
+# MAGIC WHERE table_schema='bank'
 # MAGIC ORDER BY table_name, ordinal_position;
 # MAGIC ```
 
@@ -87,7 +87,7 @@ for table in sorted(by_table.keys())[:3]:
 # MAGIC ```sql
 # MAGIC SELECT table_name, column_name, data_type, is_nullable
 # MAGIC FROM information_schema.columns
-# MAGIC WHERE table_schema='factory'
+# MAGIC WHERE table_schema='bank'
 # MAGIC ORDER BY table_name, ordinal_position;
 # MAGIC ```
 
@@ -109,7 +109,7 @@ for table, column, dtype, nullable in rows:
         "nullable": nullable == "YES"
     })
 
-print(f"\n=== Factory Schema Map ===")
+print(f"\n=== Bank Schema Map ===")
 total_cols = 0
 for table in sorted(schema_map.keys())[:3]:
     print(f"\nTABLE: {table}")
@@ -138,13 +138,13 @@ print(f"Total columns: {len(rows)}")
 # COMMAND ----------
 
 # Sample account table
-rows = run_sql(f"SELECT * FROM {SCHEMA}.machine LIMIT 3")
+rows = run_sql(f"SELECT * FROM {SCHEMA}.account LIMIT 3")
 print(f"Sample rows from account table:")
 for row in rows:
     print(f"  {row[:3]}...")  # Show first 3 cols
 
-# Sample work_order table
-rows = run_sql(f"SELECT * FROM {SCHEMA}.work_order LIMIT 3")
+# Sample trade table
+rows = run_sql(f"SELECT * FROM {SCHEMA}.trade LIMIT 3")
 print(f"\nSample rows from trade table:")
 for row in rows:
     print(f"  {row[:3]}...")  # Show first 3 cols

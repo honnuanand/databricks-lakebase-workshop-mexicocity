@@ -22,7 +22,7 @@ cd journeys/pg-integration
 python pg_integration.py
 ```
 
-The script discovers your factory schema using information_schema, builds a schema map, and prints it. Read on for what each step does; the exact output to expect is in [`expected.md`](expected.md).
+The script discovers your bank schema using information_schema, builds a schema map, and prints it. Read on for what each step does; the exact output to expect is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
@@ -32,10 +32,10 @@ This is the query every BI tool and ORM runs to discover what's in your database
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT table_name FROM information_schema.tables WHERE table_schema='factory' ORDER BY table_name"
+  "SELECT table_name FROM information_schema.tables WHERE table_schema='bank' ORDER BY table_name"
 ```
 
-You'll see all the factory tables: bom_edge, inventory, machine, maintenance_log, operation, part, part_supplier, plant, product, sensor_reading, shipment, supplier, warehouse, work_order.
+You'll see the 14 core bank tables: account, agent_memory, branch, case_note, counterparty, custodian, fund, holding, instrument, position, settlement, trade, trade_counterparty, txn, plus any tables that extensions (PostGIS) or earlier journeys (CDC, feature store) added to your branch. That is the real BI-tool experience: a client sees whatever is live in the database.
 
 ### Step 2, query information_schema for columns
 
@@ -43,7 +43,7 @@ For each table, discover the columns and types:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema='factory' ORDER BY table_name, ordinal_position"
+  "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema='bank' ORDER BY table_name, ordinal_position"
 ```
 
 This is what SQLAlchemy, dbt, or Tableau runs to build a typed schema. The output is a long list of (table, column, type) tuples.
@@ -66,7 +66,7 @@ For a few key tables, sample a row to confirm the data is real and matches the s
 python pg_integration.py --step sample-data
 ```
 
-You'll see rows from account, work_order, and sensor_reading, all real data, all matching the schema inferred from information_schema.
+You'll see rows from account, trade, and txn, all real data, all matching the schema inferred from information_schema.
 
 ### Step 5, check Unity Catalog governance
 
@@ -74,4 +74,4 @@ In a Databricks workspace, open the Data Catalog and navigate to the Lakebase in
 
 ## What you just did
 
-You discovered the entire factory schema using standard Postgres information_schema queries, the exact queries BI tools and ORMs run. You confirmed the data is real and matches the schema. You showed that Lakebase is just Postgres from the client's perspective: no adapters, no special integration code, no lock-in. Compare the results you saw against [`expected.md`](expected.md), and if anything went sideways, [`faq.md`](faq.md) has the common causes.
+You discovered the entire bank schema using standard Postgres information_schema queries, the exact queries BI tools and ORMs run. You confirmed the data is real and matches the schema. You showed that Lakebase is just Postgres from the client's perspective: no adapters, no special integration code, no lock-in. Compare the results you saw against [`expected.md`](expected.md), and if anything went sideways, [`faq.md`](faq.md) has the common causes.

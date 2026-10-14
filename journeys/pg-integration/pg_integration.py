@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common",
 from lakebase import run_sql, _env
 
 
-def list_tables(schema: str = "factory"):
+def list_tables(schema: str = "bank"):
     """List all tables in the given schema using information_schema."""
     query = f"SELECT table_name FROM information_schema.tables WHERE table_schema='{schema}' ORDER BY table_name"
     rows = run_sql(query)
@@ -41,7 +41,7 @@ def list_tables(schema: str = "factory"):
     return tables
 
 
-def list_columns(schema: str = "factory"):
+def list_columns(schema: str = "bank"):
     """List all columns and types in the given schema."""
     query = (
         f"SELECT table_name, column_name, data_type "
@@ -62,7 +62,7 @@ def list_columns(schema: str = "factory"):
     return rows
 
 
-def build_schema_map(schema: str = "factory"):
+def build_schema_map(schema: str = "bank"):
     """Build a schema map (table -> columns -> types), like a BI tool does."""
     query = (
         f"SELECT table_name, column_name, data_type, is_nullable "
@@ -80,7 +80,7 @@ def build_schema_map(schema: str = "factory"):
             "nullable": nullable == "YES"
         })
 
-    print(f"\n=== Factory Schema Map (discovered via information_schema) ===\n")
+    print(f"\n=== Bank Schema Map (discovered via information_schema) ===\n")
     total_cols = 0
     for table in sorted(schema_map.keys()):
         print(f"TABLE: {table}")
@@ -97,9 +97,9 @@ def build_schema_map(schema: str = "factory"):
     print(f"Total columns: {total_cols}")
 
 
-def sample_data(schema: str = "factory"):
+def sample_data(schema: str = "bank"):
     """Sample rows from key tables to verify data correctness."""
-    key_tables = ["machine", "work_order", "sensor_reading"]
+    key_tables = ["account", "trade", "txn"]
 
     for table in key_tables:
         try:
@@ -134,7 +134,7 @@ def main():
         return
 
     # full story
-    print("1. List tables in factory schema (via information_schema):")
+    print("1. List tables in the bank schema (via information_schema):")
     tables = list_tables(schema)
 
     print("\n2. List columns and types (via information_schema):")
