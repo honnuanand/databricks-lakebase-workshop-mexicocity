@@ -14,7 +14,7 @@ cd "$(dirname "$0")/backend"
 export LAKEBASE_PROFILE="${LB_PROFILE:?set LB_PROFILE (see 00-setup/auth.md)}"
 export LAKEBASE_PROJECT="${LB_PROJECT:?set LB_PROJECT (see 00-setup/provision.md)}"
 export LAKEBASE_BRANCH="${LB_BRANCH:-production}"
-export LAKEBASE_SCHEMA="${LB_SCHEMA:-factory}"
+export LAKEBASE_SCHEMA="${LB_SCHEMA:-bank}"
 
 echo "Installing backend dependencies (first run only)..."
 pip install -q -r requirements.txt

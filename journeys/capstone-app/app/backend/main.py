@@ -1,24 +1,24 @@
 """Capstone dashboard, FastAPI backend.
 
 A minimal, real service that shows how an application connects to and reads from
-the factory on Lakebase. The teaching point is the WIRING, not the app framework:
+the bank on Lakebase. The teaching point is the WIRING, not the app framework:
 
   - Local dev authenticates with your Databricks profile (LAKEBASE_PROFILE).
   - On Databricks Apps, the runtime injects the app's Service Principal creds, so
     WorkspaceClient() needs no profile. The same code path handles both.
 
 Endpoints:
-  GET /api/machines            list machines (direct SQL on Lakebase)
-  GET /api/machines/{id}       one machine + its recent sensor readings
-  GET /api/bom/{fund_id}    explode a product's fund holdings tree (recursive CTE)
-  GET /api/maintenance?q=...   search maintenance write-ups (full-text search)
+  GET /api/accounts            list accounts (direct SQL on Lakebase)
+  GET /api/accounts/{id}       one account + its recent transactions
+  GET /api/holdings/{fund_id}  explode a fund's holdings tree (recursive CTE)
+  GET /api/casenotes?q=...     search analyst case notes (full-text search)
   GET /api/health              liveness + which identity/branch we're serving
 
 Config comes from environment (see app.yaml for the deployed values):
   LAKEBASE_PROFILE   Databricks profile for LOCAL dev; unset on Databricks Apps
   LAKEBASE_PROJECT   the Lakebase project id
   LAKEBASE_BRANCH    the branch to serve (production, or a shared demo branch)
-  LAKEBASE_SCHEMA    schema (default: factory)
+  LAKEBASE_SCHEMA    schema (default: bank)
 """
 from __future__ import annotations
 
@@ -35,10 +35,10 @@ from databricks.sdk import WorkspaceClient
 PROFILE = os.getenv("LAKEBASE_PROFILE")          # None on Databricks Apps (SP creds injected)
 PROJECT = os.getenv("LAKEBASE_PROJECT")
 BRANCH = os.getenv("LAKEBASE_BRANCH", "production")
-SCHEMA = os.getenv("LAKEBASE_SCHEMA", "factory")
+SCHEMA = os.getenv("LAKEBASE_SCHEMA", "bank")
 PORT = int(os.getenv("PORT", "8000"))
 
-app = FastAPI(title="Factory dashboard", version="1.0")
+app = FastAPI(title="Bank dashboard", version="1.0")
 
 _client: WorkspaceClient | None = None
 
@@ -99,28 +99,29 @@ def health():
             "project": PROJECT, "branch": BRANCH, "schema": SCHEMA}
 
 
-@app.get("/api/machines")
-def machines():
+@app.get("/api/accounts")
+def accounts():
     return query(
         "SELECT account_id, branch_id, line, type, status, health_pct "
         "FROM account ORDER BY account_id")
 
 
-@app.get("/api/machines/{account_id}")
-def machine(account_id: str):
+@app.get("/api/accounts/{account_id}")
+def account(account_id: str):
     rows = query("SELECT * FROM account WHERE account_id = %s", [account_id])
     if not rows:
-        raise HTTPException(404, f"no machine {account_id}")
-    readings = query(
-        "SELECT ts, temp_c, anomaly_score, rpm, util_pct FROM txn "
+        raise HTTPException(404, f"no account {account_id}")
+    txns = query(
+        "SELECT ts, amount_usd, anomaly_score, mcc, util_pct FROM txn "
         "WHERE account_id = %s ORDER BY ts DESC LIMIT 20", [account_id])
-    return {"machine": rows[0], "recent_readings": readings}
+    return {"account": rows[0], "recent_transactions": txns}
 
 
-@app.get("/api/bom/{fund_id}")
-def bom(fund_id: str):
-    """Explode a product's fund holdings tree with a recursive CTE, the same
-    parts-explosion the pg-sql-parity journey teaches."""
+@app.get("/api/holdings/{fund_id}")
+def holdings(fund_id: str):
+    """Explode a fund's holdings tree with a recursive CTE, the same
+    look-through the pg-sql-parity journey teaches: a fund holds a sleeve, the
+    sleeve holds instruments, so one query flattens the whole tree."""
     return query(
         """
         WITH RECURSIVE explode(parent_id, instrument_id, qty, depth) AS (
@@ -135,8 +136,8 @@ def bom(fund_id: str):
         """, [fund_id])
 
 
-@app.get("/api/maintenance")
-def maintenance(q: str = Query("", description="full-text search over write-ups")):
+@app.get("/api/casenotes")
+def casenotes(q: str = Query("", description="full-text search over case notes")):
     if q.strip():
         return query(
             "SELECT note_id, account_id, ts, writeup, "

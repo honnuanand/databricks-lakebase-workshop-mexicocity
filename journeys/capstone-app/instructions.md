@@ -1,10 +1,10 @@
-# Capstone: run a manufacturing dashboard on Lakebase, instructions
+# Capstone: run a bank dashboard on Lakebase, instructions
 
 ## How to run this journey
 
 You do not write any application code here. The dashboard app is provided, complete, in the
 [`app/`](app/) folder. Your job is to point it at your Lakebase branch, run it, and deploy it,
-so you see an application read the factory you built. The Lakebase wiring is the lesson, not the
+so you see an application read the bank you built. The Lakebase wiring is the lesson, not the
 web framework.
 
 If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`,
@@ -14,9 +14,9 @@ If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you nee
 
 A small dashboard with three views, each backed by a query you already met in earlier journeys:
 
-- **Machines**, a direct `SELECT` on the `machine` table.
-- **Bill of materials**, the recursive-CTE parts explosion from [SQL you already know](../pg-sql-parity/).
-- **Maintenance**, full-text search over `maintenance_log`, from [Search, three ways](../pg-search/).
+- **Accounts**, a direct `SELECT` on the `account` table.
+- **Holdings look-through**, the recursive-CTE holdings explosion from [SQL you already know](../pg-sql-parity/).
+- **Case notes**, full-text search over `case_note`, from [Search, three ways](../pg-search/).
 
 It is a FastAPI backend ([`app/backend/main.py`](app/backend/main.py)) that serves a single-page
 UI ([`app/backend/static/index.html`](app/backend/static/index.html)). No Node, no build step. The
@@ -33,8 +33,8 @@ bash app/run_local.sh
 ```
 
 That installs the backend's dependencies (first run only), then starts the app on
-`http://localhost:8000`, serving your branch. Open that URL. You should see the Machines list,
-switch tabs to explode `FUND-GROWTH-A`'s fund holdings tree, and search the maintenance write-ups.
+`http://localhost:8000`, serving your branch. Open that URL. You should see the Accounts list,
+switch tabs to look through `FUND-GROWTH-A`'s holdings tree, and search the case notes.
 
 The header shows which branch and identity it is serving, proof it is reading your live Lakebase
 branch, not a mock. Stop it with Ctrl-C when you are done.
@@ -53,7 +53,7 @@ own permission to reach Lakebase. Grant it:
 python capstone_grant_sp.py --app-name capstone-dashboard \
   --lakebase-profile "$LB_PROFILE" \
   --lakebase-project "$LB_PROJECT" \
-  --lakebase-schema factory
+  --lakebase-schema bank
 ```
 
 This looks up the app's Service Principal, creates a PostgreSQL role for it, stamps the
@@ -98,6 +98,8 @@ branching story from the very first journey, seen from the application's side.
 You ran a real application against your Lakebase branch, granted an application identity access to
 the database, and deployed it, without writing application code. The database you built across the
 workshop is now backing an app, governed by Unity Catalog, reachable by its Service Principal. That
-is Lakebase as the operational store and the app backend at once.
+is Lakebase as the operational store and the app backend at once. The holdings look-through tab is
+worth a second look: a recursive CTE walked the fund-of-funds tree and flattened it in one query,
+the kind of operational question an app can answer directly on Lakebase.
 
 For errors and the OBO-versus-Service-Principal auth detail, see [`faq.md`](faq.md).

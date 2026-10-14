@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Factory dashboard, on Lakebase</title>
+<title>Bank dashboard, on Lakebase</title>
 <style>
   :root { --red:#FF3621; --navy:#0B1B2B; --bg:#F7F9FB; --card:#FFFFFF; --line:#D3DCE5; --dim:#4A5B6B; }
   * { box-sizing: border-box; }
@@ -21,8 +21,8 @@
   th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
   th { color:var(--dim); font-weight:600; }
   .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; }
-  .healthy { background:#e6f7f4; color:#0A8F86; } .derated { background:#fff4e0; color:#B77A00; }
-  .down, .maintenance { background:#fde8e5; color:#E5321F; }
+  .good_standing { background:#e6f7f4; color:#0A8F86; } .watch { background:#fff4e0; color:#B77A00; }
+  .frozen, .closed { background:#fde8e5; color:#E5321F; }
   input[type=text] { padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; width:280px; }
   .muted { color:var(--dim); font-size:13px; }
   .err { color:var(--red); }
@@ -31,13 +31,13 @@
 </head>
 <body>
   <header>
-    <h1>Factory dashboard</h1>
+    <h1>Bank dashboard</h1>
     <div class="sub" id="ident">connecting to Lakebase...</div>
   </header>
   <div class="tabs">
-    <button data-tab="machines" class="active">Machines</button>
-    <button data-tab="bom">Bill of materials</button>
-    <button data-tab="maint">Maintenance</button>
+    <button data-tab="accounts" class="active">Accounts</button>
+    <button data-tab="holdings">Holdings look-through</button>
+    <button data-tab="notes">Case notes</button>
   </div>
   <main id="view"><p class="muted">Loading...</p></main>
 
@@ -54,12 +54,12 @@ async function showIdent() {
 
 const pill = (s) => `<span class="pill ${s}">${s}</span>`;
 
-async function machines() {
-  view.innerHTML = `<p class="muted">Loading machines...</p>`;
+async function accounts() {
+  view.innerHTML = `<p class="muted">Loading accounts...</p>`;
   try {
-    const rows = await api("/api/machines");
+    const rows = await api("/api/accounts");
     view.innerHTML = `<div class="card"><table>
-      <tr><th>Machine</th><th>Plant</th><th>Line</th><th>Type</th><th>Status</th><th>Health</th></tr>
+      <tr><th>Account</th><th>Branch</th><th>Line</th><th>Type</th><th>Status</th><th>Health</th></tr>
       ${rows.map(m => `<tr><td><code>${m.account_id}</code></td><td>${m.branch_id}</td>
         <td>${m.line}</td><td>${m.type}</td><td>${pill(m.status)}</td>
         <td>${m.health_pct}%</td></tr>`).join("")}
@@ -68,54 +68,54 @@ async function machines() {
   } catch (e) { view.innerHTML = `<p class="err">${e.detail || e}</p>`; }
 }
 
-async function bom() {
-  view.innerHTML = `<div class="card"><label class="muted">Product id </label>
-    <input type="text" id="pid" value="FUND-GROWTH-A"> <button id="go">Explode</button></div>
-    <div id="bomout"></div>`;
+async function holdings() {
+  view.innerHTML = `<div class="card"><label class="muted">Fund id </label>
+    <input type="text" id="pid" value="FUND-GROWTH-A"> <button id="go">Look through</button></div>
+    <div id="hout"></div>`;
   const run = async () => {
     const pid = document.getElementById("pid").value.trim();
-    const out = document.getElementById("bomout");
-    out.innerHTML = `<p class="muted">Exploding ${pid}...</p>`;
+    const out = document.getElementById("hout");
+    out.innerHTML = `<p class="muted">Looking through ${pid}...</p>`;
     try {
-      const rows = await api("/api/bom/" + encodeURIComponent(pid));
+      const rows = await api("/api/holdings/" + encodeURIComponent(pid));
       out.innerHTML = rows.length ? `<div class="card"><table>
-        <tr><th>Depth</th><th>Part</th><th>Name</th><th>Qty</th></tr>
+        <tr><th>Depth</th><th>Instrument</th><th>Name</th><th>Qty</th></tr>
         ${rows.map(r => `<tr><td>${r.depth}</td>
           <td style="padding-left:${8 + r.depth*16}px"><code>${r.instrument_id}</code></td>
           <td>${r.name || ""}</td><td>${r.qty}</td></tr>`).join("")}
-      </table></div><p class="muted">A recursive CTE walked the bill-of-materials tree.</p>`
-      : `<p class="muted">No parts for <code>${pid}</code>.</p>`;
+      </table></div><p class="muted">A recursive CTE walked the holdings tree, through any sleeves.</p>`
+      : `<p class="muted">No holdings for <code>${pid}</code>.</p>`;
     } catch (e) { out.innerHTML = `<p class="err">${e.detail || e}</p>`; }
   };
   document.getElementById("go").onclick = run; run();
 }
 
-async function maint() {
-  view.innerHTML = `<div class="card"><label class="muted">Search write-ups </label>
-    <input type="text" id="q" placeholder="e.g. hydraulic bearing"> <button id="go">Search</button></div>
-    <div id="mout"></div>`;
+async function notes() {
+  view.innerHTML = `<div class="card"><label class="muted">Search case notes </label>
+    <input type="text" id="q" placeholder="e.g. card-not-present wire"> <button id="go">Search</button></div>
+    <div id="nout"></div>`;
   const run = async () => {
     const q = document.getElementById("q").value.trim();
-    const out = document.getElementById("mout");
+    const out = document.getElementById("nout");
     out.innerHTML = `<p class="muted">Searching...</p>`;
     try {
-      const rows = await api("/api/maintenance?q=" + encodeURIComponent(q));
+      const rows = await api("/api/casenotes?q=" + encodeURIComponent(q));
       out.innerHTML = `<div class="card"><table>
-        <tr><th>Log</th><th>Machine</th><th>Write-up</th></tr>
+        <tr><th>Note</th><th>Account</th><th>Write-up</th></tr>
         ${rows.map(r => `<tr><td>${r.note_id}</td><td><code>${r.account_id}</code></td>
           <td>${r.writeup}</td></tr>`).join("")}
-      </table></div><p class="muted">${q ? "Full-text search" : "Most recent"} over <code>maintenance_log</code>.</p>`;
+      </table></div><p class="muted">${q ? "Full-text search" : "Most recent"} over <code>case_note</code>.</p>`;
     } catch (e) { out.innerHTML = `<p class="err">${e.detail || e}</p>`; }
   };
   document.getElementById("go").onclick = run; run();
 }
 
-const tabs = { machines, bom, maint };
+const tabs = { accounts, holdings, notes };
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
   b.classList.add("active"); tabs[b.dataset.tab]();
 });
-showIdent(); machines();
+showIdent(); accounts();
 </script>
 </body>
 </html>

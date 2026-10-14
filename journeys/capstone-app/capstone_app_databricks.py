@@ -1,30 +1,30 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Capstone: build a manufacturing dashboard, guided checklist
+# MAGIC # Capstone: build a bank dashboard, guided checklist
 # MAGIC
-# MAGIC This journey walks you through building and deploying a React+FastAPI app on Databricks Apps that reads from Lakebase. It is a guided checklist notebook: most steps are configuration and setup; code cells show how to grant permissions and verify connectivity.
+# MAGIC This journey walks you through running and deploying a FastAPI app on Databricks Apps that reads from Lakebase. It is a guided checklist notebook: most steps are configuration and setup; code cells show how to grant permissions and verify connectivity.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the factory is loaded on your branch. You should also be familiar with `branch-the-brain` or similar journey so you understand Lakebase branching.
+# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch. You should also be familiar with `branch-the-brain` or similar journey so you understand Lakebase branching.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## The app you are building
 # MAGIC
-# MAGIC A React dashboard deployed on Databricks Apps with a FastAPI backend that queries Lakebase. It has three tabs:
+# MAGIC A single-page dashboard deployed on Databricks Apps with a FastAPI backend that queries Lakebase. The UI is a static `index.html` the backend serves directly (no Node, no build step). It has three tabs:
 # MAGIC
-# MAGIC 1. **Machines:** list all machines, fetch via direct SQL.
-# MAGIC 2. **BOM search:** search for products and see their part trees.
-# MAGIC 3. **Maintenance logs:** search maintenance records with full-text search.
+# MAGIC 1. **Accounts:** list all accounts, fetched via direct SQL.
+# MAGIC 2. **Holdings look-through:** explode a fund's holdings tree with a recursive CTE (through sleeves).
+# MAGIC 3. **Case notes:** search analyst case notes with full-text search.
 # MAGIC
-# MAGIC The app lives in `../../common/capstone-app/` and is ready to customize. Here we set up permissions, develop locally, and deploy.
+# MAGIC The app lives in `./app/` and is ready to customize. Here we set up permissions, run it locally, and deploy.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 1, Understand the object model
 # MAGIC
-# MAGIC A Databricks App is a container that runs your code. It has an auto-created Service Principal (SP). That SP needs to connect to Lakebase to query the factory data.
+# MAGIC A Databricks App is a container that runs your code. It has an auto-created Service Principal (SP). That SP needs to connect to Lakebase to query the bank data.
 # MAGIC
 # MAGIC Permission chain:
 # MAGIC 1. App SP exists (created automatically on first deploy).
@@ -50,7 +50,7 @@ print()
 print("  python capstone_grant_sp.py --app-name capstone-dashboard \\")
 print("    --lakebase-profile <LB_PROFILE> \\")
 print("    --lakebase-project <LB_PROJECT> \\")
-print("    --lakebase-schema factory")
+print("    --lakebase-schema bank")
 print()
 print("Replace <LB_PROFILE> and <LB_PROJECT> with your values from 00-setup.")
 print()
@@ -67,34 +67,25 @@ print("asks you to re-run it after deploying the app.")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, Set up local environment
+# MAGIC ## Step 3, Run the app locally
 
 # COMMAND ----------
 
-print("Set up your local development environment:")
+print("Run the dashboard on your own machine, against your Lakebase branch:")
 print()
-print("1. Navigate to the app folder:")
-print("   cd ../../common/capstone-app")
-print()
-print("2. Install backend dependencies:")
-print("   cd backend && pip install -r requirements.txt")
-print()
-print("3. Install frontend dependencies:")
-print("   cd ../frontend && npm install")
-print()
-print("4. Set environment variables (from 00-setup):")
+print("1. Make sure your workshop env vars are set (from 00-setup):")
 print("   export LB_PROFILE=<your-profile>")
 print("   export LB_PROJECT=<project-id>")
 print("   export LB_BRANCH=<branch-id>")
-print("   export LB_SCHEMA=factory")
+print("   export LB_SCHEMA=bank")
 print()
-print("5. Start the backend (from backend/ directory):")
-print("   python -m uvicorn main:app --reload --port 8000")
+print("2. From journeys/capstone-app/app/, start it (installs deps on first run):")
+print("   bash run_local.sh")
 print()
-print("6. In another terminal, start the frontend (from frontend/ directory):")
-print("   npm start")
+print("   run_local.sh maps LB_* -> LAKEBASE_* and starts uvicorn on port 8000.")
 print()
-print("7. Open http://localhost:3000 in your browser.")
+print("3. Open http://localhost:8000 in your browser. The FastAPI backend serves")
+print("   the static index.html UI and the /api/* endpoints from one process.")
 
 # COMMAND ----------
 
@@ -105,17 +96,16 @@ print("7. Open http://localhost:3000 in your browser.")
 
 print("Test the app locally before deploying:")
 print()
-print("1. Go to the Machines tab. You should see a list of all machines.")
+print("1. Go to the Accounts tab. You should see a list of all accounts.")
 print("   The backend is making a SQL query:")
-print("     SELECT account_id, status, health_pct FROM bank.account")
+print("     SELECT account_id, branch_id, line, type, status, health_pct FROM account")
 print()
-print("2. Click a machine to see its details.")
+print("2. Go to the Holdings look-through tab. Enter 'FUND-GROWTH-A' and hit Look through.")
+print("   You should see a tree of instruments, including the ones held through a sleeve")
+print("   at depth 2 (a recursive CTE walked the holdings tree).")
 print()
-print("3. Go to the BOM tab. Search for 'PRD-GEARBOX' and hit Enter.")
-print("   You should see a tree of parts.")
-print()
-print("4. Go to the Maintenance tab. Search for 'bearing'.")
-print("   Results should show case notes matching the search.")
+print("3. Go to the Case notes tab. Search for 'wire'.")
+print("   Results should show case notes matching the full-text search.")
 print()
 print("If a query fails, check:")
 print("  - Are environment variables set? (echo $LB_PROFILE, etc.)")
@@ -129,19 +119,15 @@ print("  - Did the grant script succeed? (re-run it if not)")
 
 # COMMAND ----------
 
-print("Before deploying, update app.yaml with your workspace details:")
-print()
-print("Open ../../common/capstone-app/app.yaml and set:")
-print()
-print("  name: capstone-dashboard")
-print("  host: <workspace-host>  # e.g., my-workspace.cloud.databricks.com")
-print()
-print("Also verify the environment variables match your setup:")
+print("Before deploying, verify app/app.yaml has your values:")
 print()
 print("  env:")
-print("    LAKEBASE_PROFILE: <your-profile>")
 print("    LAKEBASE_PROJECT: <project-id>")
-print("    LAKEBASE_SCHEMA: factory")
+print("    LAKEBASE_BRANCH:  <branch the app serves>")
+print("    LAKEBASE_SCHEMA:  bank")
+print()
+print("Note: app.yaml has NO LAKEBASE_PROFILE; on Databricks Apps the runtime injects")
+print("the app's Service Principal credentials, so the same code authenticates as the SP.")
 
 # COMMAND ----------
 
@@ -150,21 +136,14 @@ print("    LAKEBASE_SCHEMA: factory")
 
 # COMMAND ----------
 
-print("Deploy the app from the capstone-app/ directory:")
+print("Deploy the app from the journeys/capstone-app/app/ directory:")
 print()
-print("Option 1 (recommended): use the deploy script:")
 print("  bash deploy.sh")
-print()
-print("Option 2 (manual): use deploy_to_databricks.py:")
-print("  cd backend")
-print("  python deploy_to_databricks.py --app-name capstone-dashboard --skip-secrets")
 print()
 print("Deployment takes 1-2 minutes. Watch the output for errors.")
 print()
-print("The deploy script:")
-print("  1. Builds the React frontend (npm run build).")
-print("  2. Packages the FastAPI backend with the built frontend.")
-print("  3. Pushes to Databricks Apps.")
+print("The deploy script packages the FastAPI backend (with its static index.html)")
+print("and pushes it to Databricks Apps. There is no separate frontend build step.")
 
 # COMMAND ----------
 
@@ -180,7 +159,7 @@ print()
 print("  python capstone_grant_sp.py --app-name capstone-dashboard \\")
 print("    --lakebase-profile <LB_PROFILE> \\")
 print("    --lakebase-project <LB_PROJECT> \\")
-print("    --lakebase-schema factory")
+print("    --lakebase-schema bank")
 print()
 print("The script is idempotent; re-running is safe.")
 
@@ -195,9 +174,9 @@ print("Log into your Databricks workspace and navigate to Apps.")
 print("You should see 'capstone-dashboard'. Click it to open.")
 print()
 print("Test each tab:")
-print("  1. Machines tab: you should see a list of machines.")
-print("  2. BOM tab: search for a product (e.g., 'PRD-GEARBOX').")
-print("  3. Maintenance tab: search for case notes.")
+print("  1. Accounts tab: you should see a list of accounts.")
+print("  2. Holdings look-through tab: enter 'FUND-GROWTH-A'.")
+print("  3. Case notes tab: search for case notes.")
 print()
 print("The app is now running on Databricks Apps, querying Lakebase directly.")
 print()
@@ -213,9 +192,10 @@ print("  - Redeploy: bash deploy.sh")
 
 # COMMAND ----------
 
-print("After local testing, make a small change in the frontend or backend:")
+print("After local testing, make a small change in the backend or the static UI:")
 print()
-print("For example, add a new column to the machines table in frontend/src/Machines.tsx.")
+print("For example, add a new column to the Accounts table in app/backend/static/index.html,")
+print("or add a new /api/ endpoint in app/backend/main.py.")
 print()
 print("Then redeploy:")
 print("  bash deploy.sh")
@@ -227,13 +207,14 @@ print("The app updates live. Refresh your browser and see the change.")
 # MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
-# MAGIC You built a full-stack app (React + FastAPI) on Databricks Apps that queries Lakebase directly. The app's Service Principal connects to your Lakebase instance using OAuth credentials. You set up permissions at the app, project, schema, and branch levels, which is the same permission model as the production lakebase-pitch app. You deployed the app, iterated locally, and pushed changes live in minutes.
+# MAGIC You ran and deployed a FastAPI app on Databricks Apps that queries Lakebase directly, serving a single-page dashboard UI from the same process. The app's Service Principal connects to your Lakebase instance using OAuth credentials. You set up permissions at the app, project, schema, and branch levels, which is the same permission model as the production lakebase-pitch app. You ran the app locally, then deployed it in minutes.
 # MAGIC
 # MAGIC Key takeaways:
 # MAGIC
 # MAGIC - Databricks Apps handle deployment, scaling, and networking. You just provide code.
 # MAGIC - Service Principal auth (SP-auth) is the right choice for app-to-Lakebase calls (vs OBO, which is for user-level queries).
 # MAGIC - Grant the app SP permissions before first deploy (or re-grant after deploy if it is the first time).
+# MAGIC - A recursive CTE (holdings look-through) and full-text search (case notes) run as plain SQL on Lakebase, no extra services.
 # MAGIC - Redeploy with `bash deploy.sh` after making changes.
 # MAGIC
 # MAGIC For production apps, you would add error handling, monitoring, logging, and role-based feature flags. The capstone-app is your template.

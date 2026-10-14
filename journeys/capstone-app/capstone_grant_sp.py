@@ -14,8 +14,8 @@ app's Service Principal the full permission chain needed to connect to Lakebase:
 Usage:
     python capstone_grant_sp.py --app-name capstone-dashboard \\
       --lakebase-profile your-profile \\
-      --lakebase-project factory \\
-      --lakebase-schema factory
+      --lakebase-project bank \\
+      --lakebase-schema bank
 
 Prerequisites:
   - LB_HOST or derive from branch endpoint (set via --lakebase-profile)
@@ -44,7 +44,7 @@ def grant_app_sp(
     lakebase_profile: str,
     lakebase_project: str,
     lakebase_branch: str = "production",
-    lakebase_schema: str = "factory",
+    lakebase_schema: str = "bank",
     lakebase_host: Optional[str] = None,
 ) -> None:
     """Grant an app's Service Principal full Lakebase access.
@@ -55,7 +55,7 @@ def grant_app_sp(
         lakebase_profile: CLI profile for Lakebase (may be same)
         lakebase_project: Lakebase project ID
         lakebase_branch: branch to grant role on (default: production)
-        lakebase_schema: schema to grant permissions for (default: factory)
+        lakebase_schema: schema to grant permissions for (default: bank)
         lakebase_host: Lakebase host (if None, derive from branch endpoint)
     """
     print(f"Granting Lakebase access to app Service Principal...")
@@ -179,7 +179,7 @@ def main() -> None:
     ap.add_argument("--lakebase-profile", required=True, help="CLI profile for Lakebase auth")
     ap.add_argument("--lakebase-project", required=True, help="Lakebase project ID")
     ap.add_argument("--lakebase-branch", default="production", help="Branch to grant role on")
-    ap.add_argument("--lakebase-schema", default="factory", help="Schema to grant access to")
+    ap.add_argument("--lakebase-schema", default="bank", help="Schema to grant access to")
     ap.add_argument("--lakebase-host", default=None, help="Lakebase host (optional; derive from branch if not given)")
     args = ap.parse_args()
 

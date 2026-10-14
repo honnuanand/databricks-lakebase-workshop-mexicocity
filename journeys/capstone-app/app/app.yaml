@@ -1,4 +1,4 @@
-# Databricks Apps configuration for the capstone factory dashboard.
+# Databricks Apps configuration for the capstone bank dashboard.
 # Edit the LAKEBASE_* values to match your setup, then deploy with deploy.sh.
 #
 # Note: on Databricks Apps the runtime injects the app's Service Principal
@@ -15,8 +15,8 @@ command:
 
 env:
   - name: LAKEBASE_PROJECT
-    value: "factory"        # your project id from 00-setup
+    value: "bank"           # your project id from 00-setup
   - name: LAKEBASE_BRANCH
     value: "u-arao"     # the branch the app serves (a shared, read-friendly branch)
   - name: LAKEBASE_SCHEMA
-    value: "factory"
+    value: "bank"
