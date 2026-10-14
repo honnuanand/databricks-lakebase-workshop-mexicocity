@@ -2,19 +2,19 @@
 
 ## It connected fine, but information_schema is empty
 
-Make sure you're searching in the correct schema. The factory tables are in the `factory` schema, not `public`. If you didn't set `LB_SCHEMA=factory` or run the query with `WHERE table_schema='factory'`, you won't see the factory tables.
+Make sure you're searching in the correct schema. The bank tables are in the `bank` schema, not `public`. If you didn't set `LB_SCHEMA=bank` or run the query with `WHERE table_schema='bank'`, you won't see the bank tables.
 
-Also check that the factory schema was loaded during setup. Run:
+Also check that the bank schema was loaded during setup. Run:
 
 ```bash
 python lakebase.py --sql "SELECT * FROM bank.account LIMIT 1"
 ```
 
-If that fails with "relation not found," run the factory schema and seed load from [`../../00-setup/`](../../00-setup/).
+If that fails with "relation not found," run the bank schema and seed load from [`../../00-setup/`](../../00-setup/).
 
 ## My BI tool connected but shows no tables
 
-Your BI tool is likely querying the default `public` schema, not `factory`. Most BI tools let you select or filter by schema. Point it at `factory` and it should discover the tables. If the BI tool has a "schema search path" setting, make sure `factory` is listed first.
+Your BI tool is likely querying the default `public` schema, not `bank`. Most BI tools let you select or filter by schema. Point it at `bank` and it should discover the tables. If the BI tool has a "schema search path" setting, make sure `bank` is listed first.
 
 ## Why doesn't Lakebase have extension X (PostGIS, pgvector)?
 
@@ -58,7 +58,7 @@ Logical decoding (which powers change-data-capture) is on the Lakebase roadmap. 
 
 ## Is there a governance model for information_schema?
 
-Yes. [Unity Catalog](../../docs/glossary.md) governs all tables, including whether you can read information_schema. If you can SELECT from a table in the factory schema, you can see it in information_schema. [Unity Catalog](../../docs/glossary.md) (UC) permissions cascade: if you're denied access to a table, it won't appear in information_schema queries either (depending on your Catalog permissions).
+Yes. [Unity Catalog](../../docs/glossary.md) governs all tables, including whether you can read information_schema. If you can SELECT from a table in the bank schema, you can see it in information_schema. [Unity Catalog](../../docs/glossary.md) (UC) permissions cascade: if you're denied access to a table, it won't appear in information_schema queries either (depending on your Catalog permissions).
 
 ## Why is the wire protocol "Postgres 16" and not "Postgres 17"?
 

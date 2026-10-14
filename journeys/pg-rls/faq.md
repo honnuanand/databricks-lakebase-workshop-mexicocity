@@ -20,14 +20,14 @@ source workshop.env
 
 ## "table bank.account does not exist"
 
-The factory schema was not loaded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-factory step.
+The bank schema was not loaded. Go back to [`../../00-setup/`](../../00-setup/) and run the load-bank step.
 
 ## Row-level security is enabled but queries still return all rows
 
-Check that the session variable is set. If the script doesn't set `app.current_operator_plant`, the [row-level security](../../docs/glossary.md) policy reads NULL (or a default), and rows aren't filtered. The script must set the variable before running the query:
+Check that the session variable is set. If the script doesn't set `app.current_bu`, the [row-level security](../../docs/glossary.md) policy reads NULL (or a default), and rows aren't filtered. The script must set the variable before running the query:
 
 ```sql
-SET app.current_operator_plant = 'BR-NYC';
+SET app.current_bu = 'RetailBank';
 SELECT * FROM bank.account;
 ```
 
@@ -39,17 +39,20 @@ Yes. The RLS policy applies to the table it's defined on. If you join account an
 SELECT m.account_id, w.trade_id
   FROM bank.account m
   JOIN bank.trade w ON m.branch_id = w.branch_id
- WHERE m.branch_id = current_setting('app.current_operator_plant');
+ WHERE m.branch_id IN (
+   SELECT branch_id FROM bank.branch
+   WHERE operator = current_setting('app.current_bu'));
 ```
 
-The filter on account propagates (account.branch_id restricted) but trade rows are unfiltered unless trade also has an RLS policy on branch_id.
+The filter on account propagates (account.branch_id restricted to the current business unit's
+branches) but trade rows are unfiltered unless trade also has an RLS policy on branch_id.
 
 ## What if I want column-level masking, not just row-level?
 
 RLS is row-level. For column-level masking (hiding a sensitive field from certain roles), you need a different approach:
 
 ```sql
-CREATE VIEW machine_for_operators AS
+CREATE VIEW account_for_business_units AS
 SELECT account_id, branch_id, status,
        CASE WHEN current_user = 'admin' THEN health_pct ELSE NULL END as health_pct
   FROM bank.account;
@@ -66,11 +69,13 @@ No, it's by design. Superusers (and Postgres roles with BYPASSRLS) can see all r
 Yes, use `SET ROLE` to switch identities within the same connection (if you're a superuser):
 
 ```sql
-SET ROLE operator_detroit;
-SELECT * FROM bank.account;  -- sees only Detroit rows
+SET ROLE bu_retailbank;
+SET app.current_bu = 'RetailBank';
+SELECT * FROM bank.account;  -- sees only RetailBank accounts
 
-SET ROLE operator_chicago;
-SELECT * FROM bank.account;  -- sees only Chicago rows
+SET ROLE bu_globalmarkets;
+SET app.current_bu = 'GlobalMarkets';
+SELECT * FROM bank.account;  -- sees only GlobalMarkets accounts
 
 RESET ROLE;
 ```
@@ -82,17 +87,17 @@ This is how the script tests row-level security without creating separate connec
 Drop and recreate:
 
 ```sql
-DROP POLICY machine_operator_isolation ON bank.account;
-CREATE POLICY machine_operator_isolation ON bank.account
+DROP POLICY account_bu_isolation ON bank.account;
+CREATE POLICY account_bu_isolation ON bank.account
   FOR SELECT
-  USING (branch_id = current_setting('app.current_operator_plant'));
+  USING (branch_id = current_setting('app.current_bu'));
 ```
 
 Or modify the policy directly (Postgres 13+):
 
 ```sql
-ALTER POLICY machine_operator_isolation ON bank.account
-  USING (branch_id = current_setting('app.current_operator_plant'));
+ALTER POLICY account_bu_isolation ON bank.account
+  USING (branch_id = current_setting('app.current_bu'));
 ```
 
 ## Can RLS prevent INSERT/UPDATE/DELETE, not just SELECT?
@@ -100,15 +105,15 @@ ALTER POLICY machine_operator_isolation ON bank.account
 Yes. You can have separate policies for each operation:
 
 ```sql
-CREATE POLICY machine_select ON bank.account FOR SELECT
-  USING (branch_id = current_setting('app.current_operator_plant'));
+CREATE POLICY account_bu_select ON bank.account FOR SELECT
+  USING (branch_id = current_setting('app.current_bu'));
 
-CREATE POLICY machine_update ON bank.account FOR UPDATE
-  USING (branch_id = current_setting('app.current_operator_plant'))
-  WITH CHECK (branch_id = current_setting('app.current_operator_plant'));
+CREATE POLICY account_bu_update ON bank.account FOR UPDATE
+  USING (branch_id = current_setting('app.current_bu'))
+  WITH CHECK (branch_id = current_setting('app.current_bu'));
 
-CREATE POLICY machine_delete ON bank.account FOR DELETE
-  USING (branch_id = current_setting('app.current_operator_plant'));
+CREATE POLICY account_bu_delete ON bank.account FOR DELETE
+  USING (branch_id = current_setting('app.current_bu'));
 ```
 
 The `WITH CHECK` clause on UPDATE and INSERT ensures the new row also satisfies the policy.

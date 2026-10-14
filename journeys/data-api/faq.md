@@ -63,7 +63,7 @@ Set your environment variables (see [`../../00-setup/auth.md`](../../00-setup/au
 ```bash
 export LB_PROFILE=<your-profile>
 export LB_PROJECT=<project-id>
-export LB_SCHEMA=factory
+export LB_SCHEMA=bank
 ```
 
 ## Concept clarifications
@@ -187,7 +187,7 @@ This reduces JSON payload and network overhead.
 Instead of fetching all rows and filtering in your app, filter at the API:
 
 ```
-GET /api/v1/bank.account?status=eq.healthy
+GET /api/v1/bank.account?status=eq.good_standing
 ```
 
 This reduces the amount of data transferred.
