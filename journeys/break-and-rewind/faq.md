@@ -44,7 +44,7 @@ The script waits about 30 seconds. If it times out:
 
 ## Can I recover data from weeks ago?
 
-Yes. Lakebase typically holds 30 days of WAL history, so you can branch to any LSN within that window. The journey only demonstrates seconds, but the capability spans the entire retention window. If you delete the trade book on Monday and remember on Friday, PITR still works.
+Only within the project's history window: 7 days by default, set in the project's settings. You can branch to any LSN within that window. The journey only demonstrates seconds, but the capability spans the entire retention window. If you delete the trade book on Monday and remember on Friday, PITR still works.
 
 ## Why is "production" my own branch here, not the real production?
 

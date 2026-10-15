@@ -1,6 +1,16 @@
 # Databricks notebook source
+# MAGIC %md-sandbox
+# MAGIC <div style="display:flex; align-items:center; gap:10px; padding:8px 16px; background:#F9F7F4; border-bottom:2px solid #E0E0E0; font-family:sans-serif; line-height:1;">
+# MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
+# MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
+# MAGIC   <span style="color:#999;">|</span>
+# MAGIC   <span style="color:#5A6F77;">Setup · Create Your Branch</span>
+# MAGIC </div>
+
+# COMMAND ----------
+
 # MAGIC %md
-# MAGIC # Setup in Databricks: create your branch
+# MAGIC # Setup: Create Your Branch
 # MAGIC
 # MAGIC Run this notebook once, top to bottom, before any journey. It does the attendee part of
 # MAGIC `00-setup/` inside the workspace, with no laptop and no CLI:
@@ -10,11 +20,20 @@
 # MAGIC 3. Creates your zero-copy branch, `u-<your email name>`, off `production`.
 # MAGIC 4. Loads the bank onto it. This is skipped if the data is already there, so rerunning is safe.
 # MAGIC 5. Runs `SELECT 1` and a real query to prove it works.
-# MAGIC
-# MAGIC **Your instructor does the rest once, before the session:** creates the Lakebase project (default
-# MAGIC `bank`) and grants your group `CAN_MANAGE` on it so you can create a branch. See `provision.md`
-# MAGIC and `grants.md`. On your own, create the project in the UI first: **Compute -> Lakebase Postgres ->
-# MAGIC Create**, named `bank`, Postgres 17.
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Before you start</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     Attach this notebook to <strong>serverless</strong> compute. Your instructor does the rest once,
+# MAGIC     before the session: creates the Lakebase project (default <code>bank</code>) and grants your group
+# MAGIC     <code>CAN_MANAGE</code> on it so you can create a branch (see <code>provision.md</code> and
+# MAGIC     <code>grants.md</code>). On your own, create the project in the UI first:
+# MAGIC     <strong>Compute → Lakebase Postgres → Create</strong>, named <code>bank</code>, Postgres 17.
+# MAGIC   </div>
+# MAGIC </div>
 
 # COMMAND ----------
 

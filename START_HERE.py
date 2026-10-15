@@ -1,10 +1,36 @@
 # Databricks notebook source
+# MAGIC %md-sandbox
+# MAGIC <div style="display:flex; align-items:center; gap:10px; padding:8px 16px; background:#F9F7F4; border-bottom:2px solid #E0E0E0; font-family:sans-serif; line-height:1;">
+# MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
+# MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
+# MAGIC   <span style="color:#999;">|</span>
+# MAGIC   <span style="color:#5A6F77;">Start Here</span>
+# MAGIC </div>
+
+# COMMAND ----------
+
 # MAGIC %md
-# MAGIC # Lakebase workshop: start here
+# MAGIC # Start Here
 # MAGIC
 # MAGIC Run the setup notebook once, then work through Part 1. For Part 2, pick one of the two tracks.
 # MAGIC Every notebook ends with a link to the next one in its path and a link back to this page.
-# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">How the notebooks work</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     Attach each notebook to <strong>serverless</strong> compute and run it top to bottom, one cell at a
+# MAGIC     time. Every journey runs on your own branch of the bank database, so nothing you do affects anyone
+# MAGIC     else. Each journey starts with the same three setup cells, and shows the expected output under
+# MAGIC     every cell.
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Before you start
 # MAGIC
 # MAGIC <a href="$./00-setup/setup_databricks">Setup: Create Your Branch</a>: creates your own branch of the
