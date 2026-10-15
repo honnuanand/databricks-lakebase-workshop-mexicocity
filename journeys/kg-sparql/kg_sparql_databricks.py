@@ -129,7 +129,7 @@ for row in results:
 # MAGIC %md
 # MAGIC ## Step 3, Multi-hop SPARQL query
 # MAGIC
-# MAGIC Now a harder question: "which funds hold an instrument traded by CP-GOLDMAN?"
+# MAGIC Now a harder question: "which funds hold an instrument traded by CP-ALTAMAR?"
 # MAGIC
 # MAGIC This walks the holdings tree with the `holds+` property path (one or more hops, so it reaches instruments nested under sub-sleeves), then matches the counterparty edge.
 # MAGIC
@@ -138,7 +138,7 @@ for row in results:
 # MAGIC ```sparql
 # MAGIC SELECT DISTINCT ?fund WHERE {
 # MAGIC   ?fund <http://bank.local/holds>+ ?instrument .
-# MAGIC   ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
+# MAGIC   ?instrument <http://bank.local/traded_by> <http://bank.local/CP-ALTAMAR> .
 # MAGIC }
 # MAGIC ```
 
@@ -147,14 +147,14 @@ for row in results:
 query_multihop = """
 SELECT DISTINCT ?fund WHERE {
   ?fund <http://bank.local/holds>+ ?instrument .
-  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
+  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-ALTAMAR> .
 }
 """
 
 results = g.query(query_multihop)
 funds = [str(row["fund"]).split("/")[-1] for row in results]
 
-print("Multi-hop query result (funds holding an instrument traded by CP-GOLDMAN):")
+print("Multi-hop query result (funds holding an instrument traded by CP-ALTAMAR):")
 if funds:
     for fund in sorted(funds):
         print(f"  {fund}")
@@ -178,7 +178,7 @@ else:
 # MAGIC SELECT DISTINCT t.root_fund
 # MAGIC   FROM tree t
 # MAGIC   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
-# MAGIC  WHERE tc.counterparty_id = 'CP-GOLDMAN'
+# MAGIC  WHERE tc.counterparty_id = 'CP-ALTAMAR'
 # MAGIC    AND t.root_fund LIKE 'FUND-%'
 # MAGIC ```
 # MAGIC
@@ -196,7 +196,7 @@ WITH RECURSIVE tree(root_fund, node) AS (
 SELECT DISTINCT t.root_fund
   FROM tree t
   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
- WHERE tc.counterparty_id = 'CP-GOLDMAN'
+ WHERE tc.counterparty_id = 'CP-ALTAMAR'
    AND t.root_fund LIKE 'FUND-%'
 """
 

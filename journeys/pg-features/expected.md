@@ -26,13 +26,13 @@ Feature lookup latency (primary-key access):
   Min: 1.20 ms, Max: 5.80 ms
   ✓ Fast enough for real-time fraud scoring at authorization time
 
-Sample feature vector for ACCT-0:
-  account_id: ACCT-0
+Sample feature vector for CTA-0:
+  account_id: CTA-0
   txns_this_month: 45
   disputes_this_month: 2
   avg_anomaly_score: 3.24
   avg_util_pct: 65.42
-  total_amount_usd: 18920.50
+  total_amount: 18920.50
   computed_at: 2026-09-22 15:30:45.123456+00
 ```
 
@@ -55,13 +55,13 @@ Feature lookup latency (primary-key access):
   Min: 1.20 ms, Max: 5.80 ms
   ✓ Fast enough for real-time fraud scoring at authorization time
 
-Sample feature vector for ACCT-0:
-  account_id: ACCT-0
+Sample feature vector for CTA-0:
+  account_id: CTA-0
   txns_this_month: 45
   disputes_this_month: 2
   avg_anomaly_score: 3.24
   avg_util_pct: 65.42
-  total_amount_usd: 18920.50
+  total_amount: 18920.50
   computed_at: 2026-09-22 15:30:45.123456+00
 
 ✓ Offline training in the lakehouse, online serving in Lakebase.

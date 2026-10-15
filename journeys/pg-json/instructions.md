@@ -33,7 +33,7 @@ python ../../common/scripts/lakebase.py --sql \
   "SELECT instrument_id, name, spec FROM bank.instrument LIMIT 3"
 ```
 
-Each instrument has a `spec` column (JSONB). The contents vary: one instrument might have `{"ticker": "AAPL", "sector": "tech", "beta": 1.2}`, another might have `{"tenor": "10Y", "coupon": 4.0, "rating": "AAA"}`. No schema migration needed when a new instrument type arrives with new fields.
+Each instrument has a `spec` column (JSONB). The contents vary: one instrument might have `{"ticker": "QTZL", "sector": "tech", "beta": 1.2}`, another might have `{"tenor": "10Y", "coupon": 4.0, "rating": "AAA"}`. No schema migration needed when a new instrument type arrives with new fields.
 
 ### Step 2, use containment operator (@>)
 
@@ -52,7 +52,7 @@ SELECT instrument_id, name, spec
  LIMIT 5;
 ```
 
-This finds all instruments whose spec contains `"sector": "tech"`. The match is semantic, not string-based: `{"ticker": "AAPL", "sector": "tech", "beta": 1.2}` matches because it contains the sub-document `{"sector": "tech"}`.
+This finds all instruments whose spec contains `"sector": "tech"`. The match is semantic, not string-based: `{"ticker": "QTZL", "sector": "tech", "beta": 1.2}` matches because it contains the sub-document `{"sector": "tech"}`.
 
 ### Step 3, use path extraction (#>>)
 

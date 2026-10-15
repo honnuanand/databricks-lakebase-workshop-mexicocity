@@ -5,8 +5,8 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 ## Step 1, table seeded
 
 ```text
-CREATE TABLE bank.txn_history (id BIGSERIAL PRIMARY KEY, account_id TEXT, ts TIMESTAMPTZ, amount_usd NUMERIC);
-INSERT INTO bank.txn_history (account_id, amount_usd) SELECT ... FROM generate_series(...);
+CREATE TABLE bank.txn_history (id BIGSERIAL PRIMARY KEY, account_id TEXT, ts TIMESTAMPTZ, amount NUMERIC);
+INSERT INTO bank.txn_history (account_id, amount) SELECT ... FROM generate_series(...);
 ```
 
 Table is created with 50,000 rows. account_id is unindexed.
@@ -15,7 +15,7 @@ Table is created with 50,000 rows. account_id is unindexed.
 
 ```text
 Seq Scan on txn_history (cost=0.00..1225.00 rows=500 width=8)
-  Filter: (account_id = 'ACCT-100010'::text)
+  Filter: (account_id = 'CTA-100010'::text)
   Actual Time: 45.234..48.123 ms
   Actual Rows: 500
   Buffers: Shared Hit=500
@@ -26,7 +26,7 @@ Execution Time: 48.456 ms
 
 The plan is:
 - **Seq Scan**: reads all 50,000 rows sequentially
-- **Filter**: keeps only account_id = 'ACCT-100010' (500 rows)
+- **Filter**: keeps only account_id = 'CTA-100010' (500 rows)
 - **Actual Time**: ~50 milliseconds to read and filter
 - **Buffers**: ~500 pages accessed
 - **Total Execution Time**: ~50 ms
@@ -46,7 +46,7 @@ Index is created. Statistics are updated so the planner knows the index will hel
 
 ```text
 Index Scan using idx_txn_history_account on txn_history (cost=0.29..50.05 rows=500 width=8)
-  Index Cond: (account_id = 'ACCT-100010'::text)
+  Index Cond: (account_id = 'CTA-100010'::text)
   Actual Time: 0.456..1.234 ms
   Actual Rows: 500
   Buffers: Shared Hit=5

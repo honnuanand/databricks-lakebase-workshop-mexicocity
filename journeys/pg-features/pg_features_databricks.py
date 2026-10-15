@@ -57,7 +57,7 @@ print('Ready.')
 # MAGIC     account_id TEXT NOT NULL,
 # MAGIC     event_ts TIMESTAMPTZ DEFAULT now(),
 # MAGIC     event_type TEXT,
-# MAGIC     amount_usd NUMERIC(12,2),
+# MAGIC     amount NUMERIC(12,2),
 # MAGIC     anomaly_score NUMERIC(6,2),
 # MAGIC     util_pct NUMERIC(6,2)
 # MAGIC );
@@ -73,7 +73,7 @@ with connect() as conn:
                 account_id TEXT NOT NULL,
                 event_ts TIMESTAMPTZ DEFAULT now(),
                 event_type TEXT,
-                amount_usd NUMERIC(12,2),
+                amount NUMERIC(12,2),
                 anomaly_score NUMERIC(6,2),
                 util_pct NUMERIC(6,2)
             )
@@ -93,9 +93,9 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"""
-            INSERT INTO {SCHEMA}.{EVENTS_TABLE}(account_id, event_ts, event_type, amount_usd, anomaly_score, util_pct)
+            INSERT INTO {SCHEMA}.{EVENTS_TABLE}(account_id, event_ts, event_type, amount, anomaly_score, util_pct)
             SELECT
-                'ACCT-' || (g % 100),
+                'CTA-' || (g % 100),
                 now() - ((g / 100) || ' days')::interval,
                 (ARRAY['purchase', 'wire', 'dispute', 'chargeback'])[1 + (g % 4)],
                 (g % 5000) + (g % 100)::numeric / 100,
@@ -116,7 +116,7 @@ with connect() as conn:
 # MAGIC     disputes_this_month INT,
 # MAGIC     avg_anomaly_score NUMERIC(8,2),
 # MAGIC     avg_util_pct NUMERIC(8,2),
-# MAGIC     total_amount_usd NUMERIC(12,2),
+# MAGIC     total_amount NUMERIC(12,2),
 # MAGIC     computed_at TIMESTAMPTZ
 # MAGIC );
 # MAGIC ```
@@ -132,7 +132,7 @@ with connect() as conn:
                 disputes_this_month INT,
                 avg_anomaly_score NUMERIC(8,2),
                 avg_util_pct NUMERIC(8,2),
-                total_amount_usd NUMERIC(12,2),
+                total_amount NUMERIC(12,2),
                 computed_at TIMESTAMPTZ
             )
         """)
@@ -165,7 +165,7 @@ with connect() as conn:
                 COUNT(CASE WHEN e.event_type = 'dispute' THEN 1 END),
                 AVG(e.anomaly_score),
                 AVG(e.util_pct),
-                SUM(e.amount_usd),
+                SUM(e.amount),
                 now()
             FROM {SCHEMA}.{EVENTS_TABLE} e
             WHERE e.event_ts >= now() - interval '30 days'
@@ -183,7 +183,7 @@ with connect() as conn:
 # MAGIC latencies = []
 # MAGIC for account_id in range(100):
 # MAGIC     t0 = time.perf_counter()
-# MAGIC     cur.execute(f"SELECT * FROM account_features_online WHERE account_id = %s", [f'ACCT-{account_id}'])
+# MAGIC     cur.execute(f"SELECT * FROM account_features_online WHERE account_id = %s", [f'CTA-{account_id}'])
 # MAGIC     cur.fetchone()
 # MAGIC     latencies.append((time.perf_counter() - t0) * 1000)
 # MAGIC ```
@@ -194,7 +194,7 @@ with connect() as conn:
         latencies = []
         for account_id in range(100):
             t0 = time.perf_counter()
-            cur.execute(f"SELECT * FROM {SCHEMA}.{ONLINE_TABLE} WHERE account_id = %s", [f'ACCT-{account_id % 100}'])
+            cur.execute(f"SELECT * FROM {SCHEMA}.{ONLINE_TABLE} WHERE account_id = %s", [f'CTA-{account_id % 100}'])
             row = cur.fetchone()
             latencies.append((time.perf_counter() - t0) * 1000)
 

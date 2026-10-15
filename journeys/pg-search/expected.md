@@ -6,9 +6,9 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 
 ```text
 note_id account_id  writeup
-1       ACCT-100240 "Cardholder reports three card-not-present charges to an overseas merchant they do not recognize; velocity spike overnight. Suspect card compromise, recommend freeze and reissue."
-2       ACCT-300421 "Large outbound wire to a new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Structuring pattern? Needs AML review."
-3       ACCT-200311 "Customer disputed a recurring subscription charge. Confirmed merchant error, refunded, closed."
+1       CTA-100240 "Cardholder reports three card-not-present charges to an overseas merchant they do not recognize; velocity spike overnight. Suspect card compromise, recommend freeze and reissue."
+2       CTA-300421 "Large outbound wire to a new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Structuring pattern? Needs AML review."
+3       CTA-200311 "Customer disputed a recurring subscription charge. Confirmed merchant error, refunded, closed."
 ```
 
 Free-text notes from analysts. These are the search corpus.
@@ -17,7 +17,7 @@ Free-text notes from analysts. These are the search corpus.
 
 ```text
 note_id account_id  rank
-2       ACCT-300421 0.121
+2       CTA-300421 0.121
 ```
 
 The query `to_tsquery('english', 'wire | fraud')` searches for either word. Note #2 matches on "wire"
@@ -29,12 +29,12 @@ to see more results ranked.
 
 ```text
 account_id       similarity
-ACCT-100240      1.000
-ACCT-100241      0.923
-ACCT-100234      0.846
+CTA-100240      1.000
+CTA-100241      0.923
+CTA-100234      0.846
 ```
 
-Accounts similar to "ACCT-100240". Even with a typo like "ACCT-100204", [trigram](../../docs/glossary.md)
+Accounts similar to "CTA-100240". Even with a typo like "CTA-100204", [trigram](../../docs/glossary.md)
 overlap keeps the match close (similarity 0.85+). Results are sorted by similarity descending.
 
 ## Step 4, GIN index

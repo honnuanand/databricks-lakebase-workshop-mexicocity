@@ -72,7 +72,7 @@ The script finds an existing settlement, creates a new one that overlaps, and tr
 
 ```text
 ERROR: conflicting key value violates exclusion constraint "no_account_overlap"
-DETAIL: Key (account_id, tstzrange(starts_at, ends_at))=(ACCT-100240, ["2024-01-15 14:00:00+00","2024-01-15 15:00:00+00"]) conflicts with existing key.
+DETAIL: Key (account_id, tstzrange(starts_at, ends_at))=(CTA-100240, ["2024-01-15 14:00:00+00","2024-01-15 15:00:00+00"]) conflicts with existing key.
 ```
 
 This is the guarantee: the constraint is enforced atomically by the database. No app code can allow it.

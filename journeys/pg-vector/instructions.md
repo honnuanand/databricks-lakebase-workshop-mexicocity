@@ -37,8 +37,8 @@ python ../../common/scripts/lakebase.py --sql \
   "SELECT instrument_id, name, kind FROM bank.instrument LIMIT 5"
 ```
 
-You should see the 5 seed instruments: `INS-AAPL` (Apple, equity), `INS-MSFT` (Microsoft, equity),
-`INS-CASH-USD` (cash), `INS-SLEEVE-EQ` (ETF), and `INS-UST-10Y` (Treasury bond).
+You should see the 5 seed instruments: `INS-QTZL` (Quetzal Tecnologia, equity), `INS-ZAFR` (Zafiro Software, equity),
+`INS-CASH-MXN` (cash), `INS-SLEEVE-EQ` (ETF), and `INS-MBONO-10Y` (Bono M, a Mexican government bond).
 
 ### Step 2, enable the pgvector extension
 
@@ -93,11 +93,11 @@ You should see output like:
 
 ```text
 Embedding 5 instruments:
-  INS-AAPL: embedded
-  INS-CASH-USD: embedded
-  INS-MSFT: embedded
+  INS-QTZL: embedded
+  INS-CASH-MXN: embedded
+  INS-ZAFR: embedded
   INS-SLEEVE-EQ: embedded
-  INS-UST-10Y: embedded
+  INS-MBONO-10Y: embedded
 ```
 
 Query to confirm:
@@ -125,12 +125,12 @@ SELECT
   1 - (p.embedding <=> ref_embedding) AS similarity
 FROM bank.instrument p
 WHERE p.embedding IS NOT NULL
-  AND p.instrument_id != 'INS-AAPL'  -- exclude the original
+  AND p.instrument_id != 'INS-QTZL'  -- exclude the original
 ORDER BY similarity DESC
 LIMIT 5;
 ```
 
-This ranks the other instruments by closeness to `INS-AAPL`. The `<=>` operator returns cosine
+This ranks the other instruments by closeness to `INS-QTZL`. The `<=>` operator returns cosine
 *distance* (0 = identical direction, 1 = orthogonal, up to 2 = opposite). We compute similarity as
 `1 - distance` so higher is better; with hash embeddings that value can go slightly negative when
 two vectors point apart.
@@ -139,16 +139,16 @@ You should see output like:
 
 ```text
 Running similarity search:
-  Reference instrument: INS-AAPL
+  Reference instrument: INS-QTZL
   Top comparable instruments:
-    1. INS-UST-10Y: similarity=0.11 (US Treasury 10Y, bond)
+    1. INS-MBONO-10Y: similarity=0.11 (Bono M 10Y (Mexico), bond)
     2. INS-SLEEVE-EQ: similarity=0.03 (Equity Sleeve, etf)
-    3. INS-MSFT: similarity=-0.09 (Microsoft Corp, equity)
-    4. INS-CASH-USD: similarity=-0.22 (US Dollar Cash, cash)
+    3. INS-ZAFR: similarity=-0.09 (Zafiro Software, equity)
+    4. INS-CASH-MXN: similarity=-0.22 (Mexican Peso Cash, cash)
 ```
 
 The ranking here is driven by the hash embedding, not real financial resemblance, so do not read
-meaning into "the Treasury is closest to Apple". With a real embedding model the same query returns
+meaning into "the Bono M is closest to Quetzal". With a real embedding model the same query returns
 semantically meaningful neighbours. See [`expected.md`](expected.md) for the honesty note in full.
 
 ### Step 6, optional: create an HNSW index

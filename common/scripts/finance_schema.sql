@@ -1,6 +1,7 @@
 -- ============================================================================
--- The Bank: the finance edition's running example schema.
--- A retail + commercial bank's operational core. Every journey runs against
+-- The Bank: the finance edition's running example schema (Mexico data).
+-- A retail + commercial bank's operational core, with Mexican data: amounts in
+-- MXN, SPEI / card / CoDi channels, synthetic CLABEs, fictional institutions. Every journey runs against
 -- these tables on YOUR branch. Loaded by common/scripts/load_bank.py.
 --
 -- Design: clean, teachable names with real banking structure, mirroring the
@@ -31,21 +32,22 @@ SET search_path TO bank, public;
 
 -- ---- Branches & accounts (tenancy boundary + the live "twin") ----------------
 CREATE TABLE IF NOT EXISTS branch (
-    branch_id   TEXT PRIMARY KEY,             -- e.g. 'BR-NYC'
+    branch_id   TEXT PRIMARY KEY,             -- e.g. 'BR-CDMX'
     name        TEXT NOT NULL,
-    region      TEXT NOT NULL,                -- e.g. 'US-Northeast'
+    region      TEXT NOT NULL,                -- e.g. 'MX-Centro'
     operator    TEXT NOT NULL,                -- business unit / legal entity (RLS boundary)
     lat         DOUBLE PRECISION,             -- becomes a PostGIS point in pg-geo
     lon         DOUBLE PRECISION
 );
 
 CREATE TABLE IF NOT EXISTS account (
-    account_id  TEXT PRIMARY KEY,             -- e.g. 'ACCT-100234'
+    account_id  TEXT PRIMARY KEY,             -- e.g. 'CTA-100234'
     branch_id   TEXT NOT NULL REFERENCES branch(branch_id),
     line        TEXT NOT NULL,                -- product line: 'Checking', 'Savings', 'Credit'
     type        TEXT NOT NULL,                -- 'retail', 'commercial', 'wealth'
     status      TEXT NOT NULL DEFAULT 'good_standing',  -- good_standing | watch | frozen | closed
-    health_pct  NUMERIC(5,2) NOT NULL DEFAULT 100.0     -- account health (risk-inverse) score
+    health_pct  NUMERIC(5,2) NOT NULL DEFAULT 100.0,    -- account health (risk-inverse) score
+    clabe       CHAR(18) UNIQUE                         -- synthetic 18-digit CLABE (fictional bank code 999)
 );
 
 -- High-volume transactions off each account. Time-series: partitioned in
@@ -54,9 +56,11 @@ CREATE TABLE IF NOT EXISTS txn (
     txn_id          BIGSERIAL PRIMARY KEY,
     account_id      TEXT NOT NULL REFERENCES account(account_id),
     ts              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    amount_usd      NUMERIC(12,2),            -- transaction amount
+    amount          NUMERIC(12,2),            -- transaction amount, in `currency`
+    currency        CHAR(3) NOT NULL DEFAULT 'MXN',
+    channel         TEXT NOT NULL DEFAULT 'tarjeta',  -- SPEI (bank transfer) | tarjeta (card) | CoDi (QR payment)
     anomaly_score   NUMERIC(6,2),             -- 0-10, higher = riskier
-    mcc             INT,                      -- merchant category code
+    mcc             INT,                      -- merchant category code (card / CoDi only; NULL for SPEI)
     util_pct        NUMERIC(5,2)              -- account utilization at the time (%)
 );
 
@@ -68,7 +72,7 @@ CREATE TABLE IF NOT EXISTS fund (
 );
 
 CREATE TABLE IF NOT EXISTS instrument (
-    instrument_id TEXT PRIMARY KEY,           -- e.g. 'INS-AAPL', 'INS-UST-10Y'
+    instrument_id TEXT PRIMARY KEY,           -- e.g. 'INS-QTZL', 'INS-MBONO-10Y'
     name          TEXT NOT NULL,
     kind          TEXT NOT NULL,              -- 'equity', 'bond', 'etf', 'cash'
     spec          JSONB DEFAULT '{}'::jsonb   -- varying fields (pg-json); embedding in pg-vector
@@ -107,7 +111,7 @@ CREATE TABLE IF NOT EXISTS settlement (
 
 -- ---- Counterparties & custody (the supply-side network) ----------------------
 CREATE TABLE IF NOT EXISTS counterparty (
-    counterparty_id TEXT PRIMARY KEY,         -- e.g. 'CP-GOLDMAN'
+    counterparty_id TEXT PRIMARY KEY,         -- e.g. 'CP-ALTAMAR' (all counterparties are fictional)
     name            TEXT NOT NULL,
     lat             DOUBLE PRECISION,
     lon             DOUBLE PRECISION,
@@ -115,11 +119,11 @@ CREATE TABLE IF NOT EXISTS counterparty (
 );
 
 CREATE TABLE IF NOT EXISTS custodian (
-    custodian_id TEXT PRIMARY KEY,            -- e.g. 'CUST-BNY'
+    custodian_id TEXT PRIMARY KEY,            -- e.g. 'CUST-ALTA' (fictional)
     branch_id    TEXT REFERENCES branch(branch_id),
     lat          DOUBLE PRECISION,
     lon          DOUBLE PRECISION,
-    capacity     INT                          -- assets-under-custody capacity ($M)
+    capacity     INT                          -- assets-under-custody capacity (MXN millions)
 );
 
 CREATE TABLE IF NOT EXISTS position (

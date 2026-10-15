@@ -56,6 +56,10 @@ full cast.
 
 | Term | What it means |
 | ---- | ------------- |
+| **MXN** | The Mexican peso. All amounts in the workshop's bank are in MXN. |
+| **SPEI** | Mexico's real-time interbank transfer system, run by Banco de México. A `txn` with `channel = 'SPEI'` is a bank transfer, so it has no merchant category code. |
+| **CLABE** | The 18-digit standardized bank account number used for SPEI transfers: bank code, plaza code, account number, and a check digit. The workshop's CLABEs are synthetic. |
+| **CoDi** | Cobro Digital, a QR-code payment scheme built on SPEI. |
 | **Core banking** | The operational system that runs accounts, transactions, and balances. In this workshop, Lakebase plays that role. |
 | **Holdings tree** | The tree of instruments that make up a fund: a fund holds instruments, some of which are sleeves that themselves hold instruments, all the way down. |
 | **Sleeve** | An instrument that is itself a basket of other instruments (a fund-of-funds building block); it makes the holdings tree more than one level deep. |

@@ -52,7 +52,7 @@ print("connected; schema:", SCHEMA)
 # MAGIC %md
 # MAGIC ## Step 1, inspect JSONB specs on instruments
 # MAGIC
-# MAGIC Each instrument has a `spec` column (JSONB). The contents vary: one instrument might have `{"ticker": "AAPL", "sector": "tech", "beta": 1.2}`, another might have `{"tenor": "10Y", "coupon": 4.0, "rating": "AAA"}`. No schema migration needed when a new instrument type arrives with new fields. The SQL:
+# MAGIC Each instrument has a `spec` column (JSONB). The contents vary: one instrument might have `{"ticker": "QTZL", "sector": "tech", "beta": 1.2}`, another might have `{"tenor": "10Y", "coupon": 4.0, "rating": "AAA"}`. No schema migration needed when a new instrument type arrives with new fields. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT instrument_id, name, spec FROM bank.instrument LIMIT 3

@@ -79,7 +79,7 @@ If the query returned zero rows, check:
    Should return a value close to 1 (exact match with itself).
 
 3. **Is the reference instrument in the table?** The query filters out the reference instrument
-   (`WHERE instrument_id != 'INS-AAPL'`). Make sure that instrument exists and has an embedding.
+   (`WHERE instrument_id != 'INS-QTZL'`). Make sure that instrument exists and has an embedding.
 
 ## The similarity scores don't make sense (all 0.5, or all the same)
 

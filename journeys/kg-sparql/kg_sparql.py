@@ -85,18 +85,18 @@ def simple_query(g: Graph) -> list[str]:
 
 
 def multi_hop_query(g: Graph) -> list[str]:
-    """SPARQL: which funds hold an instrument traded by CP-GOLDMAN?
+    """SPARQL: which funds hold an instrument traded by CP-ALTAMAR?
 
     `holds` chains parent->child, so `holds+` (one or more hops) walks the whole
     holdings tree, catching instruments nested under sub-sleeves too. That multi-hop
     reachability is exactly what reads naturally as a graph and is painful as SQL joins.
-    In the seed, CP-GOLDMAN trades INS-AAPL, which sits under INS-SLEEVE-EQ, which
+    In the seed, CP-ALTAMAR trades INS-QTZL, which sits under INS-SLEEVE-EQ, which
     FUND-GROWTH-A holds, so FUND-GROWTH-A comes back."""
     query_text = """
         PREFIX bank: <http://bank.local/>
         SELECT DISTINCT ?fund WHERE {
             ?fund bank:holds+ ?instrument .
-            ?instrument bank:traded_by bank:CP-GOLDMAN .
+            ?instrument bank:traded_by bank:CP-ALTAMAR .
         }
     """
     results = g.query(query_text)
@@ -142,7 +142,7 @@ def main() -> None:
             return
 
     if args.step == "multi-hop" or not args.step:
-        print("\nSPARQL multi-hop query: which funds hold an instrument traded by CP-GOLDMAN?")
+        print("\nSPARQL multi-hop query: which funds hold an instrument traded by CP-ALTAMAR?")
         funds = multi_hop_query(g)
         for fund in funds:
             print(f"  {fund}")
@@ -161,7 +161,7 @@ def main() -> None:
         SELECT DISTINCT t.root_fund
         FROM tree t
         JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
-        WHERE tc.counterparty_id = 'CP-GOLDMAN'
+        WHERE tc.counterparty_id = 'CP-ALTAMAR'
           AND t.root_fund LIKE 'FUND-%'
         """
         print(sql)
@@ -179,7 +179,7 @@ def main() -> None:
                         SELECT DISTINCT t.root_fund
                         FROM tree t
                         JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
-                        WHERE tc.counterparty_id = 'CP-GOLDMAN'
+                        WHERE tc.counterparty_id = 'CP-ALTAMAR'
                           AND t.root_fund LIKE 'FUND-%'
                     """)
                     rows = cur.fetchall()

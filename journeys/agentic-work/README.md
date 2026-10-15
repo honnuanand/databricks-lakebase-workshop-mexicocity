@@ -11,7 +11,7 @@
 > - Tool results, actions taken, and memory are all SQL on one Lakebase instance, the
 >   database is the agent backend.
 >
-> **You'll be able to:** ask an agent to review a flagged account (e.g., "Review ACCT-100240
+> **You'll be able to:** ask an agent to review a flagged account (e.g., "Review CTA-100240
 > and place a hold if the fraud signal warrants it"), watch it read live transaction data with
 > a tool, write a hold back to the database, and remember what it did so it won't double-hold.
 >
@@ -19,7 +19,7 @@
 
 ## The scenario
 
-You run fraud operations at a retail bank. An overnight alert just surfaced ACCT-100240: a
+You run fraud operations at a retail bank. An overnight alert just surfaced CTA-100240: a
 credit account with a transaction anomaly score that spiked to 8.7 on a card-not-present
 charge. Someone needs to decide: leave it, or place a hold on the account. But with one
 constraint: do not place a second hold if one is already in place.
@@ -33,10 +33,10 @@ hold back, all in one transaction, with memory that prevents double-action.
 Here is what the agent does:
 
 1. **Reads live data**: "What are the recent transactions and the top anomaly score on
-   ACCT-100240?" via a SQL tool.
-2. **Acts**: "Place a hold on ACCT-100240" by setting the account status to `frozen` and
+   CTA-100240?" via a SQL tool.
+2. **Acts**: "Place a hold on CTA-100240" by setting the account status to `frozen` and
    writing a flag row to the `case_note` table.
-3. **Remembers**: "I just placed a hold on ACCT-100240" appended to its memory, so next turn
+3. **Remembers**: "I just placed a hold on CTA-100240" appended to its memory, so next turn
    it won't place the same hold twice.
 
 No orchestration. No separate state machine. The database is the fraud-ops backend.
@@ -68,11 +68,11 @@ agent can't double-hold because it reads its own memory first.
 
 ## The wow moment
 
-The beat worth watching: you ask the agent "Review ACCT-100240 and act on the fraud signal."
+The beat worth watching: you ask the agent "Review CTA-100240 and act on the fraud signal."
 It reads the account and its transactions, finds the 8.7 anomaly score, places a hold in one
 transaction (status to `frozen`, a flag row in `case_note`), and logs the action to its memory.
 Then you ask it the *same question again*, and it reads its memory, sees "I already placed a
-hold on ACCT-100240," and refuses, same transaction, no double-work. The agent changed the
+hold on CTA-100240," and refuses, same transaction, no double-work. The agent changed the
 state of the account in one turn, and it remembers it.
 
 ## What you'll do

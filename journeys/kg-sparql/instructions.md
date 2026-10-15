@@ -59,7 +59,7 @@ You'll see a list of instrument IDs.
 
 ### Step 3, multi-hop SPARQL query
 
-Now ask a harder question: "which funds hold an instrument traded by CP-GOLDMAN?"
+Now ask a harder question: "which funds hold an instrument traded by CP-ALTAMAR?"
 
 ```bash
 python kg_sparql.py --step multi-hop
@@ -71,11 +71,11 @@ matches the counterparty edge:
 ```sparql
 SELECT DISTINCT ?fund WHERE {
   ?fund <http://bank.local/holds>+ ?instrument .
-  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
+  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-ALTAMAR> .
 }
 ```
 
-This reads like a chain: find funds that hold instruments that are traded by CP-GOLDMAN. The
+This reads like a chain: find funds that hold instruments that are traded by CP-ALTAMAR. The
 `+` makes `holds` transitive, so it reaches instruments nested under sub-sleeves. The query runs
 in milliseconds because the graph is in memory and indexed.
 
@@ -98,7 +98,7 @@ WITH RECURSIVE tree(root_fund, node) AS (
 SELECT DISTINCT t.root_fund
   FROM tree t
   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
- WHERE tc.counterparty_id = 'CP-GOLDMAN'
+ WHERE tc.counterparty_id = 'CP-ALTAMAR'
    AND t.root_fund LIKE 'FUND-%'
 ```
 

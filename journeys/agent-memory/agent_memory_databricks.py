@@ -47,7 +47,7 @@ NAMESPACE = "default"
 SESSION_ID = "sess-01"
 FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 TABLE = "bank.agent_memory"
-QUESTION = "Is ACCT-100240 cleared, or do we freeze it for suspected fraud?"
+QUESTION = "Is CTA-100240 cleared, or do we freeze it for suspected fraud?"
 
 def fm_call(messages, max_tokens=400):
     """Call the Foundation Model API; return text, or None to use the fallback."""
@@ -77,12 +77,12 @@ print(f"Session: {SESSION_ID}, FM endpoint: {FM_ENDPOINT}")
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO bank.agent_memory (namespace, session_id, agent_id, role, content)
-# MAGIC VALUES ('default', 'sess-01', 'fraud_advisor', 'assistant', 'ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.');
+# MAGIC VALUES ('default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.');
 # MAGIC ```
 
 # COMMAND ----------
 
-SEED_NOTE = ("ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, "
+SEED_NOTE = ("CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, "
              "do not release the hold until cardholder is reached.")
 
 with connect() as conn:
@@ -144,7 +144,7 @@ messages = [{"role": "system", "content": fraud_sys},
 
 response1 = fm_call(messages)
 if response1 is None:
-    response1 = ("ACCT-100240 is not cleared. An anomaly score of 8.7 on an overnight card-not-present "
+    response1 = ("CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight card-not-present "
                  "spike is a strong fraud signal. Keep the hold in place and verify the charges with the "
                  "cardholder before releasing any funds.")
 
@@ -191,7 +191,7 @@ messages2 = [{"role": "system", "content": ops_sys},
 
 response2 = fm_call(messages2)
 if response2 is None:
-    response2 = ("I will keep the hold on ACCT-100240 in place and not release funds, in line with the fraud "
+    response2 = ("I will keep the hold on CTA-100240 in place and not release funds, in line with the fraud "
                  "advisor's determination. I will contact the cardholder to confirm the overnight charges first.")
 
 with connect() as conn:

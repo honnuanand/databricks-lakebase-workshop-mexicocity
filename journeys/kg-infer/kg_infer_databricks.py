@@ -109,12 +109,12 @@ print("  Then (fund is exposed)")
 # MAGIC %md
 # MAGIC ## Step 3, Mark an instrument as distressed
 # MAGIC
-# MAGIC Add a fact to the graph: INS-AAPL is distressed. Note that no fund holds INS-AAPL *directly*,
+# MAGIC Add a fact to the graph: INS-QTZL is distressed. Note that no fund holds INS-QTZL *directly*,
 # MAGIC only through INS-SLEEVE-EQ, so a naive one-hop lookup would miss the exposure.
 
 # COMMAND ----------
 
-distressed_instrument = "INS-AAPL"
+distressed_instrument = "INS-QTZL"
 g.add((URIRef(BANK[distressed_instrument]), URIRef(BANK.distressed), Literal(True)))
 
 print(f"Marked {distressed_instrument} as distressed.")

@@ -28,9 +28,9 @@ CREATE TABLE accounts (
 );
 
 INSERT INTO accounts VALUES
-  ('ACCT-100234', 'good_standing', 98.5),
-  ('ACCT-100240', 'watch', 91.0),
-  ('ACCT-100241', 'good_standing', 99.1);
+  ('CTA-100234', 'good_standing', 98.5),
+  ('CTA-100240', 'watch', 91.0),
+  ('CTA-100241', 'good_standing', 99.1);
 
 SELECT * FROM accounts;
 ```
@@ -42,9 +42,9 @@ Output:
 (3 rows affected)
 account_id | status | health_pct
 -----------|--------|----------
-ACCT-100234 | good_standing | 98.5
-ACCT-100240 | watch | 91.0
-ACCT-100241 | good_standing | 99.1
+CTA-100234 | good_standing | 98.5
+CTA-100240 | watch | 91.0
+CTA-100241 | good_standing | 99.1
 ```
 
 CREATE and INSERT report row counts; SELECT shows the results as a table.
@@ -58,8 +58,8 @@ CREATE TABLE instruments (
 );
 
 INSERT INTO instruments VALUES
-  ('INS-AAPL', '{"kind": "equity", "ticker": "AAPL"}'),
-  ('INS-UST-10Y', '{"kind": "bond", "tenor": "10Y"}');
+  ('INS-QTZL', '{"kind": "equity", "ticker": "QTZL"}'),
+  ('INS-MBONO-10Y', '{"kind": "bond", "tenor": "10Y"}');
 
 SELECT
   instrument_id,
@@ -75,8 +75,8 @@ Output:
 (2 rows affected)
 instrument_id | kind | ticker
 --------------|------|-------
-INS-AAPL | equity | AAPL
-INS-UST-10Y | bond | null
+INS-QTZL | equity | QTZL
+INS-MBONO-10Y | bond | null
 ```
 
 JSON extraction (->>) works in the browser the same way as on Lakebase.
@@ -87,16 +87,16 @@ JSON extraction (->>) works in the browser the same way as on Lakebase.
 CREATE TABLE txns (
   id SERIAL PRIMARY KEY,
   account_id TEXT,
-  amount_usd INT
+  amount INT
 );
 
-INSERT INTO txns(account_id, amount_usd) VALUES
-  ('ACCT-1', 100), ('ACCT-1', 95), ('ACCT-2', 80), ('ACCT-2', 85);
+INSERT INTO txns(account_id, amount) VALUES
+  ('CTA-1', 100), ('CTA-1', 95), ('CTA-2', 80), ('CTA-2', 85);
 
 SELECT
   account_id,
-  amount_usd,
-  ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY amount_usd DESC) as rank
+  amount,
+  ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY amount DESC) as rank
 FROM txns
 ORDER BY account_id, rank;
 ```
@@ -106,12 +106,12 @@ Output:
 ```text
 (0 rows affected)
 (4 rows affected)
-account_id | amount_usd | rank
+account_id | amount | rank
 -----------|------------|-----
-ACCT-1 | 100 | 1
-ACCT-1 | 95 | 2
-ACCT-2 | 85 | 1
-ACCT-2 | 80 | 2
+CTA-1 | 100 | 1
+CTA-1 | 95 | 2
+CTA-2 | 85 | 1
+CTA-2 | 80 | 2
 ```
 
 Window functions work identically in the browser Postgres.

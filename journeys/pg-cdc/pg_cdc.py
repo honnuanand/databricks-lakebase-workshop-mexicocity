@@ -50,11 +50,11 @@ def setup(conn):
         cur.execute(f"""
             INSERT INTO {schema}.{DEMO_TABLE}(account_id, status, health_pct)
             VALUES
-                ('ACCT-001', 'good_standing', 95.5),
-                ('ACCT-002', 'good_standing', 92.0),
-                ('ACCT-003', 'frozen', 50.0),
-                ('ACCT-004', 'good_standing', 98.2),
-                ('ACCT-005', 'watch', 87.3)
+                ('CTA-001', 'good_standing', 95.5),
+                ('CTA-002', 'good_standing', 92.0),
+                ('CTA-003', 'frozen', 50.0),
+                ('CTA-004', 'good_standing', 98.2),
+                ('CTA-005', 'watch', 87.3)
         """)
 
         print(f"Created {schema}.{DEMO_TABLE} with 5 accounts")
@@ -93,16 +93,16 @@ def make_changes_and_decode(conn):
             print(f"\nMaking DML changes:")
 
             # Insert a new account
-            cur.execute(f"INSERT INTO {schema}.{DEMO_TABLE} VALUES ('ACCT-100', 'good_standing', 99.5)")
-            print(f"  INSERT ACCT-100 (new account)")
+            cur.execute(f"INSERT INTO {schema}.{DEMO_TABLE} VALUES ('CTA-100', 'good_standing', 99.5)")
+            print(f"  INSERT CTA-100 (new account)")
 
             # Update an existing account
-            cur.execute(f"UPDATE {schema}.{DEMO_TABLE} SET status='frozen' WHERE account_id='ACCT-001'")
-            print(f"  UPDATE ACCT-001 (status changed to frozen)")
+            cur.execute(f"UPDATE {schema}.{DEMO_TABLE} SET status='frozen' WHERE account_id='CTA-001'")
+            print(f"  UPDATE CTA-001 (status changed to frozen)")
 
             # Delete an account
-            cur.execute(f"DELETE FROM {schema}.{DEMO_TABLE} WHERE account_id='ACCT-003'")
-            print(f"  DELETE ACCT-003 (account closed/removed)")
+            cur.execute(f"DELETE FROM {schema}.{DEMO_TABLE} WHERE account_id='CTA-003'")
+            print(f"  DELETE CTA-003 (account closed/removed)")
 
             # Get the new LSN after changes
             cur.execute("SELECT pg_current_wal_lsn()")

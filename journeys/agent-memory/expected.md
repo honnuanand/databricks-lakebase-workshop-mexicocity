@@ -15,7 +15,7 @@ Or a small count if you ran this before. Either is fine; the script is idempoten
 ## Step 2, seed
 
 ```text
-(1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.', ...)
+(1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.', ...)
 ```
 
 One row inserted.
@@ -24,10 +24,10 @@ One row inserted.
 
 ```text
 Fraud Advisor sees prior memory:
-  - ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.
+  - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.
 
 Fraud Advisor response:
-ACCT-100240 is not cleared. An anomaly score of 8.7 on an overnight card-not-present spike is a strong fraud signal. Keep the hold in place and verify the recent charges with the cardholder before releasing any funds.
+CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight card-not-present spike is a strong fraud signal. Keep the hold in place and verify the recent charges with the cardholder before releasing any funds.
 ```
 
 The exact wording varies. The key is that:
@@ -42,11 +42,11 @@ assistant response.
 
 ```text
 Ops Assistant sees prior memory:
-  - ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.
-  - fraud_advisor (assistant): ACCT-100240 is not cleared. An anomaly score of 8.7...
+  - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.
+  - fraud_advisor (assistant): CTA-100240 is not cleared. An anomaly score of 8.7...
 
 Ops Assistant response:
-I will keep the hold on ACCT-100240 in place and not release funds, in line with the fraud advisor's determination. I will contact the cardholder to confirm the overnight charges before any further action.
+I will keep the hold on CTA-100240 in place and not release funds, in line with the fraud advisor's determination. I will contact the cardholder to confirm the overnight charges before any further action.
 ```
 
 Again, the wording varies. The key is:
@@ -59,11 +59,11 @@ After this step, the memory table should have 5 rows.
 ## Step 5, full memory table
 
 ```text
-(1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...', ...)
-(2, 'default', 'sess-01', 'ops_assistant', 'user', 'Can we release the hold on ACCT-100240, or does it stay frozen?', ...)
-(3, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'ACCT-100240 is not cleared. An anomaly score of 8.7...', ...)
-(4, 'default', 'sess-01', 'ops_assistant', 'user', 'Can we release the hold on ACCT-100240, or does it stay frozen?', ...)
-(5, 'default', 'sess-01', 'ops_assistant', 'assistant', 'I will keep the hold on ACCT-100240 in place...', ...)
+(1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...', ...)
+(2, 'default', 'sess-01', 'ops_assistant', 'user', 'Can we release the hold on CTA-100240, or does it stay frozen?', ...)
+(3, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240 is not cleared. An anomaly score of 8.7...', ...)
+(4, 'default', 'sess-01', 'ops_assistant', 'user', 'Can we release the hold on CTA-100240, or does it stay frozen?', ...)
+(5, 'default', 'sess-01', 'ops_assistant', 'assistant', 'I will keep the hold on CTA-100240 in place...', ...)
 ```
 
 All rows in order, with timestamps increasing. This is the agents' shared brain as plain SQL.
@@ -74,21 +74,21 @@ Running `python agent_memory.py` with no arguments prints the whole story:
 
 ```text
 Seeding shared memory with a fraud note...
-  Seed row: (1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.')
+  Seed row: (1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.')
 
 1. Fraud Advisor turn:
   Prior memory (1 row):
-    - ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
-  Question: Is ACCT-100240 cleared, or do we freeze it for suspected fraud?
-  Response: ACCT-100240 is not cleared. An anomaly score of 8.7 on an overnight spike...
+    - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
+  Question: Is CTA-100240 cleared, or do we freeze it for suspected fraud?
+  Response: CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight spike...
   Memory after: 3 rows
 
 2. Ops Assistant turn:
   Prior memory (3 rows):
-    - ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
-    - fraud_advisor (assistant): ACCT-100240 is not cleared. An anomaly score of 8.7...
-    - ops_assistant (user): Is ACCT-100240 cleared, or do we freeze it for suspected fraud?
-  Response: I will keep the hold on ACCT-100240 in place and not release funds...
+    - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
+    - fraud_advisor (assistant): CTA-100240 is not cleared. An anomaly score of 8.7...
+    - ops_assistant (user): Is CTA-100240 cleared, or do we freeze it for suspected fraud?
+  Response: I will keep the hold on CTA-100240 in place and not release funds...
   Memory after: 5 rows
 
 Done. Both agents wrote to and read from the same governed table.

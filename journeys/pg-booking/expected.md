@@ -6,9 +6,9 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 
 ```text
 settlement_id  account_id   starts_at                    ends_at
-STL-1          ACCT-100240  2024-01-15 14:00:00+00       2024-01-15 16:00:00+00
-STL-2          ACCT-100241  2024-01-15 15:00:00+00       2024-01-15 16:00:00+00
-STL-3          ACCT-200310  2024-01-15 14:30:00+00       2024-01-15 16:30:00+00
+STL-1          CTA-100240  2024-01-15 14:00:00+00       2024-01-15 16:00:00+00
+STL-2          CTA-100241  2024-01-15 15:00:00+00       2024-01-15 16:00:00+00
+STL-3          CTA-200310  2024-01-15 14:30:00+00       2024-01-15 16:30:00+00
 ```
 
 Settlements are scheduled on accounts with non-overlapping time windows.
@@ -28,7 +28,7 @@ The constraint is created silently. All existing settlements satisfy it (they do
 
 ```text
 ERROR: conflicting key value violates exclusion constraint "no_account_overlap"
-DETAIL: Key (account_id, tstzrange(starts_at, ends_at))=(ACCT-100240, ["2024-01-15 14:30:00+00","2024-01-15 15:30:00+00"]) conflicts with existing key.
+DETAIL: Key (account_id, tstzrange(starts_at, ends_at))=(CTA-100240, ["2024-01-15 14:30:00+00","2024-01-15 15:30:00+00"]) conflicts with existing key.
 ```
 
 The INSERT is rejected. The database prevents the overlap from ever existing.

@@ -38,13 +38,13 @@ The planner makes decisions based on statistics (row counts, selectivity). If st
 
 ## The query is still slow even with the index
 
-The planner might have chosen a different plan because the query selectivity is low. If the filter matches many rows (e.g., account_id = 'ACCT-100010' matches 25% of all rows), a Seq Scan can be faster than an Index Scan + random I/O.
+The planner might have chosen a different plan because the query selectivity is low. If the filter matches many rows (e.g., account_id = 'CTA-100010' matches 25% of all rows), a Seq Scan can be faster than an Index Scan + random I/O.
 
 Check EXPLAIN to see what the planner chose and why. If EXPLAIN shows the index is not being used, you can force it:
 
 ```sql
 SET enable_seqscan = off;
-SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010';
+SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'CTA-100010';
 ```
 
 This disables sequential scans, forcing the planner to use the index. If the query is still slow, the index isn't helping (and you might not need it).
@@ -55,7 +55,7 @@ A query plan is a tree. Each node is an operation. Read from the bottom up (the 
 
 ```
 Seq Scan on txn
-  Filter: (account_id = 'ACCT-100240')
+  Filter: (account_id = 'CTA-100240')
 ```
 
 This means: "Seq Scan the entire table, then apply a Filter."
@@ -98,7 +98,7 @@ A plan with mostly "Hit" is good (data was cached). A plan with many "Read" mean
 Yes. Use FORMAT JSON:
 
 ```sql
-EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT COUNT(*) FROM txn WHERE account_id = 'ACCT-100240';
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT COUNT(*) FROM txn WHERE account_id = 'CTA-100240';
 ```
 
 This returns JSON, which you can pipe to a file or tool for later analysis. Tools like PEV (postgres explain visualizer) and depesz can parse and visualize the plan.

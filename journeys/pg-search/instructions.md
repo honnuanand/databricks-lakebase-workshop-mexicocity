@@ -71,9 +71,9 @@ The script runs:
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 SELECT account_id,
-       similarity(account_id, 'ACCT-100240') as sim
+       similarity(account_id, 'CTA-100240') as sim
   FROM bank.account
- WHERE account_id %% 'ACCT-100240'  -- %% means "similar to" (doubled for psycopg parameter marker)
+ WHERE account_id %% 'CTA-100240'  -- %% means "similar to" (doubled for psycopg parameter marker)
  ORDER BY sim DESC
  LIMIT 5;
 ```

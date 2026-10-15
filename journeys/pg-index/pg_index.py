@@ -63,7 +63,7 @@ def setup(conn):
         cur.execute(f"""
             INSERT INTO {schema}.{DEMO_TABLE}(account_id, mcc, spec, opened_at, location, embedding)
             SELECT
-                'ACCT-' || g,
+                'CTA-' || g,
                 g % 10,
                 jsonb_build_object('product', CASE WHEN (g % 3) = 0 THEN 'Checking' WHEN (g % 3) = 1 THEN 'Savings' ELSE 'Credit' END, 'tier', 'Premium' || (g % 5)),
                 now() - (g % 365 || ' days')::interval,
@@ -113,7 +113,7 @@ def explain_all(conn):
     schema = _env("LB_SCHEMA", "bank")
 
     queries = [
-        ("BTREE", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE account_id = 'ACCT-100'"),
+        ("BTREE", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE account_id = 'CTA-100'"),
         ("HASH", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE mcc = 5"),
         ("GIN", f"SELECT * FROM {schema}.{DEMO_TABLE} WHERE spec @> '{{\"product\": \"Checking\"}}'::jsonb"),
         # A narrow time window so the BRIN index is selective (a 90-day window matches

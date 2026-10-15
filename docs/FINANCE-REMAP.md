@@ -4,6 +4,12 @@ The finance branch keeps the SAME 31 journeys and the SAME Lakebase mechanics (a
 in manufacturing). Only the DOMAIN changes: table names, scenarios, and prose move from a smart
 factory to a bank. This file is the authority for that re-map.
 
+> **Mexico data (2026-10-14):** the bank's data was then localized for Mexico, in place. Ids changed
+> (`ACCT-` → `CTA-`, `BR-NYC/SFO/LON` → `BR-CDMX/MTY/GDL`, fictional counterparties, custodians, and
+> listed companies), `txn.amount_usd` became `amount` + `currency` + `channel`, and `account` gained
+> `clabe`. The tables below still show the original finance names; `common/scripts/finance_seed.sql`
+> is the source of truth for the current data.
+
 ## Schema (already built + verified live)
 
 `common/scripts/finance_schema.sql` (schema `bank`), loaded by `common/scripts/load_bank.py`.

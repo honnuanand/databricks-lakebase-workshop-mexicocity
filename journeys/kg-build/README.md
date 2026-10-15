@@ -4,7 +4,7 @@
 >
 > **Key takeaways**
 >
-> - A knowledge graph represents facts as triples (subject, predicate, object): `FUND-GROWTH-A booked_at BR-NYC`, `INS-AAPL traded_by CP-GOLDMAN`. The same relationships you would express in SQL joins become explicit, queryable nodes.
+> - A knowledge graph represents facts as triples (subject, predicate, object): `FUND-GROWTH-A booked_at BR-CDMX`, `INS-QTZL traded_by CP-ALTAMAR`. The same relationships you would express in SQL joins become explicit, queryable nodes.
 > - [Resource Description Framework](../../docs/glossary.md) (RDF) and semantic tools like rdflib let you load these triples into an in-memory graph, add reasoning rules, and ask questions that would require multiple SQL self-joins.
 > - The bank schema's holdings tree is already a tree (`holding` parent to child). Converting it to triples and loading it into a graph makes that structure speak for itself: "which funds hold an instrument traded by counterparty X?" is a single hop in the graph, a multi-join in SQL.
 >
@@ -14,21 +14,21 @@
 
 ## The scenario
 
-You run a bank with funds that hold instruments, branches that book those funds, and counterparties that trade those instruments. A credit alert comes in: counterparty `CP-GOLDMAN` is flagged. You need to know fast: which funds hold anything that counterparty trades?
+You run a bank with funds that hold instruments, branches that book those funds, and counterparties that trade those instruments. A credit alert comes in: counterparty `CP-ALTAMAR` is flagged. You need to know fast: which funds hold anything that counterparty trades?
 
-In SQL, this is a multi-join query: funds that hold instruments that are traded by CP-GOLDMAN, following the holdings tree up through its sleeves. With a graph representation, those relationships become nodes you traverse: fund holds instrument, instrument traded_by counterparty. Ask the same question, get a single-hop answer.
+In SQL, this is a multi-join query: funds that hold instruments that are traded by CP-ALTAMAR, following the holdings tree up through its sleeves. With a graph representation, those relationships become nodes you traverse: fund holds instrument, instrument traded_by counterparty. Ask the same question, get a single-hop answer.
 
 A knowledge graph is a way to surface relationships explicitly, so complex chains become navigable paths instead of nested queries.
 
 ## What a knowledge graph actually is
 
-A knowledge graph is built from triples: (subject, predicate, object). Each triple is a fact. A trading statement `CP-GOLDMAN trades INS-AAPL` becomes:
+A knowledge graph is built from triples: (subject, predicate, object). Each triple is a fact. A trading statement `CP-ALTAMAR trades INS-QTZL` becomes:
 
 ```
-(INS-AAPL, traded_by, CP-GOLDMAN)
+(INS-QTZL, traded_by, CP-ALTAMAR)
 ```
 
-Store millions of these triples, and you have a graph where each node (INS-AAPL, CP-GOLDMAN) can have incoming and outgoing edges (traded_by relationships). Query it by traversing those edges.
+Store millions of these triples, and you have a graph where each node (INS-QTZL, CP-ALTAMAR) can have incoming and outgoing edges (traded_by relationships). Query it by traversing those edges.
 
 [Resource Description Framework](../../docs/glossary.md) (RDF) is a standard format for triples. rdflib is a Python library that lets you load RDF into memory, add rules, and run [SPARQL](../../docs/glossary.md) queries (a query language for graphs, similar in power to SQL but built for linked data).
 

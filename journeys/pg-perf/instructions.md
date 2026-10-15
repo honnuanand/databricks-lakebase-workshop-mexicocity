@@ -34,8 +34,8 @@ python pg_perf.py --step setup
 ```
 
 Creates a table with 100k rows where `region` is fully determined by `branch_id` (100% correlated):
-- Branch BR-NYC → US-Northeast
-- Branch BR-SFO → US-West
+- Branch BR-CDMX → MX-Centro
+- Branch BR-MTY → MX-Noreste
 
 The planner has no knowledge of this correlation yet.
 
@@ -49,7 +49,7 @@ Run EXPLAIN ANALYZE on a correlated filter:
 
 ```sql
 SELECT account_id FROM account_perf_demo
-WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'
+WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'
 ```
 
 The planner estimates around 15k-20k rows (badly wrong; actual is ~25k). It treats branch and region as
@@ -91,7 +91,7 @@ Run the same query again:
 
 ```sql
 SELECT account_id FROM account_perf_demo
-WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'
+WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'
 ```
 
 The estimate now snaps to ~25k, matching the actual rows. The planner's knowledge is tuned. Same data, same table, same query; the difference is the statistics.

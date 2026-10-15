@@ -93,8 +93,8 @@ with connect() as conn:
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, branch_id, line, spec, embedding, location)
             SELECT
-                'ACCT-' || g,
-                (ARRAY['BR-NYC', 'BR-SFO', 'BR-LON'])[1 + (g % 3)],
+                'CTA-' || g,
+                (ARRAY['BR-CDMX', 'BR-MTY', 'BR-GDL'])[1 + (g % 3)],
                 (ARRAY['Checking', 'Savings', 'Credit'])[1 + (g % 3)],
                 jsonb_build_object(
                     'type', (ARRAY['retail', 'commercial', 'wealth'])[1 + (g % 3)],
@@ -123,7 +123,7 @@ with connect() as conn:
 # MAGIC     ST_Distance(location, ST_GeomFromText('POINT(45 -73)')) as km_from_ref
 # MAGIC FROM account_unified_demo
 # MAGIC WHERE
-# MAGIC     branch_id = 'BR-NYC'
+# MAGIC     branch_id = 'BR-CDMX'
 # MAGIC     AND (spec->>'type') = 'commercial'
 # MAGIC     AND ST_DWithin(location, ST_GeomFromText('POINT(45 -73)'), 1)
 # MAGIC LIMIT 5;
@@ -139,11 +139,11 @@ with connect() as conn:
                 line,
                 (spec->>'type') as account_type,
                 (spec->>'year')::int as vintage,
-                (embedding <-> (SELECT embedding FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id='ACCT-1'))::numeric(6,4) as embedding_distance,
+                (embedding <-> (SELECT embedding FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id='CTA-1'))::numeric(6,4) as embedding_distance,
                 ST_Distance(location, ST_MakePoint(-73.0, 45.0)::geometry) * 111.0 as km_from_ref
             FROM {SCHEMA}.{DEMO_TABLE}
             WHERE
-                branch_id = 'BR-NYC'
+                branch_id = 'BR-CDMX'
                 AND (spec->>'type') = 'commercial'
                 AND ST_DWithin(location, ST_MakePoint(-73.0, 45.0)::geometry, 0.1)
             ORDER BY embedding_distance, km_from_ref

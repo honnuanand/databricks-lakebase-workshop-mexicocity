@@ -31,7 +31,7 @@ from lakebase import connect, _env, client
 
 NAMESPACE = "default"
 SESSION_ID = "sess-01"
-ACCOUNT_ID = "ACCT-100240"
+ACCOUNT_ID = "CTA-100240"
 FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 TABLE_MEMORY = "bank.agent_memory"
 TABLE_ACCOUNT = "bank.account"
@@ -42,7 +42,7 @@ TABLE_CASE = "bank.case_note"
 def _setup():
     """Reset the flagged account to its pre-action state so the agent starts fresh.
 
-    Idempotent: puts ACCT-100240 back on 'watch' and clears any hold flag / memory
+    Idempotent: puts CTA-100240 back on 'watch' and clears any hold flag / memory
     from a prior run, so the first review places the hold and the second refuses."""
     with connect() as conn:
         with conn.cursor() as cur:

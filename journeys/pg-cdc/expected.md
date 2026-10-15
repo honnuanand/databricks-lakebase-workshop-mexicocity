@@ -24,21 +24,21 @@ If you have the necessary permissions (REPLICATION role):
 Current LSN: 0/XXXXXXXX
 
 Making DML changes:
-  INSERT ACCT-100 (new account)
-  UPDATE ACCT-001 (status changed to frozen)
-  DELETE ACCT-003 (account closed/removed)
+  INSERT CTA-100 (new account)
+  UPDATE CTA-001 (status changed to frozen)
+  DELETE CTA-003 (account closed/removed)
 
 LSN after changes: 0/YYYYYYYY
 
 Decoding changes from slot workshop_slot:
   LSN=0/XXXXXXXX: BEGIN
-  LSN=0/XXXXXXXX: INSERT ACCT-100 (good_standing)
+  LSN=0/XXXXXXXX: INSERT CTA-100 (good_standing)
   LSN=0/XXXXXXXX: COMMIT
   LSN=0/YYYYYYYY: BEGIN
-  LSN=0/YYYYYYYY: UPDATE ACCT-001 (status = frozen)
+  LSN=0/YYYYYYYY: UPDATE CTA-001 (status = frozen)
   LSN=0/YYYYYYYY: COMMIT
   LSN=0/ZZZZZZZZ: BEGIN
-  LSN=0/ZZZZZZZZ: DELETE ACCT-003
+  LSN=0/ZZZZZZZZ: DELETE CTA-003
   LSN=0/ZZZZZZZZ: COMMIT
 
 Dropped replication slot: workshop_slot
@@ -62,9 +62,9 @@ Created logical replication slot: workshop_slot
 Current LSN: 0/XXXXXXXX
 
 Making DML changes:
-  INSERT ACCT-100 (new account)
-  UPDATE ACCT-001 (status changed to frozen)
-  DELETE ACCT-003 (account closed/removed)
+  INSERT CTA-100 (new account)
+  UPDATE CTA-001 (status changed to frozen)
+  DELETE CTA-003 (account closed/removed)
 
 LSN after changes: 0/YYYYYYYY
 

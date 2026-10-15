@@ -62,8 +62,8 @@ def setup(conn):
         cur.execute(f"""
             INSERT INTO {schema}.{DEMO_TABLE}(account_id, branch_id, line, spec, embedding, location)
             SELECT
-                'ACCT-' || g,
-                (ARRAY['BR-NYC', 'BR-SFO', 'BR-LON'])[1 + (g % 3)],
+                'CTA-' || g,
+                (ARRAY['BR-CDMX', 'BR-MTY', 'BR-GDL'])[1 + (g % 3)],
                 (ARRAY['Checking', 'Savings', 'Credit'])[1 + (g % 3)],
                 jsonb_build_object(
                     'type', (ARRAY['retail', 'commercial', 'wealth'])[1 + (g % 3)],
@@ -93,12 +93,12 @@ def run_unified_query(conn):
             (spec->>'type') as account_type,
             (spec->>'year')::int as vintage,
             -- vector similarity: find accounts with similar embeddings
-            (embedding <-> (SELECT embedding FROM {schema}.{DEMO_TABLE} WHERE account_id='ACCT-1'))::numeric(6,4) as embedding_distance,
+            (embedding <-> (SELECT embedding FROM {schema}.{DEMO_TABLE} WHERE account_id='CTA-1'))::numeric(6,4) as embedding_distance,
             -- geospatial: distance to a reference point
             ST_Distance(location, ST_MakePoint(-73.0, 45.0)::geometry) * 111.0 as km_from_ref
         FROM {schema}.{DEMO_TABLE}
         WHERE
-            branch_id = 'BR-NYC'
+            branch_id = 'BR-CDMX'
             AND (spec->>'type') = 'commercial'
             AND ST_DWithin(location, ST_MakePoint(-73.0, 45.0)::geometry, 0.1)
         ORDER BY embedding_distance, km_from_ref
@@ -132,7 +132,7 @@ def show_explain(conn):
             (spec->>'type') as account_type,
             ST_Distance(location, ST_MakePoint(-73.0, 45.0)::geometry) as km_from_ref
         FROM {schema}.{DEMO_TABLE}
-        WHERE branch_id = 'BR-NYC'
+        WHERE branch_id = 'BR-CDMX'
     """
 
     with conn.cursor() as cur:
@@ -165,11 +165,11 @@ def main():
                     line,
                     (spec->>'type') as account_type,
                     (spec->>'year')::int as vintage,
-                    (embedding <-> (SELECT embedding FROM {schema}.{DEMO_TABLE} WHERE account_id='ACCT-1'))::numeric(6,4) as embedding_distance,
+                    (embedding <-> (SELECT embedding FROM {schema}.{DEMO_TABLE} WHERE account_id='CTA-1'))::numeric(6,4) as embedding_distance,
                     ST_Distance(location, ST_MakePoint(-73.0, 45.0)::geometry) * 111.0 as km_from_ref
                 FROM {schema}.{DEMO_TABLE}
                 WHERE
-                    branch_id = 'BR-NYC'
+                    branch_id = 'BR-CDMX'
                     AND (spec->>'type') = 'commercial'
                     AND ST_DWithin(location, ST_MakePoint(-73.0, 45.0)::geometry, 0.1)
                 ORDER BY embedding_distance, km_from_ref

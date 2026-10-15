@@ -6,7 +6,7 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 
 ```text
 account_id    health_pct  xmin  xmax  ctid
-ACCT-100240   91.00       1234  0     (0,5)
+CTA-100240   91.00       1234  0     (0,5)
 ```
 
 The row is alive: xmin=1234 (created by TID 1234), xmax=0 (not deleted), ctid=(0,5) (physical location: page 0, slot 5).
@@ -18,11 +18,11 @@ After UPDATE health_pct=50.0:
 ```text
 -- Before:
 account_id    health_pct  xmin  xmax  ctid
-ACCT-100240   91.00       1234  0     (0,5)
+CTA-100240   91.00       1234  0     (0,5)
 
 -- After:
 account_id    health_pct  xmin  xmax  ctid
-ACCT-100240   50.00       1245  0     (0,7)
+CTA-100240   50.00       1245  0     (0,7)
 ```
 
 - `xmin` changed: 1234 to 1245 (new transaction)
@@ -41,7 +41,7 @@ n_live_tup  n_dead_tup  last_vacuum
 ```
 
 - `n_live_tup`: ~8 (all rows in the account table, or just the sample)
-- `n_dead_tup`: 9 (the 9 old versions of ACCT-100240 that we UPDATEd)
+- `n_dead_tup`: 9 (the 9 old versions of CTA-100240 that we UPDATEd)
 - `last_vacuum`: NULL or a timestamp if VACUUM has run
 
 The dead tuples accumulate until VACUUM cleans them up.

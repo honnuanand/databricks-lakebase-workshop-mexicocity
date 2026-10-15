@@ -14,8 +14,8 @@
 
 ## The scenario
 
-A credit alert names a counterparty, `CP-GOLDMAN`. Risk wants a complete list of funds that could
-be exposed: any fund that holds an instrument traded by CP-GOLDMAN, directly or through a nested
+A credit alert names a counterparty, `CP-ALTAMAR`. Risk wants a complete list of funds that could
+be exposed: any fund that holds an instrument traded by CP-ALTAMAR, directly or through a nested
 sleeve.
 
 In SQL, you walk the holdings tree with a recursive CTE and then join to the counterparty edge:
@@ -30,7 +30,7 @@ WITH RECURSIVE tree(root_fund, node) AS (
 SELECT DISTINCT t.root_fund
   FROM tree t
   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
- WHERE tc.counterparty_id = 'CP-GOLDMAN'
+ WHERE tc.counterparty_id = 'CP-ALTAMAR'
    AND t.root_fund LIKE 'FUND-%'
 ```
 
@@ -59,7 +59,7 @@ multi-hop query:
 ```sparql
 SELECT DISTINCT ?fund WHERE {
   ?fund holds+ ?instrument .
-  ?instrument traded_by <http://bank.local/CP-GOLDMAN> .
+  ?instrument traded_by <http://bank.local/CP-ALTAMAR> .
 }
 ```
 
@@ -68,7 +68,7 @@ set of recursion and join steps.
 
 ## The wow moment
 
-You write a SPARQL query that reads like English ("funds that hold something traded by CP-GOLDMAN"),
+You write a SPARQL query that reads like English ("funds that hold something traded by CP-ALTAMAR"),
 run it on the graph you built earlier, and get the answer in milliseconds. Then you write the
 equivalent SQL with a recursive CTE and a join and see the difference in readability. Both are
 correct; the graph query is closer to how you actually think about the problem.
@@ -77,7 +77,7 @@ correct; the graph query is closer to how you actually think about the problem.
 
 1. Build on the graph from the previous journey (or rebuild it here).
 2. Write a simple SPARQL query: "which instruments does FUND-GROWTH-A hold directly?"
-3. Extend it to a multi-hop query: "which funds hold an instrument traded by CP-GOLDMAN?"
+3. Extend it to a multi-hop query: "which funds hold an instrument traded by CP-ALTAMAR?"
 4. Write the equivalent SQL and compare readability and performance.
 
 Full copy-paste steps are in [`instructions.md`](instructions.md); expected output is in

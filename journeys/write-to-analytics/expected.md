@@ -7,16 +7,16 @@ no live output for that step; you see the query you would run.
 ## Step 1, write a transaction through Lakebase
 
 ```text
-  inserted txn_id=11: amount_usd=2200.00, anomaly_score=8.70
+  inserted txn_id=11: amount=38500.00, anomaly_score=8.70
 ```
 
-Your `txn_id` will differ. The row is a real INSERT on your branch, a $2,200 charge on
-ACCT-100240 with a high anomaly score.
+Your `txn_id` will differ. The row is a real INSERT on your branch, a MXN 38,500 SPEI transfer on
+CTA-100240 with a high anomaly score.
 
 ## Step 2, compute and write back the fraud score
 
 ```text
-  scored + wrote back: (11, 'ACCT-100240', Decimal('2200.00'), Decimal('8.70'), Decimal('92.00'), Decimal('179.0'))
+  scored + wrote back: (11, 'CTA-100240', Decimal('38500.00'), Decimal('8.70'), Decimal('92.00'), Decimal('179.0'))
 ```
 
 The fraud_risk is `ROUND(100 * (anomaly_score/10 + util_pct/100), 1)` = `ROUND(100*(0.87+0.92),1)`
@@ -28,9 +28,9 @@ There is no live output here on purpose. You see the query to run once the datab
 in Unity Catalog:
 
 ```sql
-SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk
+SELECT account_id, ts, amount, anomaly_score, fraud_risk
 FROM <catalog>.bank.txn
-WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;
+WHERE account_id = 'CTA-100240' ORDER BY ts DESC LIMIT 1;
 ```
 
 ## The numbers that matter

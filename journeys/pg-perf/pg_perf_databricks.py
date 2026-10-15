@@ -63,7 +63,7 @@ print('Ready.')
 
 # MAGIC ## Step 1, Create demo table
 # MAGIC
-# MAGIC Create a table where region is 100 percent correlated with branch_id. Branch BR-NYC is US-Northeast, BR-SFO is US-West.
+# MAGIC Create a table where region is 100 percent correlated with branch_id. Branch BR-CDMX is MX-Centro, BR-MTY is MX-Noreste.
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE TABLE account_perf_demo (
@@ -71,7 +71,7 @@ print('Ready.')
 # MAGIC     account_id TEXT,
 # MAGIC     branch_id TEXT,
 # MAGIC     region TEXT,
-# MAGIC     amount_usd NUMERIC,
+# MAGIC     amount NUMERIC,
 # MAGIC     health_pct NUMERIC
 # MAGIC );
 # MAGIC ```
@@ -87,20 +87,20 @@ with connect() as conn:
                 account_id TEXT,
                 branch_id TEXT,
                 region TEXT,
-                amount_usd NUMERIC,
+                amount NUMERIC,
                 health_pct NUMERIC
             )
         """)
         cur.execute(f"""
-            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, branch_id, region, amount_usd, health_pct)
+            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, branch_id, region, amount, health_pct)
             SELECT
-                'ACCT-' || g,
-                (ARRAY['BR-NYC', 'BR-NYC', 'BR-SFO', 'BR-SFO'])[1 + (g % 4)],
+                'CTA-' || g,
+                (ARRAY['BR-CDMX', 'BR-CDMX', 'BR-MTY', 'BR-MTY'])[1 + (g % 4)],
                 CASE (g % 4)
-                    WHEN 0 THEN 'US-Northeast'
-                    WHEN 1 THEN 'US-Northeast'
-                    WHEN 2 THEN 'US-West'
-                    ELSE 'US-West'
+                    WHEN 0 THEN 'MX-Centro'
+                    WHEN 1 THEN 'MX-Centro'
+                    WHEN 2 THEN 'MX-Noreste'
+                    ELSE 'MX-Noreste'
                 END,
                 50.0 + (g % 30),
                 80.0 + (g % 20)
@@ -118,13 +118,13 @@ with connect() as conn:
 # MAGIC ```sql
 # MAGIC EXPLAIN ANALYZE
 # MAGIC SELECT account_id FROM account_perf_demo
-# MAGIC WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'
+# MAGIC WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'
 # MAGIC ```
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
-        query = f"SELECT account_id FROM {SCHEMA}.{DEMO_TABLE} WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'"
+        query = f"SELECT account_id FROM {SCHEMA}.{DEMO_TABLE} WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'"
         est, act = _explain(cur, query)
         if est > 0:
             ratio = act / est
@@ -167,13 +167,13 @@ with connect() as conn:
 # MAGIC ```sql
 # MAGIC EXPLAIN ANALYZE
 # MAGIC SELECT account_id FROM account_perf_demo
-# MAGIC WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'
+# MAGIC WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'
 # MAGIC ```
 # COMMAND ----------
 
 with connect() as conn:
     with conn.cursor() as cur:
-        query = f"SELECT account_id FROM {SCHEMA}.{DEMO_TABLE} WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'"
+        query = f"SELECT account_id FROM {SCHEMA}.{DEMO_TABLE} WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'"
         est, act = _explain(cur, query)
         print(f'After CREATE STATISTICS:')
         print(f'  Estimated: {est:,}')

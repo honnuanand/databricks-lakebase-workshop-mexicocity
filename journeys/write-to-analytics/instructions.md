@@ -31,7 +31,7 @@ Read on for what each step does; the exact output to expect is in [`expected.md`
 
 ### Step 1, write a transaction through Lakebase (OLTP)
 
-Insert a new card transaction, a $2,200 charge on ACCT-100240 with a high anomaly score:
+Insert a new transaction, a MXN 38,500 SPEI transfer from CTA-100240 with a high anomaly score:
 
 ```bash
 python write_to_analytics.py --step write
@@ -40,8 +40,8 @@ python write_to_analytics.py --step write
 The script runs:
 
 ```sql
-INSERT INTO bank.txn (account_id, ts, amount_usd, anomaly_score, mcc, util_pct)
-VALUES ('ACCT-100240', now(), 2200.00, 8.7, 6011, 92.0)
+INSERT INTO bank.txn (account_id, ts, amount, channel, anomaly_score, mcc, util_pct)
+VALUES ('CTA-100240', now(), 38500.00, 'SPEI', 8.7, NULL, 92.0)
 RETURNING txn_id;
 ```
 
@@ -73,9 +73,9 @@ The full run prints the exact query you would run on a SQL warehouse to read the
 the lakehouse, once the database is registered as a Unity Catalog online catalog:
 
 ```sql
-SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk
+SELECT account_id, ts, amount, anomaly_score, fraud_risk
 FROM <catalog>.bank.txn
-WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;
+WHERE account_id = 'CTA-100240' ORDER BY ts DESC LIMIT 1;
 ```
 
 The transaction you wrote in Step 1 appears there immediately, the same copy, no pipeline.
@@ -88,7 +88,7 @@ Query Postgres to confirm the risk score is now there:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk FROM bank.txn WHERE account_id='ACCT-100240' ORDER BY ts DESC LIMIT 1"
+  "SELECT account_id, ts, amount, anomaly_score, fraud_risk FROM bank.txn WHERE account_id='CTA-100240' ORDER BY ts DESC LIMIT 1"
 ```
 
 The most recent transaction now has the fraud-risk score, computed on the lakehouse, written back to Postgres.

@@ -62,7 +62,7 @@ print('Ready.')
 # MAGIC     txn_id BIGSERIAL,
 # MAGIC     account_id TEXT NOT NULL,
 # MAGIC     ts TIMESTAMPTZ NOT NULL,
-# MAGIC     amount_usd NUMERIC(12,2),
+# MAGIC     amount NUMERIC(12,2),
 # MAGIC     anomaly_score NUMERIC(6,2),
 # MAGIC     PRIMARY KEY (txn_id, ts)
 # MAGIC ) PARTITION BY RANGE (ts);
@@ -77,7 +77,7 @@ with connect() as conn:
                 txn_id BIGSERIAL,
                 account_id TEXT NOT NULL,
                 ts TIMESTAMPTZ NOT NULL,
-                amount_usd NUMERIC(12,2),
+                amount NUMERIC(12,2),
                 anomaly_score NUMERIC(6,2),
                 PRIMARY KEY (txn_id, ts)
             ) PARTITION BY RANGE (ts)
@@ -112,9 +112,9 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"""
-            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, ts, amount_usd, anomaly_score)
+            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, ts, amount, anomaly_score)
             SELECT
-                'ACCT-' || (g % 100),
+                'CTA-' || (g % 100),
                 '2024-01-01'::date + (g / 100 || ' days')::interval + (g % 3600 || ' seconds')::interval,
                 50.0 + (g % 30),
                 2.0 + (g % 5)::numeric / 10

@@ -186,7 +186,7 @@ for instrument in sorted(sql_instruments):
     print(f"  {instrument}")
 
 print(f"\nBoth queries return the same {len(instruments)} instruments. The graph and SQL are equivalent here.")
-print(f"The difference shows when you ask multi-hop questions like 'funds holding an instrument traded by CP-GOLDMAN'.")
+print(f"The difference shows when you ask multi-hop questions like 'funds holding an instrument traded by CP-ALTAMAR'.")
 
 # COMMAND ----------
 

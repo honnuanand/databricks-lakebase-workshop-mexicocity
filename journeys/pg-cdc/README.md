@@ -24,7 +24,7 @@ This is roadmap on Lakebase. This journey previews the capability against a Post
 
 ## The wow moment
 
-You create a logical replication slot. You make three committed writes (INSERT, UPDATE, DELETE). You decode the slot and see the exact stream: `BEGIN → INSERT(ACCT-100, good_standing) → COMMIT`, then `BEGIN → UPDATE(ACCT-100, frozen) → COMMIT`, then `BEGIN → DELETE(ACCT-003) → COMMIT`. Each record [LSN](../../docs/glossary.md)-stamped, orderable, durable.
+You create a logical replication slot. You make three committed writes (INSERT, UPDATE, DELETE). You decode the slot and see the exact stream: `BEGIN → INSERT(CTA-100, good_standing) → COMMIT`, then `BEGIN → UPDATE(CTA-100, frozen) → COMMIT`, then `BEGIN → DELETE(CTA-003) → COMMIT`. Each record [LSN](../../docs/glossary.md)-stamped, orderable, durable.
 
 ## What you'll do
 

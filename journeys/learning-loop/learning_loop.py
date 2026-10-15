@@ -40,11 +40,11 @@ TABLE = "bank.case_note"
 # Real-world messy analyst case notes on real accounts. Some clear, some ambiguous, so
 # the AI's confidence score varies and low-confidence ones route to a human reviewer.
 WRITEUPS = [
-    ("WU-001", "ACCT-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
-    ("WU-002", "ACCT-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
-    ("WU-003", "ACCT-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
-    ("WU-004", "ACCT-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
-    ("WU-005", "ACCT-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
+    ("WU-001", "CTA-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
+    ("WU-002", "CTA-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
+    ("WU-003", "CTA-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
+    ("WU-004", "CTA-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
+    ("WU-005", "CTA-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
 ]
 
 

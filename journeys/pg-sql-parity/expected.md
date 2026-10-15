@@ -5,11 +5,11 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 ## Step 1, holdings data model
 
 ```text
-('FUND-GROWTH-A', 'INS-CASH-USD', 1)
+('FUND-GROWTH-A', 'INS-CASH-MXN', 1)
 ('FUND-GROWTH-A', 'INS-SLEEVE-EQ', 2)
-('FUND-GROWTH-A', 'INS-MSFT', 8)
-('INS-SLEEVE-EQ', 'INS-AAPL', 1)
-('INS-SLEEVE-EQ', 'INS-UST-10Y', 2)
+('FUND-GROWTH-A', 'INS-ZAFR', 8)
+('INS-SLEEVE-EQ', 'INS-QTZL', 1)
+('INS-SLEEVE-EQ', 'INS-MBONO-10Y', 2)
 ```
 
 A few rows showing the parent-child-units structure. Each row is an edge in the holdings tree.
@@ -18,11 +18,11 @@ A few rows showing the parent-child-units structure. Each row is an edge in the 
 
 ```text
 account_id    health_pct  rank  rank_with_ties  prev_health
-ACCT-100241   99.10        1       1             NULL
-ACCT-100234   98.50        2       2             99.10
-ACCT-100235   96.20        3       3             98.50
-ACCT-200310   94.70        4       4             96.20
-ACCT-300420   97.30        ...
+CTA-100241   99.10        1       1             NULL
+CTA-100234   98.50        2       2             99.10
+CTA-100235   96.20        3       3             98.50
+CTA-200310   94.70        4       4             96.20
+CTA-300420   97.30        ...
 ```
 
 The `ROW_NUMBER()` gives a unique rank (1, 2, 3...). The `RANK()` would give ties the same rank and skip the next rank. The `LAG()` shows the previous row's health when sorted by health descending. All three are standard Postgres window functions.
@@ -33,14 +33,14 @@ Starting from FUND-GROWTH-A, the tree expands down to all leaf instruments:
 
 ```text
 instrument_id    multiplier  depth
-INS-CASH-USD     1           1
+INS-CASH-MXN     1           1
 INS-SLEEVE-EQ    2           1
-INS-MSFT         8           1
-INS-AAPL         2           2
-INS-UST-10Y      4           2
+INS-ZAFR         8           1
+INS-QTZL         2           2
+INS-MBONO-10Y      4           2
 ```
 
-(Your output will have more rows if you seed deeper structures; this is the base tree.) The `multiplier` is the cumulative units: FUND-GROWTH-A holds 2 units of the equity sleeve, and the sleeve holds 2 units of the 10-year Treasury, so the fund is really exposed to 4 units of the Treasury. The multiplier multiplies down the chain.
+(Your output will have more rows if you seed deeper structures; this is the base tree.) The `multiplier` is the cumulative units: FUND-GROWTH-A holds 2 units of the equity sleeve, and the sleeve holds 2 units of the 10-year Bono M, so the fund is really exposed to 4 units of the Bono M. The multiplier multiplies down the chain.
 
 The `depth` column shows how many levels deep each instrument is. Leaf instruments reached through a sub-fund have higher depths. The recursion stops after 10 levels (to prevent infinite loops on circular structures, though the holdings tree is a clean tree).
 

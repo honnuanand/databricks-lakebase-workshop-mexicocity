@@ -56,10 +56,10 @@ the `bank` schema, never pseudocode.
 directly, without the README or `00-setup/`'s "Meet the bank" intro. So the FIRST time a
 notebook names a specific entity, give a one-line gloss inline, don't assume reading order:
 
-- First mention of `ACCT-100240`: "ACCT-100240, a retail credit account at the NYC branch (it
+- First mention of `CTA-100240`: "CTA-100240, a retail credit account at the CDMX branch (it
   starts out on a `watch` status at 91% health)".
-- First mention of a fund/instrument/holdings tree: "FUND-GROWTH-A, which holds Microsoft, cash,
-  and an equity sleeve that in turn holds Apple and a Treasury".
+- First mention of a fund/instrument/holdings tree: "FUND-GROWTH-A, which holds Zafiro Software, cash,
+  and an equity sleeve that in turn holds Quetzal Tecnologia and a Bono M".
 - Same for a trade, branch, counterparty, etc.: one clause the first time, bare id after.
 
 Keep it to a clause, not a re-teach; the full cast lives in `00-setup/`'s "Meet the bank".

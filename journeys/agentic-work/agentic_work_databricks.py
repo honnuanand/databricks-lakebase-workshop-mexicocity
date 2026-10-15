@@ -44,7 +44,7 @@ from lakebase import connect, _env, client
 
 NAMESPACE = "default"
 SESSION_ID = "sess-01"
-ACCOUNT_ID = "ACCT-100240"
+ACCOUNT_ID = "CTA-100240"
 TABLE_MEMORY = "bank.agent_memory"
 TABLE_ACCOUNT = "bank.account"
 TABLE_TXN = "bank.txn"
@@ -57,7 +57,7 @@ print(f"Account under review: {ACCOUNT_ID}")
 # MAGIC %md
 # MAGIC ## Step 0 - Setup: reset the flagged account
 # MAGIC
-# MAGIC Put ACCT-100240 back on 'watch' and clear any prior hold flag / memory, so the first review places the hold and the second refuses.
+# MAGIC Put CTA-100240 back on 'watch' and clear any prior hold flag / memory, so the first review places the hold and the second refuses.
 
 # COMMAND ----------
 
@@ -78,8 +78,8 @@ print(f"Prepared: {ACCOUNT_ID} reset to 'watch', ready for review")
 # MAGIC Check the account status and its riskiest transaction. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT account_id, line, type, status, health_pct FROM bank.account WHERE account_id='ACCT-100240';
-# MAGIC SELECT MAX(anomaly_score) FROM bank.txn WHERE account_id='ACCT-100240';
+# MAGIC SELECT account_id, line, type, status, health_pct FROM bank.account WHERE account_id='CTA-100240';
+# MAGIC SELECT MAX(anomaly_score) FROM bank.txn WHERE account_id='CTA-100240';
 # MAGIC ```
 
 # COMMAND ----------
@@ -103,8 +103,8 @@ print(f"  top transaction anomaly_score: {top_score}")
 # MAGIC The agent reads the account status and its top anomaly score. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT status FROM bank.account WHERE account_id='ACCT-100240';
-# MAGIC SELECT MAX(anomaly_score) FROM bank.txn WHERE account_id='ACCT-100240';
+# MAGIC SELECT status FROM bank.account WHERE account_id='CTA-100240';
+# MAGIC SELECT MAX(anomaly_score) FROM bank.txn WHERE account_id='CTA-100240';
 # MAGIC ```
 
 # COMMAND ----------
@@ -128,9 +128,9 @@ if top_score and float(top_score) >= 8.0:
 # MAGIC The agent freezes the account and writes a flag row to case_note. One logical action, two writes. The SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC UPDATE bank.account SET status='frozen' WHERE account_id='ACCT-100240';
+# MAGIC UPDATE bank.account SET status='frozen' WHERE account_id='CTA-100240';
 # MAGIC INSERT INTO bank.case_note (account_id, writeup, category, finding, action, confidence)
-# MAGIC VALUES ('ACCT-100240', '...', 'fraud', '...', 'hold_placed', 0.95);
+# MAGIC VALUES ('CTA-100240', '...', 'fraud', '...', 'hold_placed', 0.95);
 # MAGIC ```
 
 # COMMAND ----------
@@ -157,7 +157,7 @@ print(f"Placed hold on {ACCOUNT_ID}: account frozen, case_note flag written")
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO bank.agent_memory (namespace, session_id, agent_id, role, content)
-# MAGIC VALUES ('default', 'sess-01', 'fraud_advisor', 'assistant', 'placed hold on ACCT-100240');
+# MAGIC VALUES ('default', 'sess-01', 'fraud_advisor', 'assistant', 'placed hold on CTA-100240');
 # MAGIC ```
 
 # COMMAND ----------

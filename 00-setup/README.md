@@ -65,22 +65,25 @@ the `bank` schema. You load it onto your branch in [`your-branch.md`](your-branc
 to know the cast now means the journeys read easily later, because the same branches, accounts, and
 trades show up throughout.
 
-- **Three branches**, run by two business units: `BR-NYC` and `BR-SFO` (operator RetailBank),
-  and `BR-LON` (operator GlobalMarkets). Each serves different market segments.
-- **Accounts** across those branches, named `ACCT-100xxx` at NYC, `ACCT-200xxx` at SFO, `ACCT-300xxx` at London.
-  The recurring one to know is **`ACCT-100240`**, a retail credit account at NYC on a `watch` status that
-  you'll track, query, and diagnose for fraud across several journeys. When you see `ACCT-100240`, that's the one.
-- **Transactions** flow through each account (card charges, transfers, wires). `ACCT-100240` has
-  a series of transactions, including a suspicious high-value one, you'll analyze through the data journeys.
+- **Three branches**, run by two business units: `BR-CDMX` and `BR-MTY` (operator RetailBank),
+  and `BR-GDL` (operator GlobalMarkets). Each serves different market segments.
+- **Accounts** across those branches, named `CTA-100xxx` in CDMX, `CTA-200xxx` in Monterrey, `CTA-300xxx` in Guadalajara.
+  The recurring one to know is **`CTA-100240`**, a retail credit account in CDMX on a `watch` status that
+  you'll track, query, and diagnose for fraud across several journeys. When you see `CTA-100240`, that's the one.
+- **Transactions** flow through each account, in MXN, by channel: `SPEI` (bank transfer), `tarjeta`
+  (card), or `CoDi` (QR payment). `CTA-100240` has a series of transactions, including a suspicious
+  late-night SPEI transfer, you'll analyze through the data journeys.
+- **Everything is fictional:** the counterparties, custodians, and listed companies are made up, and each
+  account's CLABE is synthetic (fictional bank code 999).
 - **A holdings hierarchy**: funds hold instruments, and some holdings are sleeves (an instrument that
-  itself holds other instruments). `FUND-GROWTH-A` holds Microsoft, cash, and an equity sleeve, and that
-  sleeve in turn holds Apple and a Treasury; that two-level tree is what the recursive-query and
+  itself holds other instruments). `FUND-GROWTH-A` holds Zafiro Software, cash, and an equity sleeve, and that
+  sleeve in turn holds Quetzal Tecnologia and a Bono M; that two-level tree is what the recursive-query and
   knowledge-graph journeys walk.
 - **Trades and settlements** (execution side), **counterparties, custodians, and positions** (the portfolio),
   and **case notes** (free text the AI journeys learn to read).
 
 You don't need to memorize any of this. It's seeded for you, and each journey reintroduces the
-few rows it touches. `ACCT-100234` is just the character worth remembering.
+few rows it touches. `CTA-100234` is just the character worth remembering.
 
 ## When you're done
 

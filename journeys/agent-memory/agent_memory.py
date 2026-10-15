@@ -36,9 +36,9 @@ SESSION_ID = "sess-01"
 FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 TABLE = "bank.agent_memory"
 
-QUESTION = "Is ACCT-100240 cleared, or do we freeze it for suspected fraud?"
+QUESTION = "Is CTA-100240 cleared, or do we freeze it for suspected fraud?"
 SEED_NOTE = (
-    "ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, "
+    "CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, "
     "do not release the hold until cardholder is reached."
 )
 
@@ -113,13 +113,13 @@ def _call_agent(agent_id: str, question: str) -> str:
     if response is None:
         if agent_id == "fraud_advisor":
             response = (
-                "ACCT-100240 is not cleared. An anomaly score of 8.7 on an overnight "
+                "CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight "
                 "card-not-present spike is a strong fraud signal. Keep the hold in place and "
                 "verify the recent charges with the cardholder before releasing any funds."
             )
         else:  # ops_assistant
             response = (
-                "I will keep the hold on ACCT-100240 in place and not release funds, in line "
+                "I will keep the hold on CTA-100240 in place and not release funds, in line "
                 "with the fraud advisor's determination. I will contact the cardholder to "
                 "confirm the overnight charges before any further action."
             )

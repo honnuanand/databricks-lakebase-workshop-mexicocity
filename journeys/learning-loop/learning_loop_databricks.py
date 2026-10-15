@@ -55,7 +55,7 @@ print("Learning loop: seed -> extract -> route -> correct -> analyze")
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO bank.case_note (account_id, writeup)
-# MAGIC VALUES ('ACCT-100240', 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.');
+# MAGIC VALUES ('CTA-100240', 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.');
 # MAGIC ```
 
 # COMMAND ----------
@@ -67,11 +67,11 @@ with connect() as conn:
 
 # Real accounts and their analyst case notes.
 writeups = [
-    ("ACCT-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
-    ("ACCT-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
-    ("ACCT-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
-    ("ACCT-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
-    ("ACCT-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
+    ("CTA-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
+    ("CTA-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
+    ("CTA-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
+    ("CTA-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
+    ("CTA-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
 ]
 
 with connect() as conn:

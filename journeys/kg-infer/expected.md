@@ -24,8 +24,8 @@ Defining rule: instrument distressed → fund exposed
 ## Step 3, assert a distressed instrument
 
 ```text
-Marking INS-AAPL as distressed...
-  Asserted: INS-AAPL distressed=true
+Marking INS-QTZL as distressed...
+  Asserted: INS-QTZL distressed=true
 ```
 
 ## Step 4, query before inference
@@ -50,8 +50,8 @@ Applying entailment...
   Inferred: 1 new triples
 ```
 
-One new triple: FUND-GROWTH-A is exposed. The graph reached INS-AAPL by walking FUND-GROWTH-A →
-INS-SLEEVE-EQ → INS-AAPL. FUND-INCOME-B holds nothing, so nothing is inferred for it. The count of
+One new triple: FUND-GROWTH-A is exposed. The graph reached INS-QTZL by walking FUND-GROWTH-A →
+INS-SLEEVE-EQ → INS-QTZL. FUND-INCOME-B holds nothing, so nothing is inferred for it. The count of
 inferred triples depends on how many funds hold the distressed instrument, directly or through a
 sleeve.
 
@@ -64,7 +64,7 @@ Funds exposed:
   FUND-GROWTH-A
 ```
 
-FUND-GROWTH-A was inferred to be exposed because it holds INS-AAPL two hops down, through the
+FUND-GROWTH-A was inferred to be exposed because it holds INS-QTZL two hops down, through the
 equity sleeve. The graph inferred it; you never stored that link.
 
 ## Step 7, the entailment chain
@@ -78,7 +78,7 @@ Defining chain rule: exposed sleeve → exposed fund
 ```
 
 The chain is exactly what Step 5 computed: the transitive `contains` walk *is* the multi-hop rule.
-INS-AAPL distressed → INS-SLEEVE-EQ is on the path → FUND-GROWTH-A exposed.
+INS-QTZL distressed → INS-SLEEVE-EQ is on the path → FUND-GROWTH-A exposed.
 
 ## Full run output
 
@@ -91,8 +91,8 @@ Loading graph...
 Defining rule: instrument distressed → fund exposed
   [rule text]
 
-Marking INS-AAPL as distressed...
-  Asserted: INS-AAPL distressed=true
+Marking INS-QTZL as distressed...
+  Asserted: INS-QTZL distressed=true
 
 Query (before inference): which funds are exposed?
   Funds exposed: []

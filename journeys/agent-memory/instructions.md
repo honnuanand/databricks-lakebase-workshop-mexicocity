@@ -55,7 +55,7 @@ The script inserts a note like:
 ```sql
 INSERT INTO bank.agent_memory (namespace, session_id, agent_id, role, content)
 VALUES ('default', 'sess-01', 'fraud_advisor', 'assistant',
-        'ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.');
+        'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.');
 ```
 
 Read it back:
@@ -83,9 +83,9 @@ You should see output like:
 
 ```text
 Fraud Advisor sees prior memory:
-  - ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
+  - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
 Fraud Advisor response:
-  ACCT-100240 is not cleared. The 8.7 anomaly score on an overnight card-not-present spike warrants keeping the hold until the cardholder confirms the charges.
+  CTA-100240 is not cleared. The 8.7 anomaly score on an overnight card-not-present spike warrants keeping the hold until the cardholder confirms the charges.
 ```
 
 Check the memory table:
@@ -115,10 +115,10 @@ You should see output like:
 
 ```text
 Ops Assistant sees prior memory:
-  - ACCT-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
-  - fraud_advisor (assistant): ACCT-100240 is not cleared...
+  - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
+  - fraud_advisor (assistant): CTA-100240 is not cleared...
 Ops Assistant response:
-  I will keep the hold on ACCT-100240 in place and will not release funds, per the fraud advisor's note. I will reach out to the cardholder to verify.
+  I will keep the hold on CTA-100240 in place and will not release funds, per the fraud advisor's note. I will reach out to the cardholder to verify.
 ```
 
 ### Step 5, query the shared memory directly

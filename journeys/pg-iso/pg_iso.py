@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common",
 from lakebase import connect, _env
 
 DEMO_TABLE = "account_isolation_demo"
-ACCOUNT_ID = "ACCT-TEST-ISOLATION"
+ACCOUNT_ID = "CTA-TEST-ISOLATION"
 
 
 def setup(conn):

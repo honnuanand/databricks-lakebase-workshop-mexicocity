@@ -8,7 +8,7 @@ ranked results in a single SQL statement.
 its text (`name kind spec`), not a real embedding model. A hash is reproducible and needs no model
 call, which is why the workshop uses it, but it carries no financial meaning: the resulting
 "similarity" ranking is an artifact of hashing, not a judgement that two securities actually
-resemble each other. So do not expect "AAPL and MSFT come back as the closest pair" here, even
+resemble each other. So do not expect "QTZL and ZAFR come back as the closest pair" here, even
 though they are the two tech equities. What you *are* verifying is the mechanism, store a vector on
 the row, rank the rest with `<=>` in one SQL statement. Swap the hash for a real embedding model
 (see "From the field" below) and the same query returns semantically meaningful neighbours.
@@ -16,15 +16,15 @@ the row, rank the rest with `<=>` in one SQL statement. Swap the hash for a real
 ## Step 1, instruments table
 
 ```text
-('INS-AAPL', 'Apple Inc')
-('INS-CASH-USD', 'US Dollar Cash')
-('INS-MSFT', 'Microsoft Corp')
+('INS-QTZL', 'Quetzal Tecnologia')
+('INS-CASH-MXN', 'Mexican Peso Cash')
+('INS-ZAFR', 'Zafiro Software')
 ('INS-SLEEVE-EQ', 'Equity Sleeve')
-('INS-UST-10Y', 'US Treasury 10Y')
+('INS-MBONO-10Y', 'Bono M 10Y (Mexico)')
 ```
 
-The bank seed has 5 instruments: two tech equities (AAPL, MSFT), a cash position, an equity-sleeve
-ETF, and a 10-year Treasury bond. Each has a JSONB `spec` (ticker, sector, beta, tenor, coupon).
+The bank seed has 5 instruments: two tech equities (QTZL, ZAFR), a cash position, an equity-sleeve
+ETF, and a 10-year Bono M (Mexican government bond). Each has a JSONB `spec` (ticker, sector, beta, tenor, coupon).
 
 ## Step 2, pgvector extension
 
@@ -46,32 +46,32 @@ A 768-dimensional `vector` column was added to the instrument table.
 
 ```text
 Embedding 5 instruments:
-  INS-AAPL: embedded
-  INS-CASH-USD: embedded
-  INS-MSFT: embedded
+  INS-QTZL: embedded
+  INS-CASH-MXN: embedded
+  INS-ZAFR: embedded
   INS-SLEEVE-EQ: embedded
-  INS-UST-10Y: embedded
+  INS-MBONO-10Y: embedded
 ```
 
 All 5 instruments now have 768-dimensional embedding vectors.
 
 ## Step 5, similarity search
 
-Query: find the instruments most similar to `INS-AAPL` by cosine similarity (`<=>`):
+Query: find the instruments most similar to `INS-QTZL` by cosine similarity (`<=>`):
 
 ```text
 Running similarity search:
-  Reference instrument: INS-AAPL
+  Reference instrument: INS-QTZL
   Top comparable instruments:
-    1. INS-UST-10Y: similarity=0.11 (US Treasury 10Y, bond)
+    1. INS-MBONO-10Y: similarity=0.11 (Bono M 10Y (Mexico), bond)
     2. INS-SLEEVE-EQ: similarity=0.03 (Equity Sleeve, etf)
-    3. INS-MSFT: similarity=-0.09 (Microsoft Corp, equity)
-    4. INS-CASH-USD: similarity=-0.22 (US Dollar Cash, cash)
+    3. INS-ZAFR: similarity=-0.09 (Zafiro Software, equity)
+    4. INS-CASH-MXN: similarity=-0.22 (Mexican Peso Cash, cash)
 ```
 
 The ranking and the exact scores will differ from run to run only if you change the embedding
 method. With the hash embedding they are stable but, as noted above, financially arbitrary: here
-the Treasury happens to hash closest to Apple. The important shapes are:
+the Bono M happens to hash closest to Quetzal. The important shapes are:
 - Four rows come back (every instrument except the reference itself), ranked by similarity.
 - The whole ranking is one SQL statement against the same table that holds your positions.
 
@@ -92,11 +92,11 @@ Running `python pg_vector.py` with no arguments prints the whole story:
 Checking instrument table:
   Total instruments: 5
   Sample instruments:
-    - INS-AAPL: Apple Inc
-    - INS-CASH-USD: US Dollar Cash
-    - INS-MSFT: Microsoft Corp
+    - INS-QTZL: Quetzal Tecnologia
+    - INS-CASH-MXN: Mexican Peso Cash
+    - INS-ZAFR: Zafiro Software
     - INS-SLEEVE-EQ: Equity Sleeve
-    - INS-UST-10Y: US Treasury 10Y
+    - INS-MBONO-10Y: Bono M 10Y (Mexico)
 
 Creating pgvector extension:
   Extension 'vector' created
@@ -106,19 +106,19 @@ Adding embedding column (768-dim):
 
 Populating embeddings:
   Embedding 5 instruments:
-    INS-AAPL: embedded
-    INS-CASH-USD: embedded
-    INS-MSFT: embedded
+    INS-QTZL: embedded
+    INS-CASH-MXN: embedded
+    INS-ZAFR: embedded
     INS-SLEEVE-EQ: embedded
-    INS-UST-10Y: embedded
+    INS-MBONO-10Y: embedded
 
 Running similarity search:
-  Reference instrument: INS-AAPL
+  Reference instrument: INS-QTZL
   Top comparable instruments:
-    1. INS-UST-10Y: similarity=0.11 (US Treasury 10Y, bond)
+    1. INS-MBONO-10Y: similarity=0.11 (Bono M 10Y (Mexico), bond)
     2. INS-SLEEVE-EQ: similarity=0.03 (Equity Sleeve, etf)
-    3. INS-MSFT: similarity=-0.09 (Microsoft Corp, equity)
-    4. INS-CASH-USD: similarity=-0.22 (US Dollar Cash, cash)
+    3. INS-ZAFR: similarity=-0.09 (Zafiro Software, equity)
+    4. INS-CASH-MXN: similarity=-0.22 (Mexican Peso Cash, cash)
 
 Creating HNSW index:
   HNSW index created on embedding column

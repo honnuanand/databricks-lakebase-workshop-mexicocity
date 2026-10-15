@@ -59,7 +59,7 @@ operational database.
 ### What does "triple" mean?
 
 A triple is (subject, predicate, object). Example: (Alice, knows, Bob). In the bank:
-(INS-AAPL, traded_by, CP-GOLDMAN).
+(INS-QTZL, traded_by, CP-ALTAMAR).
 
 Every fact in an RDF graph is a triple. By composing triples, you build a graph. A SPARQL query
 navigates those triples to find patterns.

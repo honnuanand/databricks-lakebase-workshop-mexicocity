@@ -25,9 +25,9 @@ python ../common/scripts/lakebase.py --sql \
 ```
 
 ```text
-('BR-LON', 2)
-('BR-NYC', 4)
-('BR-SFO', 2)
+('BR-GDL', 2)
+('BR-CDMX', 4)
+('BR-MTY', 2)
 ```
 
 Three branches, eight accounts. That's the bank you'll spend the rest of the workshop

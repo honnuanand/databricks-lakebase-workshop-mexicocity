@@ -41,8 +41,8 @@ CREATE TABLE accounts (
 **INSERT:**
 ```sql
 INSERT INTO accounts VALUES
-  ('ACCT-100234', 'good_standing', 98.5),
-  ('ACCT-100240', 'watch', 91.0);
+  ('CTA-100234', 'good_standing', 98.5),
+  ('CTA-100240', 'watch', 91.0);
 ```
 
 **SELECT:**
@@ -71,7 +71,7 @@ ORDER BY rank;
 
 **ON CONFLICT (upsert):**
 ```sql
-INSERT INTO accounts VALUES ('ACCT-100240', 'frozen', 88.0)
+INSERT INTO accounts VALUES ('CTA-100240', 'frozen', 88.0)
 ON CONFLICT (account_id) DO UPDATE SET status = 'frozen', health_pct = 88.0;
 ```
 

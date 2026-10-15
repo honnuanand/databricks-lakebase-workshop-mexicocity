@@ -24,10 +24,10 @@ You run a retail bank with two AI agents deployed on Model Serving:
 - **Fraud Advisor**: reasons about account risk, reads transaction anomaly scores, decides
   whether an account should be cleared or frozen for suspected fraud.
 - **Ops Assistant**: handles day-to-day account servicing, answers questions from the branch
-  like "can we release the hold on ACCT-100240, or does it stay frozen?"
+  like "can we release the hold on CTA-100240, or does it stay frozen?"
 
 They never talk to each other directly. But the fraud advisor needs to tell the ops assistant
-something: "ACCT-100240 had a card-not-present charge spike overnight, anomaly score hit 8.7.
+something: "CTA-100240 had a card-not-present charge spike overnight, anomaly score hit 8.7.
 Keep it on watch, do not release the hold until the cardholder is reached." The ops assistant
 needs to know that before it touches the account.
 
@@ -43,7 +43,7 @@ In Lakebase, agent memory is a table with a few columns:
 
 ```text
 id | agent_id      | role      | content                       | created_at
-1  | fraud_advisor | assistant | ACCT-100240 anomaly 8.7, watch | 2026-10-04 10:00:00
+1  | fraud_advisor | assistant | CTA-100240 anomaly 8.7, watch | 2026-10-04 10:00:00
 2  | ops_assistant | user      | Can we release the hold?       | 2026-10-04 10:00:15
 3  | ops_assistant | assistant | Hold stays, per fraud advisor  | 2026-10-04 10:00:16
 ```
@@ -55,7 +55,7 @@ first-class asset, not a black box.
 
 ## The wow moment
 
-The beat worth watching: you ask the fraud advisor "Is ACCT-100240 cleared, or do we freeze
+The beat worth watching: you ask the fraud advisor "Is CTA-100240 cleared, or do we freeze
 it?" It answers and writes the answer to the shared memory table. Then you ask the ops
 assistant the same question, and it reads the *exact same answer from the same table*, even
 though the two agents never sent each other a message. Multi-agent shared state, governed,

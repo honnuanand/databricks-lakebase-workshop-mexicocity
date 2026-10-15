@@ -14,13 +14,13 @@
 
 ## The scenario
 
-An instrument, INS-AAPL, becomes distressed (say its issuer is downgraded, or the position is
-flagged). Your system stored the structure: "INS-AAPL is held inside INS-SLEEVE-EQ, and
+An instrument, INS-QTZL, becomes distressed (say its issuer is downgraded, or the position is
+flagged). Your system stored the structure: "INS-QTZL is held inside INS-SLEEVE-EQ, and
 INS-SLEEVE-EQ is held by FUND-GROWTH-A." But nobody explicitly stored "FUND-GROWTH-A is exposed to
-INS-AAPL."
+INS-QTZL."
 
-That's an inference: if FUND-GROWTH-A holds INS-SLEEVE-EQ, and INS-SLEEVE-EQ holds INS-AAPL, and
-INS-AAPL is distressed, then FUND-GROWTH-A must be exposed. A knowledge graph with rules lets you
+That's an inference: if FUND-GROWTH-A holds INS-SLEEVE-EQ, and INS-SLEEVE-EQ holds INS-QTZL, and
+INS-QTZL is distressed, then FUND-GROWTH-A must be exposed. A knowledge graph with rules lets you
 state this logic once, then apply it automatically to all funds, no matter how deep the holding
 sits.
 
@@ -42,7 +42,7 @@ if (X contains Y) and (Y is_distressed) then (X is_exposed)
 
 Because `contains` is transitive (a fund that holds a sleeve, and the sleeve holds an instrument,
 holds the instrument), the rule chains down the tree. When you add this rule and assert that
-INS-AAPL is_distressed, the graph automatically infers that FUND-GROWTH-A is_exposed, without you
+INS-QTZL is_distressed, the graph automatically infers that FUND-GROWTH-A is_exposed, without you
 explicitly inserting that triple.
 
 This is particularly powerful for exposure analysis, compliance, and impact assessment. You define
@@ -59,7 +59,7 @@ link. The graph walked the holdings tree two hops down and inferred it.
 
 1. Build the graph from the previous journeys (or rebuild it here).
 2. Define a simple rule: "fund contains instrument; instrument distressed → fund exposed."
-3. Assert that one instrument (INS-AAPL) is distressed.
+3. Assert that one instrument (INS-QTZL) is distressed.
 4. Query: "which funds are exposed to this instrument?" and see the inferred results.
 5. See the entailment chain apply through the sleeve: instrument distressed → sleeve holding it
    reached → fund exposed.

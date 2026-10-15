@@ -17,9 +17,9 @@
 # MAGIC
 # MAGIC ## Overview
 # MAGIC
-# MAGIC A $2,200 cash withdrawal lands overnight on account `ACCT-100240`, whose credit utilization is
-# MAGIC already running hot. The authorization path has milliseconds to decide, while the fraud team's
-# MAGIC analytics run in the lakehouse. In the usual architecture, transactions are copied to an analytics
+# MAGIC Late at night, account `CTA-100240` sends MXN 38,500 by SPEI to a beneficiary it has never paid
+# MAGIC before, and its credit utilization is already running hot. The authorization path has milliseconds
+# MAGIC to decide, while the fraud team's analytics run in the lakehouse. In the usual architecture, transactions are copied to an analytics
 # MAGIC store on a schedule, so the fraud score the operational side sees is always a little stale.
 # MAGIC
 # MAGIC With Lakebase, the operational rows and the analytics work on the same copy. In this lab you write
@@ -142,30 +142,30 @@ print("ready")
 # MAGIC %md
 # MAGIC ## B. Write a transaction through Postgres
 # MAGIC
-# MAGIC First add a column to hold the score, then write the new transaction for `ACCT-100240`: $2,200,
-# MAGIC merchant category 6011 (cash withdrawal), anomaly score 8.7 out of 10, and the account at 92%
+# MAGIC First add a column to hold the score, then write the new transaction for `CTA-100240`: MXN 38,500
+# MAGIC by SPEI (so no merchant category code), anomaly score 8.7 out of 10, and the account at 92%
 # MAGIC utilization. This is an ordinary operational write, the kind an application makes all day:
 # MAGIC
 # MAGIC ```sql
 # MAGIC ALTER TABLE bank.txn ADD COLUMN IF NOT EXISTS fraud_risk NUMERIC(5,1);
-# MAGIC INSERT INTO bank.txn (account_id, ts, amount_usd, anomaly_score, mcc, util_pct)
-# MAGIC VALUES ('ACCT-100240', now(), 2200.00, 8.7, 6011, 92.0) RETURNING txn_id;
+# MAGIC INSERT INTO bank.txn (account_id, ts, amount, channel, anomaly_score, mcc, util_pct)
+# MAGIC VALUES ('CTA-100240', now(), 38500.00, 'SPEI', 8.7, NULL, 92.0) RETURNING txn_id;
 # MAGIC ```
 
 # COMMAND ----------
 
 run_sql("ALTER TABLE bank.txn ADD COLUMN IF NOT EXISTS fraud_risk NUMERIC(5,1)")
 r = run_sql("""INSERT INTO bank.txn
-  (account_id, ts, amount_usd, anomaly_score, mcc, util_pct)
-  VALUES ('ACCT-100240', now(), 2200.00, 8.7, 6011, 92.0)
-  RETURNING txn_id, amount_usd, anomaly_score""")
+  (account_id, ts, amount, channel, anomaly_score, mcc, util_pct)
+  VALUES ('CTA-100240', now(), 38500.00, 'SPEI', 8.7, NULL, 92.0)
+  RETURNING txn_id, amount, anomaly_score""")
 rid = r[0][0]
 print("inserted txn_id", r[0])
 
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `inserted txn_id (6, Decimal('2200.00'), Decimal('8.70'))`. The first number is
+# MAGIC **Expected result:** `inserted txn_id (6, Decimal('38500.00'), Decimal('8.70'))`. The first number is
 # MAGIC the new row's `txn_id`: 6 on a freshly loaded branch, one higher each time you run the cell.
 # MAGIC
 # MAGIC **What this proves:** the transaction is an ordinary Postgres row, written the way any application writes one.
@@ -200,7 +200,7 @@ print("inserted txn_id", r[0])
 
 run_sql(f"UPDATE bank.txn SET fraud_risk = "
         f"ROUND(100*(anomaly_score/10.0 + util_pct/100.0),1) WHERE txn_id={rid}")
-row = run_sql(f"SELECT txn_id, account_id, amount_usd, anomaly_score, util_pct, fraud_risk "
+row = run_sql(f"SELECT txn_id, account_id, amount, anomaly_score, util_pct, fraud_risk "
               f"FROM bank.txn WHERE txn_id={rid}")[0]
 print("scored + wrote back:", row)
 
@@ -208,7 +208,7 @@ print("scored + wrote back:", row)
 
 # MAGIC %md
 # MAGIC **Expected result:**
-# MAGIC `scored + wrote back: (6, 'ACCT-100240', Decimal('2200.00'), Decimal('8.70'), Decimal('92.00'), Decimal('179.0'))`
+# MAGIC `scored + wrote back: (6, 'CTA-100240', Decimal('38500.00'), Decimal('8.70'), Decimal('92.00'), Decimal('179.0'))`
 # MAGIC
 # MAGIC The score is `ROUND(100 × (8.7 / 10 + 92 / 100), 1)` = `ROUND(100 × 1.79, 1)` = **179.0** out of
 # MAGIC 200, close to the top. It's stored on the row you wrote in B, so the authorization path can read it
@@ -239,9 +239,9 @@ print("scored + wrote back:", row)
 # MAGIC **2. Query it from a SQL warehouse:**
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk
+# MAGIC SELECT account_id, ts, amount, anomaly_score, fraud_risk
 # MAGIC FROM <your_catalog>.bank.txn
-# MAGIC WHERE account_id = 'ACCT-100240'
+# MAGIC WHERE account_id = 'CTA-100240'
 # MAGIC ORDER BY ts DESC
 # MAGIC LIMIT 1;
 # MAGIC ```

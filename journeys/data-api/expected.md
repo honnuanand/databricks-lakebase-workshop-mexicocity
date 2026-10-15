@@ -40,9 +40,9 @@ Running `python data_api.py --step get-accounts` shows:
 
 ```json
 [
-  {"account_id": "ACCT-100240", "branch_id": "BR-NYC", "line": "Checking", "type": "retail", "status": "good_standing", "health_pct": 91.0},
-  {"account_id": "ACCT-100241", "branch_id": "BR-NYC", "line": "Credit", "type": "retail", "status": "watch", "health_pct": 70.0},
-  {"account_id": "ACCT-200311", "branch_id": "BR-SFO", "line": "Credit", "type": "retail", "status": "frozen", "health_pct": 45.0},
+  {"account_id": "CTA-100240", "branch_id": "BR-CDMX", "line": "Checking", "type": "retail", "status": "good_standing", "health_pct": 91.0},
+  {"account_id": "CTA-100241", "branch_id": "BR-CDMX", "line": "Credit", "type": "retail", "status": "watch", "health_pct": 70.0},
+  {"account_id": "CTA-200311", "branch_id": "BR-MTY", "line": "Credit", "type": "retail", "status": "frozen", "health_pct": 45.0},
   ...
 ]
 ```
@@ -55,9 +55,9 @@ Running `python data_api.py --step get-filtered` shows:
 
 ```json
 [
-  {"account_id": "ACCT-100234", "status": "good_standing"},
-  {"account_id": "ACCT-100234", "status": "good_standing"},
-  {"account_id": "ACCT-100235", "status": "good_standing"}
+  {"account_id": "CTA-100234", "status": "good_standing"},
+  {"account_id": "CTA-100234", "status": "good_standing"},
+  {"account_id": "CTA-100235", "status": "good_standing"}
 ]
 ```
 
@@ -80,7 +80,7 @@ SQL:
   Latency: ~15 ms
 
 Same result:
-  [("ACCT-100234", "good_standing"), ("ACCT-100235", "good_standing"), ...]
+  [("CTA-100234", "good_standing"), ("CTA-100235", "good_standing"), ...]
 ```
 
 REST is slower due to HTTP overhead, but the difference is usually negligible for user-facing
@@ -93,11 +93,11 @@ Running `python data_api.py --step post-read-only` shows:
 ```text
 POST request (insert):
   POST /api/v1/bank.account
-  Body: {"account_id": "ACCT-999999", "branch_id": "BR-TEST", ...}
+  Body: {"account_id": "CTA-999999", "branch_id": "BR-TEST", ...}
 
 Result:
   201 Created
-  {"account_id": "ACCT-999999", "branch_id": "BR-TEST", ...}
+  {"account_id": "CTA-999999", "branch_id": "BR-TEST", ...}
 ```
 
 If your RLS or permissions prevent writes, you'll see:

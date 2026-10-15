@@ -25,10 +25,10 @@ If the script says "inferred 0 triples," the rule may not have matched your grap
    python kg_infer.py --step list-instruments
    ```
    Pick an instrument that exists and mark it distressed (edit `DISTRESSED` near the top of the
-   script if you want a different one than INS-AAPL).
+   script if you want a different one than INS-QTZL).
 
 2. Does that instrument appear in any `holding` edges? If no fund holds it (directly or through a
-   sleeve), the rule has nothing to infer from. The default INS-AAPL is held through INS-SLEEVE-EQ
+   sleeve), the rule has nothing to infer from. The default INS-QTZL is held through INS-SLEEVE-EQ
    by FUND-GROWTH-A, so it does fire.
 
 3. Is the rule pattern right? The script prints the rule (`--step rule-simple`) before applying it;

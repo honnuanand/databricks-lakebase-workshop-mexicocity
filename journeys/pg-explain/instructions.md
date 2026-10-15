@@ -45,7 +45,7 @@ python pg_explain.py --step explain-before
 The script runs:
 
 ```sql
-EXPLAIN (ANALYZE, BUFFERS) SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010';
+EXPLAIN (ANALYZE, BUFFERS) SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'CTA-100010';
 ```
 
 Output shows:

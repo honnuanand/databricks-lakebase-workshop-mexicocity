@@ -9,8 +9,8 @@ Running `python kg_sparql.py --step simple-query` shows:
 
 ```text
 SPARQL query: which instruments does FUND-GROWTH-A hold directly?
-  INS-CASH-USD
-  INS-MSFT
+  INS-CASH-MXN
+  INS-ZAFR
   INS-SLEEVE-EQ
 ```
 
@@ -22,17 +22,17 @@ sub-sleeve; the simple query stops at the first level.
 Running `python kg_sparql.py --step multi-hop` shows the [SPARQL](../../docs/glossary.md) pattern result:
 
 ```text
-SPARQL multi-hop query: which funds hold an instrument traded by CP-GOLDMAN?
+SPARQL multi-hop query: which funds hold an instrument traded by CP-ALTAMAR?
   FUND-GROWTH-A
 ```
 
-In the seed, CP-GOLDMAN trades INS-AAPL. INS-AAPL sits under INS-SLEEVE-EQ, which FUND-GROWTH-A
+In the seed, CP-ALTAMAR trades INS-QTZL. INS-QTZL sits under INS-SLEEVE-EQ, which FUND-GROWTH-A
 holds, so `holds+` reaches it and that fund comes back. FUND-INCOME-B holds nothing in the seed,
 so it is not exposed.
 The SPARQL pattern traverses:
   fund holds+ instrument
   instrument traded_by counterparty
-  filter counterparty = CP-GOLDMAN
+  filter counterparty = CP-ALTAMAR
 
 ## Step 4, equivalent SQL
 
@@ -49,7 +49,7 @@ WITH RECURSIVE tree(root_fund, node) AS (
 SELECT DISTINCT t.root_fund
   FROM tree t
   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
- WHERE tc.counterparty_id = 'CP-GOLDMAN'
+ WHERE tc.counterparty_id = 'CP-ALTAMAR'
    AND t.root_fund LIKE 'FUND-%'
 
   SQL Result: [('FUND-GROWTH-A',)]
@@ -64,9 +64,9 @@ Running `python kg_sparql.py --step aggregate` shows:
 
 ```text
 SPARQL aggregation query: instruments per counterparty
-  CP-BARCLAYS: 1
-  CP-CITADEL: 1
-  CP-GOLDMAN: 1
+  CP-CUMBRE: 1
+  CP-MIRADOR: 1
+  CP-ALTAMAR: 1
 ```
 
 The SPARQL GROUP BY aggregates across all triples, counting distinct instruments per counterparty.
@@ -82,11 +82,11 @@ Loading graph...
   Loaded 18 triples
 
 SPARQL query: which instruments does FUND-GROWTH-A hold directly?
-  INS-CASH-USD
-  INS-MSFT
+  INS-CASH-MXN
+  INS-ZAFR
   INS-SLEEVE-EQ
 
-SPARQL multi-hop query: which funds hold an instrument traded by CP-GOLDMAN?
+SPARQL multi-hop query: which funds hold an instrument traded by CP-ALTAMAR?
   FUND-GROWTH-A
 
 Equivalent SQL query:

@@ -84,7 +84,7 @@ with connect() as conn:
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{DEMO_TABLE}
             SELECT
-                'ACCT-' || g,
+                'CTA-' || g,
                 (g % 10)::int,
                 jsonb_build_object('product', CASE WHEN (g % 3) = 0 THEN 'Checking' WHEN (g % 3) = 1 THEN 'Savings' ELSE 'Credit' END, 'tier', 'Premium' || (g % 5)),
                 now() - (g % 365 || ' days')::interval,
@@ -142,7 +142,7 @@ with connect() as conn:
             return "Index" in plan_text
 
         queries = [
-            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'ACCT-100'"),
+            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'CTA-100'"),
             ('HASH', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE mcc = 5"),
             ('GIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE spec @> '{{\"product\": \"Checking\"}}'::jsonb"),
             ('BRIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE opened_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),

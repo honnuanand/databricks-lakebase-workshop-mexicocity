@@ -213,7 +213,7 @@ def main() -> None:
         url = f"https://{host}/api/v1/bank.account"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         data = {
-            "account_id": "ACCT-TEST-999",
+            "account_id": "CTA-TEST-999",
             "branch_id": "BR-TEST",
             "line": "Test",
             "type": "test",

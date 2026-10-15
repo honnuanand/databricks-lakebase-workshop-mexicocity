@@ -15,11 +15,11 @@ The raw input (first 4 columns) and the AI extraction (last 4 columns).
 ## Step 2, seed
 
 ```text
-(_, 'ACCT-100240', ..., 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.')
-(_, 'ACCT-300421', ..., 'Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML.')
-(_, 'ACCT-200311', ..., 'Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records.')
-(_, 'ACCT-100235', ..., 'A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review.')
-(_, 'ACCT-100240', ..., 'Something looked off on the account this morning, maybe the login location? not sure, flagging it.')
+(_, 'CTA-100240', ..., 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.')
+(_, 'CTA-300421', ..., 'Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML.')
+(_, 'CTA-200311', ..., 'Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records.')
+(_, 'CTA-100235', ..., 'A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review.')
+(_, 'CTA-100240', ..., 'Something looked off on the account this morning, maybe the login location? not sure, flagging it.')
 ```
 
 Five messy, real-world analyst case notes. The `note_id` values are serial and depend on how many
@@ -83,11 +83,11 @@ Running `python learning_loop.py` with no arguments prints the whole story:
 
 ```text
 Seeding analyst case notes (5 entries):
-  - ACCT-100240: Three card-not-present charges overnight to an overseas merc...
-  - ACCT-300421: Large outbound wire to a brand-new beneficiary in a high-ris...
-  - ACCT-200311: Customer disputes a charge they say posted twice; merchant p...
-  - ACCT-100235: A few small foreign-currency charges followed by a larger on...
-  - ACCT-100240: Something looked off on the account this morning, maybe the ...
+  - CTA-100240: Three card-not-present charges overnight to an overseas merc...
+  - CTA-300421: Large outbound wire to a brand-new beneficiary in a high-ris...
+  - CTA-200311: Customer disputes a charge they say posted twice; merchant p...
+  - CTA-100235: A few small foreign-currency charges followed by a larger on...
+  - CTA-100240: Something looked off on the account this morning, maybe the ...
 
 Running AI extraction (5 write-ups):
   - Note 25: category=fraud, confidence=0.92, status=auto_accepted

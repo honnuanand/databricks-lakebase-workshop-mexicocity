@@ -7,11 +7,11 @@ double-hold on the second call.
 ## Step 1, initial state
 
 ```text
-('ACCT-100240', 'Credit', 'retail', 'watch', Decimal('91.00'))
+('CTA-100240', 'Credit', 'retail', 'watch', Decimal('91.00'))
 8.70
 ```
 
-ACCT-100240 is a retail Credit account on `watch`. Its riskiest transaction carries an anomaly
+CTA-100240 is a retail Credit account on `watch`. Its riskiest transaction carries an anomaly
 score of 8.7.
 
 ## Step 2, review the account
@@ -21,16 +21,16 @@ Agent reads prior memory:
   (empty or prior turns from an earlier run)
 
 Agent calls tools:
-  - get_account_risk('ACCT-100240'): ('watch', 8.70)
-  - place_hold('ACCT-100240'): froze account, wrote case_note flag
+  - get_account_risk('CTA-100240'): ('watch', 8.70)
+  - place_hold('CTA-100240'): froze account, wrote case_note flag
 
 Agent response:
-Hold placed on ACCT-100240 due to an anomaly score of 8.7 on a card-not-present charge. The account is frozen pending cardholder verification.
+Hold placed on CTA-100240 due to an anomaly score of 8.7 on a card-not-present charge. The account is frozen pending cardholder verification.
 
 Appended to memory:
   agent_id: fraud_advisor
   role: assistant
-  content: placed hold on ACCT-100240
+  content: placed hold on CTA-100240
 ```
 
 The agent:
@@ -41,9 +41,9 @@ The agent:
 ## Step 3, confirm the hold
 
 ```text
-('ACCT-100240', 'frozen')
+('CTA-100240', 'frozen')
 
-('ACCT-100240', 'fraud', 'card_not_present_anomaly_8.70', 'hold_placed')
+('CTA-100240', 'fraud', 'card_not_present_anomaly_8.70', 'hold_placed')
 ```
 
 The account status is now `frozen`, and there is one case_note row with `action='hold_placed'`.
@@ -52,10 +52,10 @@ The account status is now `frozen`, and there is one case_note row with `action=
 
 ```text
 Agent reads prior memory:
-  - placed hold on ACCT-100240
+  - placed hold on CTA-100240
 
 Agent response:
-ACCT-100240 is already on hold. No duplicate action needed.
+CTA-100240 is already on hold. No duplicate action needed.
 ```
 
 The agent reads its own prior turn and refuses to re-hold. No second case_note flag, no
@@ -67,25 +67,25 @@ Running `python agentic_work.py` with no arguments prints the whole story:
 
 ```text
 Initial state:
-  ACCT-100240: Credit (retail), status=watch, health=91.00%
+  CTA-100240: Credit (retail), status=watch, health=91.00%
   top transaction anomaly_score: 8.70
 
-1. Review ACCT-100240 and act on the fraud signal:
+1. Review CTA-100240 and act on the fraud signal:
   Agent reads prior memory:
     (empty)
 
   Agent calls tools:
-    - get_account_risk('ACCT-100240'): ('watch', 8.70)
-    - place_hold('ACCT-100240'): froze account, wrote case_note flag
+    - get_account_risk('CTA-100240'): ('watch', 8.70)
+    - place_hold('CTA-100240'): froze account, wrote case_note flag
 
-  Agent response: Hold placed on ACCT-100240 due to anomaly score 8.7...
-  Memory: placed hold on ACCT-100240
+  Agent response: Hold placed on CTA-100240 due to anomaly score 8.7...
+  Memory: placed hold on CTA-100240
 
-2. Review ACCT-100240 and act on the fraud signal:
+2. Review CTA-100240 and act on the fraud signal:
   Agent reads prior memory:
-    - placed hold on ACCT-100240
+    - placed hold on CTA-100240
 
-  Agent response: ACCT-100240 is already on hold. No duplicate action.
+  Agent response: CTA-100240 is already on hold. No duplicate action.
 
 Done. Agent read state, acted, remembered, and refused to double-hold.
 ```

@@ -45,7 +45,7 @@ import psycopg
 
 DEMO_TABLE = 'account_isolation_demo'
 SCHEMA = _env('LB_SCHEMA', 'bank')
-ACCOUNT_ID = 'ACCT-TEST-ISOLATION'
+ACCOUNT_ID = 'CTA-TEST-ISOLATION'
 
 def connect_branch():
     w = WorkspaceClient()
@@ -74,7 +74,7 @@ print('Ready to demonstrate locking.')
 # MAGIC     account_id TEXT PRIMARY KEY,
 # MAGIC     available_credit INT
 # MAGIC );
-# MAGIC INSERT INTO account_isolation_demo VALUES ('ACCT-TEST-ISOLATION', 10000);
+# MAGIC INSERT INTO account_isolation_demo VALUES ('CTA-TEST-ISOLATION', 10000);
 # MAGIC ```
 # COMMAND ----------
 
@@ -99,7 +99,7 @@ with connect() as conn:
 # MAGIC ```sql
 # MAGIC BEGIN;
 # MAGIC UPDATE account_isolation_demo SET available_credit = available_credit - 500
-# MAGIC WHERE account_id = 'ACCT-TEST-ISOLATION';
+# MAGIC WHERE account_id = 'CTA-TEST-ISOLATION';
 # MAGIC ```
 # COMMAND ----------
 
@@ -120,7 +120,7 @@ print(f'  Available credit now 9500 (locally to Session A)')
 # MAGIC
 # MAGIC ```sql
 # MAGIC UPDATE account_isolation_demo SET available_credit = available_credit - 2500
-# MAGIC WHERE account_id = 'ACCT-TEST-ISOLATION';
+# MAGIC WHERE account_id = 'CTA-TEST-ISOLATION';
 # MAGIC ```
 # COMMAND ----------
 
@@ -178,7 +178,7 @@ conn_a.close()
 # MAGIC
 # MAGIC ```sql
 # MAGIC SELECT account_id, available_credit FROM account_isolation_demo
-# MAGIC WHERE account_id = 'ACCT-TEST-ISOLATION';
+# MAGIC WHERE account_id = 'CTA-TEST-ISOLATION';
 # MAGIC ```
 # COMMAND ----------
 

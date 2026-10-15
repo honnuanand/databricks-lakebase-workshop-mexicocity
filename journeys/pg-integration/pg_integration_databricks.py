@@ -220,8 +220,8 @@ for table in sorted(by_table.keys())[:3]:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Expected result:** `74 columns across 14 tables` if you ran *Lakebase Data in the Lakehouse*,
-# MAGIC which adds a `fraud_risk` column (73 on a freshly loaded branch). Then the first columns of
+# MAGIC **Expected result:** `77 columns across 14 tables` if you ran *Lakebase Data in the Lakehouse*,
+# MAGIC which adds a `fraud_risk` column (76 on a freshly loaded branch). Then the first columns of
 # MAGIC `account`, `agent_memory`, and `branch`:
 # MAGIC
 # MAGIC ```
@@ -301,10 +301,10 @@ print(f"Total columns: {len(rows)}")
 # MAGIC ```
 # MAGIC === Statistics ===
 # MAGIC Total tables: 14
-# MAGIC Total columns: 74
+# MAGIC Total columns: 77
 # MAGIC ```
 # MAGIC
-# MAGIC As in B2, the total is 73 on a freshly loaded branch.
+# MAGIC As in B2, the total is 76 on a freshly loaded branch.
 # MAGIC
 # MAGIC **What this proves:** adding `is_nullable` gives a tool what it needs to build forms, reports, or ORM models, all from `information_schema`.
 
@@ -342,13 +342,13 @@ for row in rows:
 # MAGIC
 # MAGIC ```
 # MAGIC Sample rows from account table:
-# MAGIC   ('ACCT-100234', 'BR-NYC', 'Checking')...
-# MAGIC   ('ACCT-100235', 'BR-NYC', 'Savings')...
-# MAGIC   ('ACCT-100240', 'BR-NYC', 'Credit')...
+# MAGIC   ('CTA-100234', 'BR-CDMX', 'Checking')...
+# MAGIC   ('CTA-100235', 'BR-CDMX', 'Savings')...
+# MAGIC   ('CTA-100240', 'BR-CDMX', 'Credit')...
 # MAGIC
 # MAGIC Sample rows from trade table:
-# MAGIC   ('TRD-8821', 'BR-NYC', 'FUND-GROWTH-A')...
-# MAGIC   ('TRD-8822', 'BR-SFO', 'FUND-INCOME-B')...
+# MAGIC   ('TRD-8821', 'BR-CDMX', 'FUND-GROWTH-A')...
+# MAGIC   ('TRD-8822', 'BR-MTY', 'FUND-INCOME-B')...
 # MAGIC ```
 # MAGIC
 # MAGIC **What this proves:** the data matches the structure the tool discovered.

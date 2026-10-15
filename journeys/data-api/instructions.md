@@ -74,8 +74,8 @@ And prints the JSON response:
 
 ```json
 [
-  {"account_id": "ACCT-100234", "status": "good_standing", "health_pct": 98.5},
-  {"account_id": "ACCT-100241", "status": "derated", "health_pct": 70.0},
+  {"account_id": "CTA-100234", "status": "good_standing", "health_pct": 98.5},
+  {"account_id": "CTA-100241", "status": "derated", "health_pct": 70.0},
   ...
 ]
 ```

@@ -55,7 +55,7 @@ txn:
   txn_id: bigint
   account_id: text
   ts: timestamp with time zone
-  amount_usd: numeric
+  amount: numeric
   anomaly_score: numeric
   mcc: integer
   util_pct: numeric
@@ -99,7 +99,7 @@ TABLE: txn
   txn_id: bigint NOT NULL
   account_id: text
   ts: timestamp with time zone
-  amount_usd: numeric
+  amount: numeric
   anomaly_score: numeric
   mcc: integer
   util_pct: numeric
@@ -116,18 +116,18 @@ Total columns: ~90 across the core bank tables
 
 ```text
 Sample from account:
-  ('ACCT-100234', 'BR-NYC', 'Checking', 'retail', 'good_standing', Decimal('98.50'))
-  ('ACCT-100235', 'BR-NYC', 'Savings', 'retail', 'good_standing', Decimal('96.20'))
-  ('ACCT-100240', 'BR-NYC', 'Credit', 'retail', 'watch', Decimal('91.00'))
+  ('CTA-100234', 'BR-CDMX', 'Checking', 'retail', 'good_standing', Decimal('98.50'), '999180000001002342')
+  ('CTA-100235', 'BR-CDMX', 'Savings', 'retail', 'good_standing', Decimal('96.20'), '999180000001002355')
+  ('CTA-100240', 'BR-CDMX', 'Credit', 'retail', 'watch', Decimal('91.00'), '999180000001002407')
 
 Sample from trade:
-  ('TRD-8821', 'BR-NYC', 'FUND-GROWTH-A', 50, 'placed', datetime.datetime(...))
-  ('TRD-8822', 'BR-SFO', 'FUND-INCOME-B', 120, 'executing', datetime.datetime(...))
+  ('TRD-8821', 'BR-CDMX', 'FUND-GROWTH-A', 50, 'placed', datetime.datetime(...))
+  ('TRD-8822', 'BR-MTY', 'FUND-INCOME-B', 120, 'executing', datetime.datetime(...))
 
 Sample from txn:
-  (1, 'ACCT-100240', datetime.datetime(..., tzinfo=...), Decimal('120.50'), Decimal('2.10'), 5411, Decimal('74.00'), None)
-  (2, 'ACCT-100240', datetime.datetime(..., tzinfo=...), Decimal('340.00'), Decimal('2.40'), 5812, Decimal('76.50'), None)
-  (3, 'ACCT-100240', datetime.datetime(..., tzinfo=...), Decimal('2200.00'), Decimal('8.70'), 6011, Decimal('92.00'), None)
+  (1, 'CTA-100240', datetime.datetime(..., tzinfo=...), Decimal('2150.00'), 'MXN', 'tarjeta', Decimal('2.10'), 5411, Decimal('74.00'), None)
+  (2, 'CTA-100240', datetime.datetime(..., tzinfo=...), Decimal('5980.00'), 'MXN', 'tarjeta', Decimal('2.40'), 5812, Decimal('76.50'), None)
+  (3, 'CTA-100240', datetime.datetime(..., tzinfo=...), Decimal('38500.00'), 'MXN', 'SPEI', Decimal('8.70'), None, Decimal('92.00'), None)
 ```
 
 Real data, all columns present, all types matching the schema inferred from information_schema. (The

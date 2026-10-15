@@ -25,16 +25,16 @@ SELECT
     ST_Distance(location, reference_point) * 111.0 as km_from_ref
 FROM account_unified_demo
 WHERE
-    branch_id = 'BR-NYC'
+    branch_id = 'BR-CDMX'
     AND (spec->>'type') = 'commercial'
     AND ST_DWithin(location, reference_point, 0.1)
 ORDER BY embedding_distance, km_from_ref
 LIMIT 5
 
 Results (single query, single plan):
-  ACCT-1042 | BR-NYC | Checking | commercial | 2021 | dist=0.0123 | km=0.0234
-  ACCT-1089 | BR-NYC | Credit | commercial | 2023 | dist=0.0167 | km=0.0456
-  ACCT-1156 | BR-NYC | Savings | commercial | 2022 | dist=0.0198 | km=0.0678
+  CTA-1042 | BR-CDMX | Checking | commercial | 2021 | dist=0.0123 | km=0.0234
+  CTA-1089 | BR-CDMX | Credit | commercial | 2023 | dist=0.0167 | km=0.0456
+  CTA-1156 | BR-CDMX | Savings | commercial | 2022 | dist=0.0198 | km=0.0678
 
 ✓ All four data models (relational, JSON, vector, geo) in one query
 ✓ One execution plan, one snapshot, one transaction
@@ -45,7 +45,7 @@ Results (single query, single plan):
 ```text
 EXPLAIN shows single plan across all types:
   Seq Scan on account_unified_demo
-    Filter: (branch_id = 'BR-NYC') AND ((spec->>'type') = 'commercial') AND st_dwithin(location, ...
+    Filter: (branch_id = 'BR-CDMX') AND ((spec->>'type') = 'commercial') AND st_dwithin(location, ...
 ```
 
 One plan, four filters. Not four sub-queries stitched together.
@@ -63,16 +63,16 @@ Query:
 [SQL query shown above]
 
 Results (single query, single plan):
-  ACCT-1042 | BR-NYC | Checking | commercial | 2021 | dist=0.0123 | km=0.0234
-  ACCT-1089 | BR-NYC | Credit | commercial | 2023 | dist=0.0167 | km=0.0456
-  ACCT-1156 | BR-NYC | Savings | commercial | 2022 | dist=0.0198 | km=0.0678
+  CTA-1042 | BR-CDMX | Checking | commercial | 2021 | dist=0.0123 | km=0.0234
+  CTA-1089 | BR-CDMX | Credit | commercial | 2023 | dist=0.0167 | km=0.0456
+  CTA-1156 | BR-CDMX | Savings | commercial | 2022 | dist=0.0198 | km=0.0678
 
 ✓ All four data models (relational, JSON, vector, geo) in one query
 ✓ One execution plan, one snapshot, one transaction
 
 3. EXPLAIN shows single plan across all types:
   Seq Scan on account_unified_demo
-    Filter: (branch_id = 'BR-NYC') AND ((spec->>'type') = 'commercial') AND st_dwithin(...)
+    Filter: (branch_id = 'BR-CDMX') AND ((spec->>'type') = 'commercial') AND st_dwithin(...)
 
 ✓ Not four products. One database.
 ```

@@ -165,7 +165,7 @@ else:
 
 sql = ("EXPLAIN INSERT INTO bank.settlement "
        "(settlement_id, trade_id, account_id, seq, status, starts_at, ends_at) "
-       "SELECT 'stl-explain', trade_id, 'ACCT-100240', 98, 'pending', now(), now() + interval '1 hour' "
+       "SELECT 'stl-explain', trade_id, 'CTA-100240', 98, 'pending', now(), now() + interval '1 hour' "
        "FROM bank.settlement LIMIT 1")
 
 with connect() as conn:

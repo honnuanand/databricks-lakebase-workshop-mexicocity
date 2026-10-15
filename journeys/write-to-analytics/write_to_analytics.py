@@ -5,7 +5,7 @@ The Lakebase idea (live data flow, no pipeline): your operational rows are the s
 rows analytics reads. There is no change-data-capture job copying from an OLTP store
 to an analytics store; there is one copy, reachable from both sides.
 
-Banking scenario: a card transaction lands, you score its fraud risk, and write the
+Banking scenario: a SPEI transfer lands, you score its fraud risk, and write the
 score back onto the row, so the operational side (the authorization path) serves an
 analytics-derived value at OLTP latency.
 
@@ -44,11 +44,11 @@ def ensure_column():
 def write_txn():
     """Write a new transaction through Lakebase (OLTP). Returns its txn_id."""
     r = run_sql(
-        "INSERT INTO bank.txn (account_id, ts, amount_usd, anomaly_score, mcc, util_pct) "
-        "VALUES ('ACCT-100240', now(), 2200.00, 8.7, 6011, 92.0) "
-        "RETURNING txn_id, amount_usd, anomaly_score")
+        "INSERT INTO bank.txn (account_id, ts, amount, channel, anomaly_score, mcc, util_pct) "
+        "VALUES ('CTA-100240', now(), 38500.00, 'SPEI', 8.7, NULL, 92.0) "
+        "RETURNING txn_id, amount, anomaly_score")
     tid, amt, anom = r[0]
-    print(f"  inserted txn_id={tid}: amount_usd={amt}, anomaly_score={anom}")
+    print(f"  inserted txn_id={tid}: amount={amt}, anomaly_score={anom}")
     return tid
 
 
@@ -59,7 +59,7 @@ def score_and_write_back(tid):
         "SET fraud_risk = ROUND(100 * (anomaly_score / 10.0 + util_pct / 100.0), 1) "
         f"WHERE txn_id = {tid}")
     row = run_sql(
-        "SELECT txn_id, account_id, amount_usd, anomaly_score, util_pct, fraud_risk "
+        "SELECT txn_id, account_id, amount, anomaly_score, util_pct, fraud_risk "
         f"FROM bank.txn WHERE txn_id = {tid}")[0]
     print(f"  scored + wrote back: {row}")
     return row
@@ -72,9 +72,9 @@ def lakehouse_explainer():
     print("  the operational rows are visible to a SQL warehouse with no pipeline and no copy:")
     print()
     print("    -- on a SQL warehouse, against the UC foreign catalog for this database:")
-    print("    SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk")
+    print("    SELECT account_id, ts, amount, anomaly_score, fraud_risk")
     print("    FROM <catalog>.bank.txn")
-    print("    WHERE account_id = 'ACCT-100240' ORDER BY ts DESC LIMIT 1;")
+    print("    WHERE account_id = 'CTA-100240' ORDER BY ts DESC LIMIT 1;")
     print()
     print("  The transaction you just wrote through Lakebase appears there immediately: same copy,")
     print("  not a synced one. Registering the catalog needs CREATE CATALOG on the metastore (a")
@@ -107,7 +107,7 @@ def main():
     print("\n3. The operational side now serves an analytics-derived value at OLTP latency.")
     print("   Read it straight back from Lakebase:")
     row = run_sql(
-        "SELECT account_id, amount_usd, anomaly_score, fraud_risk "
+        "SELECT account_id, amount, anomaly_score, fraud_risk "
         f"FROM bank.txn WHERE txn_id = {tid}")[0]
     print(f"  {row}")
 

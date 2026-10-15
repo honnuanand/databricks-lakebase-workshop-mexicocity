@@ -36,7 +36,7 @@ Opens Connection A to your branch, runs:
 
 ```sql
 BEGIN;
-UPDATE account_isolation_demo SET available_credit = available_credit - 500 WHERE account_id = 'ACCT-TEST-ISOLATION'
+UPDATE account_isolation_demo SET available_credit = available_credit - 500 WHERE account_id = 'CTA-TEST-ISOLATION'
 ```
 
 Connection A holds this transaction open (the row is locked).
@@ -46,7 +46,7 @@ Connection A holds this transaction open (the row is locked).
 Opens Connection B and tries:
 
 ```sql
-UPDATE account_isolation_demo SET available_credit = available_credit - 2500 WHERE account_id = 'ACCT-TEST-ISOLATION'
+UPDATE account_isolation_demo SET available_credit = available_credit - 2500 WHERE account_id = 'CTA-TEST-ISOLATION'
 ```
 
 **Session B blocks.** It waits on Session A's lock. The script demonstrates the wait.

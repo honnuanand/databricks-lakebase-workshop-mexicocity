@@ -69,8 +69,8 @@ You'll see triples like:
 
 ```text
 (FUND-GROWTH-A, holds, INS-SLEEVE-EQ)
-(INS-AAPL, traded_by, CP-GOLDMAN)
-(FUND-GROWTH-A, booked_at, BR-NYC)
+(INS-QTZL, traded_by, CP-ALTAMAR)
+(FUND-GROWTH-A, booked_at, BR-CDMX)
 ```
 
 ### Step 2, query the graph for a fund's direct holdings
@@ -105,7 +105,7 @@ SELECT instrument_id FROM bank.holding WHERE parent_id = 'FUND-GROWTH-A'
 ```
 
 This is a single-level SELECT. But when you ask "which funds hold an instrument traded by
-CP-GOLDMAN?", the SQL becomes a multi-join query that also has to walk the sleeve nesting. The
+CP-ALTAMAR?", the SQL becomes a multi-join query that also has to walk the sleeve nesting. The
 graph makes it a short traversal.
 
 ## What you just did

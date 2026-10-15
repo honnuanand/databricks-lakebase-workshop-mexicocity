@@ -112,7 +112,7 @@ def account(account_id: str):
     if not rows:
         raise HTTPException(404, f"no account {account_id}")
     txns = query(
-        "SELECT ts, amount_usd, anomaly_score, mcc, util_pct FROM txn "
+        "SELECT ts, amount, anomaly_score, mcc, util_pct FROM txn "
         "WHERE account_id = %s ORDER BY ts DESC LIMIT 20", [account_id])
     return {"account": rows[0], "recent_transactions": txns}
 

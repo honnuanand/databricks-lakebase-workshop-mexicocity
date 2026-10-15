@@ -26,7 +26,7 @@ The bank schema was not loaded, or the instrument specs were not seeded. Go back
 
 ```sql
 UPDATE bank.instrument SET spec = '{"sector": "tech", "beta": 1.2}'
-  WHERE instrument_id = 'INS-AAPL';
+  WHERE instrument_id = 'INS-QTZL';
 ```
 
 ## What's the difference between ->> and #>>?
@@ -85,11 +85,11 @@ Yes, use the `||` (merge) operator or the `jsonb_set()` function:
 ```sql
 -- Merge (shallow; overwrites matching keys at top level)
 UPDATE bank.instrument SET spec = spec || '{"sector": "energy"}'
-  WHERE instrument_id = 'INS-AAPL';
+  WHERE instrument_id = 'INS-QTZL';
 
 -- jsonb_set (deep; set a specific path)
 UPDATE bank.instrument SET spec = jsonb_set(spec, '{sector}', '"energy"')
-  WHERE instrument_id = 'INS-AAPL';
+  WHERE instrument_id = 'INS-QTZL';
 ```
 
 The `||` operator is simpler for top-level updates. Use `jsonb_set()` for nested paths.

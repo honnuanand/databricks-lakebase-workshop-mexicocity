@@ -17,7 +17,7 @@
 # MAGIC
 # MAGIC ## Overview
 # MAGIC
-# MAGIC Production says account `ACCT-100240`, a retail credit account, is on `watch` and still open for
+# MAGIC Production says account `CTA-100240`, a retail credit account, is on `watch` and still open for
 # MAGIC spending. An overnight transaction scored high for fraud, and a fraud analyst wants to freeze the
 # MAGIC account to see how the downstream flows react. Freezing a live customer account to run an
 # MAGIC experiment is exactly the kind of change that pages someone at 2 a.m.
@@ -137,7 +137,7 @@ PROJECT = os.environ["LB_PROJECT"]
 MINE    = os.environ["LB_BRANCH"]
 EXP     = MINE + "-exp"
 SCHEMA  = os.environ.get("LB_SCHEMA", "bank")
-ACCOUNT = "ACCT-100240"
+ACCOUNT = "CTA-100240"
 w = client()
 
 def connect_branch(branch):
@@ -203,13 +203,13 @@ print("connected as", w.current_user.me().user_name)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### B1. Look at ACCT-100240 on your branch
+# MAGIC ### B1. Look at CTA-100240 on your branch
 # MAGIC
-# MAGIC `ACCT-100240` is a retail credit account at the New York Midtown branch, one of the accounts you
+# MAGIC `CTA-100240` is a retail credit account at the CDMX Reforma branch, one of the accounts you
 # MAGIC loaded in setup. This is a plain query, the same SQL you could run in any Postgres tool:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT account_id, status, health_pct FROM bank.account WHERE account_id = 'ACCT-100240';
+# MAGIC SELECT account_id, status, health_pct FROM bank.account WHERE account_id = 'CTA-100240';
 # MAGIC ```
 
 # COMMAND ----------
@@ -221,7 +221,7 @@ with connect_branch(MINE) as c, c.cursor() as cur:
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `your branch, before: ('ACCT-100240', 'watch', Decimal('91.00'))`
+# MAGIC **Expected result:** `your branch, before: ('CTA-100240', 'watch', Decimal('91.00'))`
 # MAGIC
 # MAGIC **What this proves:** your branch has the bank you loaded in setup. This is what you'll compare the fork against.
 # MAGIC
@@ -315,11 +315,11 @@ print(f"fork API {api_ms:.0f} ms; endpoint ACTIVE in ~{waited:.1f}s")
 # MAGIC %md
 # MAGIC ## C. Freeze the account on the fork and compare
 # MAGIC
-# MAGIC Freeze `ACCT-100240` on the fork only, then read it from both branches. The SQL that runs on the
+# MAGIC Freeze `CTA-100240` on the fork only, then read it from both branches. The SQL that runs on the
 # MAGIC fork:
 # MAGIC
 # MAGIC ```sql
-# MAGIC UPDATE bank.account SET status = 'frozen', health_pct = 70.0 WHERE account_id = 'ACCT-100240';
+# MAGIC UPDATE bank.account SET status = 'frozen', health_pct = 70.0 WHERE account_id = 'CTA-100240';
 # MAGIC ```
 
 # COMMAND ----------
@@ -339,8 +339,8 @@ with connect_branch(MINE) as c, c.cursor() as cur:
 # MAGIC **Expected result:**
 # MAGIC
 # MAGIC ```
-# MAGIC fork, after change: ('ACCT-100240', 'frozen', Decimal('70.00'))
-# MAGIC your branch, still:  ('ACCT-100240', 'watch', Decimal('91.00'))
+# MAGIC fork, after change: ('CTA-100240', 'frozen', Decimal('70.00'))
+# MAGIC your branch, still:  ('CTA-100240', 'watch', Decimal('91.00'))
 # MAGIC ```
 # MAGIC
 # MAGIC Two live databases, one forked from the other a minute ago, now hold different facts about the
@@ -387,7 +387,7 @@ print("branches now:", [b.branch_id for b in w.postgres.list_branches(parent=f"p
 # MAGIC ##### Check your understanding
 # MAGIC
 # MAGIC <details>
-# MAGIC <summary><strong>1. You froze `ACCT-100240` on the fork. Why did your branch still show `watch`?</strong></summary>
+# MAGIC <summary><strong>1. You froze `CTA-100240` on the fork. Why did your branch still show `watch`?</strong></summary>
 # MAGIC
 # MAGIC A branch is an independent copy. The fork wrote the change to its own pages, so your branch never saw it.
 # MAGIC
