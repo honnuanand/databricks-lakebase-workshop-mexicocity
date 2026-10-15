@@ -88,10 +88,10 @@ Query Postgres to confirm the risk score is now there:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT account_id, ts, temp_c, anomaly_score FROM bank.txn WHERE account_id='ACCT-100240' ORDER BY ts DESC LIMIT 1"
+  "SELECT account_id, ts, amount_usd, anomaly_score, fraud_risk FROM bank.txn WHERE account_id='ACCT-100240' ORDER BY ts DESC LIMIT 1"
 ```
 
-The most recent reading now has the risk score, computed on the lakehouse, written back to Postgres.
+The most recent transaction now has the fraud-risk score, computed on the lakehouse, written back to Postgres.
 
 ## What you just did
 
