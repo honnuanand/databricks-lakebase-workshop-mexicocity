@@ -22,7 +22,7 @@ import time
 from databricks.sdk.service.postgres import Branch, BranchSpec
 from databricks.sdk.common.types.fieldmask import FieldMask
 
-from lakebase import client, branch_name, branch_endpoint, wait_active, _env
+from lakebase import client, branch_name, branch_endpoint, wait_active, _env, _t
 
 PRODUCTION = "production"
 
@@ -37,7 +37,7 @@ def create(reload: bool = False) -> None:
     # idempotent: only create if absent
     try:
         w.postgres.get_branch(name=branch_name(project, branch))
-        print(f"branch {branch} already exists")
+        print(_t(f"branch {branch} already exists", f"la rama {branch} ya existe"))
     except Exception:
         t0 = time.time()
         w.postgres.create_branch(
@@ -45,10 +45,12 @@ def create(reload: bool = False) -> None:
             branch=Branch(spec=BranchSpec(
                 source_branch=branch_name(project, PRODUCTION), no_expiry=True)),
             branch_id=branch, replace_existing=False)
-        print(f"create_branch API returned in {(time.time()-t0)*1000:.0f} ms")
+        ms = (time.time() - t0) * 1000
+        print(_t(f"create_branch API returned in {ms:.0f} ms", f"la API create_branch respondió en {ms:.0f} ms"))
     waited = wait_active(w, project, branch)
     host, _, state = branch_endpoint(w, project, branch)
-    print(f"branch {branch} is {state} in ~{waited:.1f}s  (host {host})")
+    print(_t(f"branch {branch} is {state} in ~{waited:.1f}s  (host {host})",
+             f"la rama {branch} está {state} en ~{waited:.1f}s  (host {host})"))
     if reload:
         _reload_bank()
 
@@ -64,7 +66,7 @@ def delete() -> None:
     w = client()
     project, branch = _project_branch()
     if branch == PRODUCTION:
-        raise SystemExit("refusing to delete the production branch")
+        raise SystemExit(_t("refusing to delete the production branch", "no se puede eliminar la rama production"))
     # unprotect (best effort) then delete
     try:
         w.postgres.update_branch(
@@ -74,7 +76,7 @@ def delete() -> None:
     except Exception:
         pass
     w.postgres.delete_branch(name=branch_name(project, branch))
-    print(f"deleted branch {branch}")
+    print(_t(f"deleted branch {branch}", f"rama {branch} eliminada"))
 
 
 def reset() -> None:

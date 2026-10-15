@@ -19,7 +19,7 @@ import argparse
 import os
 import pathlib
 
-from lakebase import connect
+from lakebase import connect, _t
 
 HERE = pathlib.Path(__file__).parent
 SCHEMA_SQL = HERE / "finance_schema.sql"
@@ -36,9 +36,9 @@ def _counts(conn) -> None:
         for t in TABLES:
             try:
                 cur.execute(f"SELECT count(*) FROM {schema}.{t}")
-                print(f"  {t:20} {cur.fetchone()[0]:>6} rows")
+                print(f"  {t:20} {cur.fetchone()[0]:>6} {_t('rows', 'filas')}")
             except Exception as e:
-                print(f"  {t:20} (missing: {str(e)[:40]})")
+                print(f"  {t:20} ({_t('missing', 'no existe')}: {str(e)[:40]})")
 
 
 def is_loaded(conn) -> bool:
@@ -59,15 +59,15 @@ def main(argv: list[str] | None = None) -> None:
 
     with connect() as conn:
         if args.check:
-            print("Bank tables on your branch:")
+            print(_t("Bank tables on your branch:", "Tablas del banco en tu rama:"))
             _counts(conn)
             return
         with conn.cursor() as cur:
-            print("Loading schema ...")
+            print(_t("Loading schema ...", "Cargando el esquema ..."))
             cur.execute(SCHEMA_SQL.read_text())
-            print("Seeding data ...")
+            print(_t("Seeding data ...", "Cargando los datos de ejemplo ..."))
             cur.execute(SEED_SQL.read_text())
-        print("Done. Row counts:")
+        print(_t("Done. Row counts:", "Listo. Filas por tabla:"))
         _counts(conn)
 
 

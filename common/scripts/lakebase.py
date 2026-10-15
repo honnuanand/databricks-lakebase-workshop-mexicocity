@@ -12,6 +12,7 @@ hard-coded to any workspace:
     LB_PROJECT      the Lakebase project id (from 00-setup/provision.md)
     LB_BRANCH       your branch id, e.g. u-alex (from 00-setup/your-branch.md)
     LB_SCHEMA       schema to use (default: bank)
+    LB_LANG         language for printed messages: en (default) or es
 
 Usage (from another script):
     from lakebase import connect, run_sql, branch_endpoint
@@ -40,12 +41,19 @@ DEFAULT_DB = "databricks_postgres"
 PRIMARY_ENDPOINT = "primary"
 
 
+def _t(en: str, es: str) -> str:
+    """Pick a printed message by LB_LANG (set by notebook_env(..., lang="es")). English by default."""
+    return es if os.getenv("LB_LANG") == "es" else en
+
+
 def _env(name: str, default: Optional[str] = None, required: bool = False) -> str:
     val = os.getenv(name, default)
     if required and not val:
-        raise SystemExit(
+        raise SystemExit(_t(
             f"Missing required env var {name}. Set it (see 00-setup/) e.g.:\n"
-            f"  export {name}=...")
+            f"  export {name}=...",
+            f"Falta la variable de entorno requerida {name}. Defínela (ver 00-setup/), por ejemplo:\n"
+            f"  export {name}=..."))
     return val or ""
 
 
@@ -82,7 +90,8 @@ def wait_active(w: WorkspaceClient, project: str, branch: str, timeout_s: int = 
         if state == "ACTIVE" and host:
             return time.time() - t0
         time.sleep(0.4)
-    raise TimeoutError(f"branch {branch} not ACTIVE within {timeout_s}s")
+    raise TimeoutError(_t(f"branch {branch} not ACTIVE within {timeout_s}s",
+                          f"la rama {branch} no llegó a ACTIVE en {timeout_s}s"))
 
 
 def connect(project: Optional[str] = None, branch: Optional[str] = None,
@@ -94,8 +103,10 @@ def connect(project: Optional[str] = None, branch: Optional[str] = None,
     branch = branch or _env("LB_BRANCH", required=True)
     host, endpoint_id, state = branch_endpoint(w, project, branch)
     if not host:
-        raise RuntimeError(f"branch '{branch}' has no endpoint host yet (state={state}). "
-                           f"Is the branch provisioned? See 00-setup/your-branch.md.")
+        raise RuntimeError(_t(f"branch '{branch}' has no endpoint host yet (state={state}). "
+                              f"Is the branch provisioned? See 00-setup/your-branch.md.",
+                              f"la rama '{branch}' todavía no tiene host de endpoint (state={state}). "
+                              f"¿Ya se creó la rama? Ver 00-setup/your-branch.md."))
     cred = w.postgres.generate_database_credential(
         endpoint=f"{branch_name(project, branch)}/endpoints/{endpoint_id}")
     user = w.current_user.me().user_name
@@ -124,19 +135,24 @@ def default_branch(user_name: str) -> str:
     return f"u-{name}"[:63]
 
 
-def notebook_env(dbutils, project: str = "bank", schema: str = "bank") -> dict:
+def notebook_env(dbutils, project: str = "bank", schema: str = "bank", lang: str = "en") -> dict:
     """For Databricks notebooks: set LB_PROJECT, LB_BRANCH, LB_SCHEMA from widgets.
 
     A workspace has no workshop.env, so each notebook calls this once. It adds
     three widgets at the top of the notebook; LB_BRANCH defaults to your
     default_branch(), the branch 00-setup/setup_databricks creates. LB_PROFILE
-    stays unset, so the SDK signs in as you automatically."""
+    stays unset, so the SDK signs in as you automatically. lang="es" sets LB_LANG so the
+    shared scripts print their messages in Spanish."""
+    os.environ["LB_LANG"] = lang
     w = client()
     if not hasattr(w, "postgres"):
         import databricks.sdk
-        raise SystemExit(
-            f"databricks-sdk {databricks.sdk.version.__version__} predates the Lakebase API. Run the "
-            f'%pip install "databricks-sdk>=0.120.0" cell and the restart cell above, then rerun this one.')
+        v = databricks.sdk.version.__version__
+        raise SystemExit(_t(
+            f"databricks-sdk {v} predates the Lakebase API. Run the "
+            f'%pip install "databricks-sdk>=0.120.0" cell and the restart cell above, then rerun this one.',
+            f"databricks-sdk {v} es anterior a la API de Lakebase. Ejecuta la celda "
+            f'%pip install "databricks-sdk>=0.120.0" y la celda de reinicio de arriba, y luego vuelve a ejecutar esta.'))
     me = w.current_user.me().user_name
     dbutils.widgets.text("LB_PROJECT", project)
     dbutils.widgets.text("LB_BRANCH", default_branch(me))
@@ -144,9 +160,10 @@ def notebook_env(dbutils, project: str = "bank", schema: str = "bank") -> dict:
     env = {k: dbutils.widgets.get(k).strip() for k in ("LB_PROJECT", "LB_BRANCH", "LB_SCHEMA")}
     missing = [k for k, v in env.items() if not v]
     if missing:
-        raise SystemExit(f"Fill in {', '.join(missing)} in the widgets at the top of the notebook.")
+        raise SystemExit(_t(f"Fill in {', '.join(missing)} in the widgets at the top of the notebook.",
+                            f"Llena {', '.join(missing)} en los widgets de la parte superior del notebook."))
     os.environ.update(env)
-    print(f"signed in as {me}")
+    print(_t(f"signed in as {me}", f"sesión iniciada como {me}"))
     for k, v in env.items():
         print(f"  {k} = {v}")
     return env

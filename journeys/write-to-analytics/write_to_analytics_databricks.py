@@ -19,8 +19,9 @@
 # MAGIC
 # MAGIC Late at night, account `CTA-100240` sends MXN 38,500 by SPEI to a beneficiary it has never paid
 # MAGIC before, and its credit utilization is already running hot. The authorization path has milliseconds
-# MAGIC to decide, while the fraud team's analytics run in the lakehouse. In the usual architecture, transactions are copied to an analytics
-# MAGIC store on a schedule, so the fraud score the operational side sees is always a little stale.
+# MAGIC to decide, while the fraud team's analytics run in the lakehouse. In the usual architecture,
+# MAGIC transactions are copied to an analytics store on a schedule, so the fraud score the operational side
+# MAGIC sees is always a little stale.
 # MAGIC
 # MAGIC With Lakebase, the operational rows and the analytics work on the same copy. In this lab you write
 # MAGIC the transaction through Postgres, compute a fraud-risk score from it, and write the score back onto

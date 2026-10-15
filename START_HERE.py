@@ -14,6 +14,8 @@
 # MAGIC
 # MAGIC Run the setup notebook once, then work through Part 1. For Part 2, pick one of the two tracks.
 # MAGIC Every notebook ends with a link to the next one in its path and a link back to this page.
+# MAGIC
+# MAGIC *Versión en español:* <a href="$./START_HERE_es">Comienza aquí</a>
 
 # COMMAND ----------
 
