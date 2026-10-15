@@ -41,7 +41,7 @@ DELETE /api/v1/{schema}.{table}
 Query parameters control filtering, ordering, and pagination:
 
 ```
-GET /api/v1/bank.account?select=account_id,status&status=eq.healthy
+GET /api/v1/bank.account?select=account_id,status&status=eq.good_standing
 ```
 
 ### Authentication
@@ -61,7 +61,7 @@ Responses are JSON arrays or objects. A GET query returns an array of rows:
 
 ```json
 [
-  {"account_id": "ACCT-100240", "status": "healthy", "health_pct": 91.0},
+  {"account_id": "ACCT-100234", "status": "good_standing", "health_pct": 98.5},
   {"account_id": "ACCT-100241", "status": "derated", "health_pct": 70.0}
 ]
 ```
@@ -82,7 +82,7 @@ HTTPS and JSON. The data is current and respects row-level security.
 
 1. Enable the Data API on your Lakebase instance (if not already enabled).
 2. Get a Databricks OAuth token.
-3. Make a simple GET request to fetch machines and parse the JSON.
+3. Make a simple GET request to fetch accounts and parse the JSON.
 4. Try a filtered query with parameters.
 5. Compare REST to SQL to understand the trade-offs.
 

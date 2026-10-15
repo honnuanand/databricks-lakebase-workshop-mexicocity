@@ -4,8 +4,8 @@
 
 ### Do I need CMK?
 
-Probably not, unless you're in a regulated industry (medical, financial, aerospace) or have
-strict data governance requirements. For most workloads, Databricks-managed keys are sufficient.
+Probably not, unless you're in a regulated industry (financial services, healthcare, aerospace) or
+have strict data governance requirements. For most workloads, Databricks-managed keys are sufficient.
 
 [Customer-Managed Keys](../../docs/glossary.md) (CMK) is required if:
 - Compliance regulations (HIPAA, PCI-DSS, FedRAMP, ITAR) mandate customer-controlled keys.

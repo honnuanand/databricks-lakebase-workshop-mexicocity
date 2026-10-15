@@ -57,10 +57,10 @@ And extracts the `access_token` field. Tokens expire in 1 hour (3600 seconds).
 
 ### Step 3, make a simple GET request
 
-Fetch all machines:
+Fetch all accounts:
 
 ```bash
-python data_api.py --step get-machines
+python data_api.py --step get-accounts
 ```
 
 The script makes an HTTP GET request:
@@ -74,7 +74,7 @@ And prints the JSON response:
 
 ```json
 [
-  {"account_id": "ACCT-100240", "status": "healthy", "health_pct": 91.0},
+  {"account_id": "ACCT-100234", "status": "good_standing", "health_pct": 98.5},
   {"account_id": "ACCT-100241", "status": "derated", "health_pct": 70.0},
   ...
 ]
@@ -82,7 +82,7 @@ And prints the JSON response:
 
 ### Step 4, filter with query parameters
 
-Fetch only healthy machines:
+Fetch only good_standing accounts:
 
 ```bash
 python data_api.py --step get-filtered
@@ -91,11 +91,11 @@ python data_api.py --step get-filtered
 The script makes a GET request with filters:
 
 ```
-GET https://<lakebase-host>/api/v1/bank.account?select=account_id,status&status=eq.healthy
+GET https://<lakebase-host>/api/v1/bank.account?select=account_id,status&status=eq.good_standing
 Authorization: Bearer <token>
 ```
 
-This returns only rows where `status='healthy'`.
+This returns only rows where `status='good_standing'`.
 
 ### Step 5, compare REST to SQL
 

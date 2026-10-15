@@ -36,7 +36,7 @@ The full token is long and sensitive; the script only shows the first 20 charact
 
 ## Step 3, simple GET request
 
-Running `python data_api.py --step get-machines` shows:
+Running `python data_api.py --step get-accounts` shows:
 
 ```json
 [
@@ -55,13 +55,13 @@ Running `python data_api.py --step get-filtered` shows:
 
 ```json
 [
-  {"account_id": "ACCT-100240", "status": "healthy"},
+  {"account_id": "ACCT-100234", "status": "good_standing"},
   {"account_id": "ACCT-100234", "status": "good_standing"},
   {"account_id": "ACCT-100235", "status": "good_standing"}
 ]
 ```
 
-Only machines with `status='healthy'` are returned. The `select=account_id,status` parameter
+Only accounts with `status='good_standing'` are returned. The `select=account_id,status` parameter
 limits the columns.
 
 ## Step 5, REST vs SQL comparison
@@ -72,15 +72,15 @@ Running `python data_api.py --step compare-sql` shows:
 Same query, two ways:
 
 REST:
-  GET /api/v1/bank.account?select=account_id,status&status=eq.healthy
+  GET /api/v1/bank.account?select=account_id,status&status=eq.good_standing
   Latency: ~45 ms
 
 SQL:
-  SELECT account_id, status FROM bank.account WHERE status = 'healthy'
+  SELECT account_id, status FROM bank.account WHERE status = 'good_standing'
   Latency: ~15 ms
 
-Same result (12 rows):
-  [("ACCT-100240", "healthy"), ("ACCT-100234", "healthy"), ...]
+Same result:
+  [("ACCT-100234", "good_standing"), ("ACCT-100235", "good_standing"), ...]
 ```
 
 REST is slower due to HTTP overhead, but the difference is usually negligible for user-facing
@@ -123,11 +123,11 @@ Step 1: Check if Data API is enabled
 Step 2: Get OAuth token
   Token: ya29.a0AfH6SMB...
 
-Step 3: Fetch all machines
-  Result: 45 rows returned
+Step 3: Fetch all accounts
+  Result: 8 rows returned
 
-Step 4: Filter query (status=healthy)
-  Result: 12 rows returned
+Step 4: Filter query (status=good_standing)
+  Result: 5 rows returned
 
 Step 5: Compare REST vs SQL
   REST latency: 45 ms

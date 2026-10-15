@@ -29,7 +29,7 @@ FEATURE_TABLE = "account_features_online"
 
 
 def setup(conn):
-    """Create a raw events table with account transaction telemetry."""
+    """Create a raw events table with the account's transaction event stream."""
     schema = _env("LB_SCHEMA", "bank")
 
     with conn.cursor() as cur:

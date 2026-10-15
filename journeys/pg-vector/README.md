@@ -6,7 +6,7 @@
 >
 > - pgvector stores dense embeddings as vector columns on Postgres tables and queries them with
 >   cosine similarity (`<=>`) in the same transaction as your operational data.
-> - Finding the best-fit comparable instrument by similarity (or the closest warehouse by location
+> - Finding the best-fit comparable instrument by similarity (or the closest branch by location
 >   vector) happens in SQL without leaving the database.
 > - pgvector with [Hierarchical Navigable Small Worlds](../../docs/glossary.md) (HNSW) indexing scales to millions of vectors while staying fast (sub-millisecond
 >   for typical queries).

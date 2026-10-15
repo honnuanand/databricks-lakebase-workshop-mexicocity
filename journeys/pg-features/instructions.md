@@ -44,7 +44,7 @@ CREATE TABLE account_events_for_features (
 )
 ```
 
-Then seeds it with 10k events across 100 accounts. This is the raw transaction telemetry.
+Then seeds it with 10k events across 100 accounts. This is the raw transaction event stream.
 
 ### Step 2, materialize features
 

@@ -138,11 +138,12 @@ Pass the custom vector as a literal `ARRAY[...]::vector(768)`.
 
 Both are supported:
 - **`<=>`** (cosine): magnitude-invariant, good for comparing "direction" (e.g., instrument specs).
-- **`<->`** (L2): Euclidean distance, good for geometric queries (e.g., warehouse locations).
+- **`<->`** (L2): Euclidean distance, good for geometric queries (e.g., branch or custodian locations).
 
 For instrument similarity, cosine distance is more robust because it ignores magnitude (a large security
-is still similar to a small one if the proportions are the same). For the warehouse scenario, L2
-would be used to find nearest warehouses by actual coordinates.
+is still similar to a small one if the proportions are the same). For a location scenario, L2
+would be used to find the nearest branch or custodian by actual coordinates (see the pg-geo journey,
+which uses PostGIS for exactly that).
 
 ## Why pgvector on Lakebase, not Vector Search?
 

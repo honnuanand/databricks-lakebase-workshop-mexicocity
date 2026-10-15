@@ -41,7 +41,7 @@ python data_api.py --step check-rls
 
 The table or schema doesn't exist, or the Data API endpoint path is wrong. Check:
 
-- Is the table name correct? (e.g., `bank.account`, not `factory_machine`)
+- Is the table name correct? (e.g., `bank.account`, not `bank_accounts`)
 - Does the table exist in your branch? Run:
   ```bash
   python lakebase.py --sql "SELECT 1 FROM bank.account LIMIT 1"

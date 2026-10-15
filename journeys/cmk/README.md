@@ -14,9 +14,9 @@
 
 ## The scenario
 
-You run a manufacturing operation in a regulated industry (medical devices, aerospace, automotive).
-Your data includes proprietary designs, supply-chain costs, and IP. Legal and compliance require
-that you, not the cloud provider, control the encryption keys.
+You run a bank, one of the most heavily regulated industries there is. Your data includes customer
+account details, transaction histories, and trading positions. Legal, compliance, and your
+regulators require that you, not the cloud provider, control the encryption keys.
 
 Lakebase's default: keys are managed by Databricks and stored in AWS/Azure/GCP. For regulated
 use cases, this isn't enough. You need keys in your own KMS, keys you can rotate, keys you can
@@ -61,11 +61,12 @@ switch.
 
 CMK is required (or strongly recommended) for:
 
-- **Regulated industries:** medical devices, financial services, aerospace, defense. Compliance
-  (HIPAA, PCI, FedRAMP, ITAR) often requires customer-controlled keys.
+- **Regulated industries:** financial services, healthcare, aerospace, defense. Compliance
+  (PCI DSS, SOX, GLBA, GDPR) often requires customer-controlled keys.
 - **Multi-tenant SaaS:** if you're running a SaaS app on Lakebase and your customers demand
   isolation, CMK provides cryptographic proof of separation.
-- **IP protection:** proprietary designs, formulations, or algorithms where the data is the asset.
+- **Sensitive data assets:** customer PII, account and card numbers, or trading strategies where
+  the data itself is the crown jewel.
 
 CMK is optional (default encryption is fine) for:
 

@@ -135,7 +135,7 @@ except Exception as e:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4, Fetch all machines via REST (if enabled)
+# MAGIC ## Step 4, Fetch all accounts via REST (if enabled)
 
 # COMMAND ----------
 
@@ -145,7 +145,7 @@ else:
     url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
 
-    print(f"Fetching all machines:")
+    print(f"Fetching all accounts:")
     print(f"  URL: {url}")
     print()
 
@@ -154,8 +154,8 @@ else:
             response = client_http.get(url, headers=headers)
             response.raise_for_status()
             accounts = response.json()
-            print(f"Result: {len(machines)} machines")
-            if machines:
+            print(f"Result: {len(accounts)} accounts")
+            if accounts:
                 print(f"\nFirst account:")
                 print(f"  {accounts[0]}")
     except Exception as e:
@@ -173,9 +173,9 @@ if not data_api_enabled:
 else:
     url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
-    params = {"select": "account_id,status", "status": "eq.healthy"}
+    params = {"select": "account_id,status", "status": "eq.good_standing"}
 
-    print(f"Fetching only healthy machines:")
+    print(f"Fetching only good_standing accounts:")
     print(f"  URL: {url}")
     print(f"  Params: {params}")
     print()
@@ -185,8 +185,8 @@ else:
             response = client_http.get(url, headers=headers, params=params)
             response.raise_for_status()
             accounts = response.json()
-            print(f"Result: {len(machines)} healthy machines")
-            print(f"\nSample machines:")
+            print(f"Result: {len(accounts)} good_standing accounts")
+            print(f"\nSample accounts:")
             for account in accounts[:3]:
                 print(f"  {account}")
     except Exception as e:
@@ -200,7 +200,7 @@ else:
 # MAGIC The same query in SQL:
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT account_id, status FROM bank.account WHERE status = 'healthy'
+# MAGIC SELECT account_id, status FROM bank.account WHERE status = 'good_standing'
 # MAGIC ```
 
 # COMMAND ----------
@@ -211,12 +211,12 @@ if not data_api_enabled:
     print("Skipping: Data API is not enabled.")
 else:
     print("SQL equivalent:")
-    print("  SELECT account_id, status FROM bank.account WHERE status = 'healthy'")
+    print("  SELECT account_id, status FROM bank.account WHERE status = 'good_standing'")
     print()
 
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT account_id, status FROM bank.account WHERE status = 'healthy'")
+            cur.execute("SELECT account_id, status FROM bank.account WHERE status = 'good_standing'")
             sql_rows = cur.fetchall()
             print(f"SQL result: {len(sql_rows)} rows")
             print(f"\nSample rows:")

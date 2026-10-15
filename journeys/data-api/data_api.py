@@ -8,7 +8,7 @@ Usage:
     python data_api.py              # full test
     python data_api.py --step check # check if Data API is enabled
     python data_api.py --step token # get an OAuth token
-    python data_api.py --step get-machines  # fetch via REST
+    python data_api.py --step get-accounts  # fetch via REST
 """
 from __future__ import annotations
 
@@ -81,8 +81,8 @@ def check_data_api(host: str, token: str) -> tuple[bool, str]:
         return False, f"Could not reach Data API: {e}"
 
 
-def get_machines(host: str, token: str) -> list[dict]:
-    """Fetch all machines via REST."""
+def get_accounts(host: str, token: str) -> list[dict]:
+    """Fetch all accounts via REST."""
     url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -92,11 +92,11 @@ def get_machines(host: str, token: str) -> list[dict]:
         return response.json()
 
 
-def get_filtered_machines(host: str, token: str) -> list[dict]:
-    """Fetch only healthy machines via REST."""
+def get_filtered_accounts(host: str, token: str) -> list[dict]:
+    """Fetch only good-standing accounts via REST."""
     url = f"https://{host}/api/v1/bank.account"
     headers = {"Authorization": f"Bearer {token}"}
-    params = {"select": "account_id,status", "status": "eq.healthy"}
+    params = {"select": "account_id,status", "status": "eq.good_standing"}
 
     with httpx.Client(timeout=10) as http:
         response = http.get(url, headers=headers, params=params)
@@ -106,7 +106,7 @@ def get_filtered_machines(host: str, token: str) -> list[dict]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Query Lakebase via REST Data API")
-    ap.add_argument("--step", choices=["check", "token", "get-machines", "get-filtered",
+    ap.add_argument("--step", choices=["check", "token", "get-accounts", "get-filtered",
                                        "compare-sql", "post-read-only"],
                     help="run a specific step")
     ap.add_argument("--verbose", action="store_true")
@@ -164,17 +164,17 @@ def main() -> None:
             print("To enable it: Databricks console -> Lakebase -> your instance -> Settings ->")
             print("turn on the Data API, then re-run. The calls below are what you would run:")
             print("  GET  https://<host>/api/v1/bank.account")
-            print("  GET  https://<host>/api/v1/bank.account?select=account_id,status&status=eq.healthy")
+            print("  GET  https://<host>/api/v1/bank.account?select=account_id,status&status=eq.good_standing")
             print("\nEverything up to here is real: the OAuth token above is live. The REST reads")
             print("just need the Data API switched on, which is an instance setting, not a script step.")
             return
 
-    if args.step == "get-machines" or not args.step:
-        print(f"\nFetching machines via REST...")
+    if args.step == "get-accounts" or not args.step:
+        print(f"\nFetching accounts via REST...")
         try:
-            accounts = get_machines(host, token)
-            print(f"  Result: {len(machines)} rows returned")
-            if machines:
+            accounts = get_accounts(host, token)
+            print(f"  Result: {len(accounts)} rows returned")
+            if accounts:
                 print(f"  Sample: {accounts[0]}")
         except Exception as e:
             print(f"  Error: {e}")
@@ -182,11 +182,11 @@ def main() -> None:
             return
 
     if args.step == "get-filtered" or not args.step:
-        print(f"\nFetching filtered (healthy) machines via REST...")
+        print(f"\nFetching filtered (good_standing) accounts via REST...")
         try:
-            accounts = get_filtered_machines(host, token)
-            print(f"  Result: {len(machines)} rows returned")
-            if machines:
+            accounts = get_filtered_accounts(host, token)
+            print(f"  Result: {len(accounts)} rows returned")
+            if accounts:
                 print(f"  Sample: {accounts[0]}")
         except Exception as e:
             print(f"  Error: {e}")
@@ -196,15 +196,15 @@ def main() -> None:
     if args.step == "compare-sql":
         print(f"\nComparing REST vs SQL...")
         try:
-            accounts = get_filtered_machines(host, token)
-            print(f"  REST result: {len(machines)} machines")
+            accounts = get_filtered_accounts(host, token)
+            print(f"  REST result: {len(accounts)} accounts")
 
             with connect() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT account_id, status FROM bank.account WHERE status = 'healthy'")
+                    cur.execute("SELECT account_id, status FROM bank.account WHERE status = 'good_standing'")
                     sql_rows = cur.fetchall()
-                    print(f"  SQL result: {len(sql_rows)} machines")
-                    print(f"  Results match: {'✓' if len(machines) == len(sql_rows) else '✗'}")
+                    print(f"  SQL result: {len(sql_rows)} accounts")
+                    print(f"  Results match: {'✓' if len(accounts) == len(sql_rows) else '✗'}")
         except Exception as e:
             print(f"  Error: {e}")
 
@@ -213,11 +213,11 @@ def main() -> None:
         url = f"https://{host}/api/v1/bank.account"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         data = {
-            "account_id": "M-TEST-999",
+            "account_id": "ACCT-TEST-999",
             "branch_id": "BR-TEST",
             "line": "Test",
             "type": "test",
-            "status": "healthy",
+            "status": "good_standing",
             "health_pct": 100.0
         }
 
