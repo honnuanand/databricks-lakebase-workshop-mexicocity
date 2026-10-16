@@ -59,3 +59,34 @@ como `ACTIVE` e `IDLE`) se quedan en inglés.
 | counterparty, custodian | **contraparte**, **custodio** | |
 | case note | **nota de caso** | |
 | freeze (an account) | **congelar** | `status = 'frozen'`. |
+| hold (on an account) | **retención**, **retener** | La acción del agente en Agentes que usan herramientas; termina en `status = 'frozen'`. |
+| AML (anti-money laundering) | **PLD** (prevención de lavado de dinero) | La categoría `AML` de las notas de caso se queda en inglés. |
+| dispute | **aclaración** | `event_type = 'dispute'`. |
+| chargeback | **contracargo** | |
+| beneficiary | **beneficiario** | |
+| anomaly score | **puntaje de anomalía** | La columna `anomaly_score`, de 0 a 10. |
+
+## IA y agentes
+
+| Inglés | Español | Nota |
+| --- | --- | --- |
+| agent | **agente** | |
+| agent memory | **memoria del agente** | Filas de `bank.agent_memory`. |
+| tool | **herramienta** | Una función que el agente puede llamar; aquí, SQL en tu rama. |
+| function calling | **function calling** (llamadas a funciones) | Cuando el modelo elige la herramienta y sus argumentos. |
+| prompt | **prompt** | |
+| Foundation Model endpoint | **endpoint de Foundation Model** | Un modelo servido por Model Serving, como `databricks-claude-opus-4-8`. |
+| grounding | **grounding** (anclar la respuesta en los datos) | |
+| fallback | **respuesta de respaldo** | Lo que imprime el notebook si falla la llamada al modelo. |
+| idempotent | **idempotente** | |
+| audit trail | **registro de auditoría** | |
+| confidence, threshold | **confianza**, **umbral** | El umbral de confianza de Revisión humana es 0.75. |
+| human in the loop | **human in the loop** (revisión humana) | |
+| drift | **drift** (deriva) | |
+| embedding | **embedding** | |
+| feature (of a model) | **feature** (variable del modelo) | Femenino: "las features". |
+| materialize | **materializar** | |
+| online serving | **servir en línea** | |
+| freshness | **frescura** | La columna `computed_at`. |
+| primary key | **llave primaria** | |
+| lookup | **búsqueda** | Una búsqueda por llave primaria. |

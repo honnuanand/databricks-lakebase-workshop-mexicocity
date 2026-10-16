@@ -471,6 +471,6 @@ with connect() as conn:
 # MAGIC **Siguiente**, según tu ruta:
 # MAGIC
 # MAGIC - Desarrolladores de aplicaciones: <a href="$../pg-search/pg_search_databricks_es">Búsqueda de texto completo y aproximada →</a>
-# MAGIC - Desarrolladores de agentes: <a href="$../pg-features/pg_features_databricks">Online Feature Serving (en inglés) →</a>
+# MAGIC - Desarrolladores de agentes: <a href="$../pg-features/pg_features_databricks_es">Servir features en línea →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE_es">← Volver al índice</a>

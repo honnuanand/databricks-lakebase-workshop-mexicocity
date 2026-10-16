@@ -73,8 +73,8 @@
 # MAGIC
 # MAGIC | # | Journey | Time | What you'll do |
 # MAGIC | - | ------- | ---- | -------------- |
-# MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks">Shared Agent Memory</a> | 20 min | Two agents share one memory table: one writes a fraud note, the other reads it and acts on it. |
-# MAGIC | 2 | <a href="$./journeys/agentic-work/agentic_work_databricks">Tool-Calling Agents</a> | 20 min | An agent reads live transactions with a tool, places a hold on a flagged account, and remembers it so it won't hold twice. |
-# MAGIC | 3 | <a href="$./journeys/learning-loop/learning_loop_databricks">Human Review of AI Output</a> | 25 min | AI extracts findings from case notes with a confidence score; low-confidence ones go to a human analyst. |
+# MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks">Shared Agent Memory</a> | 20 min | Two agents share one memory table: one writes a fraud note, the other reads it and acts on it. Needs a Foundation Model endpoint. |
+# MAGIC | 2 | <a href="$./journeys/agentic-work/agentic_work_databricks">Tool-Calling Agents</a> | 20 min | An agent reads live transactions with a tool, places a hold on a flagged account, and remembers it so it won't hold twice. Needs a Foundation Model endpoint. |
+# MAGIC | 3 | <a href="$./journeys/learning-loop/learning_loop_databricks">Human Review of AI Output</a> | 25 min | AI extracts findings from case notes with a confidence score; low-confidence ones go to a human analyst. Needs a Foundation Model endpoint; replaces your branch's case notes. |
 # MAGIC | 4 | <a href="$./journeys/pg-vector/pg_vector_databricks">Vector Similarity Search</a> | 20 min | Find the instruments most similar to a holding by embedding similarity, next to your transactional data. |
 # MAGIC | 5 | <a href="$./journeys/pg-features/pg_features_databricks">Online Feature Serving</a> | 10 min | Serve an account's fraud-risk features from Lakebase with a fast key lookup. |

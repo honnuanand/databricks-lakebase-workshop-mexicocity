@@ -72,12 +72,10 @@
 # MAGIC
 # MAGIC ### Desarrolladores de agentes (unas 1.5 horas)
 # MAGIC
-# MAGIC Los notebooks de esta ruta todavía están **en inglés**.
-# MAGIC
 # MAGIC | # | Recorrido | Tiempo | Qué vas a hacer |
 # MAGIC | - | --------- | ------ | --------------- |
-# MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks">Shared Agent Memory</a> | 20 min | Dos agentes comparten una tabla de memoria: uno escribe una nota de fraude y el otro la lee y actúa. |
-# MAGIC | 2 | <a href="$./journeys/agentic-work/agentic_work_databricks">Tool-Calling Agents</a> | 20 min | Un agente lee transacciones en vivo con una herramienta, bloquea una cuenta marcada y lo recuerda para no bloquearla dos veces. |
-# MAGIC | 3 | <a href="$./journeys/learning-loop/learning_loop_databricks">Human Review of AI Output</a> | 25 min | La IA extrae hallazgos de notas de casos con un nivel de confianza; los de baja confianza pasan a un analista. |
-# MAGIC | 4 | <a href="$./journeys/pg-vector/pg_vector_databricks_es">Búsqueda por similitud de vectores</a> (en español) | 20 min | Encuentra los instrumentos más parecidos a una posición por similitud de embeddings, junto a tus datos transaccionales. |
-# MAGIC | 5 | <a href="$./journeys/pg-features/pg_features_databricks">Online Feature Serving</a> | 10 min | Sirve desde Lakebase las variables de riesgo de fraude de una cuenta con una búsqueda rápida por llave. |
+# MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks_es">Memoria compartida entre agentes</a> | 20 min | Dos agentes comparten una tabla de memoria: uno escribe una nota de fraude y el otro la lee y actúa. Necesita un endpoint de Foundation Model. |
+# MAGIC | 2 | <a href="$./journeys/agentic-work/agentic_work_databricks_es">Agentes que usan herramientas</a> | 20 min | Un agente lee transacciones en vivo con una herramienta, retiene una cuenta marcada y lo recuerda para no retenerla dos veces. Necesita un endpoint de Foundation Model. |
+# MAGIC | 3 | <a href="$./journeys/learning-loop/learning_loop_databricks_es">Revisión humana de los resultados de la IA</a> | 25 min | La IA extrae hallazgos de notas de casos con un nivel de confianza; los de baja confianza pasan a un analista. Necesita un endpoint de Foundation Model; reemplaza las notas de caso de tu rama. |
+# MAGIC | 4 | <a href="$./journeys/pg-vector/pg_vector_databricks_es">Búsqueda por similitud de vectores</a> | 20 min | Encuentra los instrumentos más parecidos a una posición por similitud de embeddings, junto a tus datos transaccionales. |
+# MAGIC | 5 | <a href="$./journeys/pg-features/pg_features_databricks_es">Servir features en línea</a> | 10 min | Sirve desde Lakebase las variables de riesgo de fraude de una cuenta con una búsqueda rápida por llave. |
