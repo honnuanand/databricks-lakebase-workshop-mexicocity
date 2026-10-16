@@ -20,8 +20,8 @@
 ## The scenario
 
 You run fraud operations at a retail bank. An overnight alert just surfaced CTA-100240: a
-credit account with a transaction anomaly score that spiked to 8.7 on a card-not-present
-charge. Someone needs to decide: leave it, or place a hold on the account. But with one
+credit account with a transaction anomaly score that spiked to 8.7 on a late-night SPEI
+transfer to a new beneficiary. Someone needs to decide: leave it, or place a hold on the account. But with one
 constraint: do not place a second hold if one is already in place.
 
 On a traditional system, the hold happens through an app button, a human clicks it, or a batch

@@ -77,13 +77,13 @@ print(f"Session: {SESSION_ID}, FM endpoint: {FM_ENDPOINT}")
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO bank.agent_memory (namespace, session_id, agent_id, role, content)
-# MAGIC VALUES ('default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.');
+# MAGIC VALUES ('default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score 8.7. Keep on watch, do not release the hold until the customer is reached.');
 # MAGIC ```
 
 # COMMAND ----------
 
-SEED_NOTE = ("CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, "
-             "do not release the hold until cardholder is reached.")
+SEED_NOTE = ("CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score 8.7. "
+             "Keep on watch, do not release the hold until the customer is reached.")
 
 with connect() as conn:
     with conn.cursor() as cur:
@@ -144,9 +144,9 @@ messages = [{"role": "system", "content": fraud_sys},
 
 response1 = fm_call(messages)
 if response1 is None:
-    response1 = ("CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight card-not-present "
-                 "spike is a strong fraud signal. Keep the hold in place and verify the charges with the "
-                 "cardholder before releasing any funds.")
+    response1 = ("CTA-100240 is not cleared. An anomaly score of 8.7 on a late-night SPEI transfer to a new "
+                 "beneficiary is a strong fraud signal. Keep the hold in place and verify the transfer with "
+                 "the customer before releasing any funds.")
 
 with connect() as conn:
     with conn.cursor() as cur:
@@ -192,7 +192,7 @@ messages2 = [{"role": "system", "content": ops_sys},
 response2 = fm_call(messages2)
 if response2 is None:
     response2 = ("I will keep the hold on CTA-100240 in place and not release funds, in line with the fraud "
-                 "advisor's determination. I will contact the cardholder to confirm the overnight charges first.")
+                 "advisor's determination. I will contact the customer to confirm the late-night transfer first.")
 
 with connect() as conn:
     with conn.cursor() as cur:

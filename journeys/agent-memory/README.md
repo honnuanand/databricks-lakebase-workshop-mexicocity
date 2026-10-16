@@ -27,8 +27,8 @@ You run a retail bank with two AI agents deployed on Model Serving:
   like "can we release the hold on CTA-100240, or does it stay frozen?"
 
 They never talk to each other directly. But the fraud advisor needs to tell the ops assistant
-something: "CTA-100240 had a card-not-present charge spike overnight, anomaly score hit 8.7.
-Keep it on watch, do not release the hold until the cardholder is reached." The ops assistant
+something: "CTA-100240 sent a late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score
+hit 8.7. Keep it on watch, do not release the hold until the customer is reached." The ops assistant
 needs to know that before it touches the account.
 
 On most systems, the answer is "build a message queue" or "cache the state in Redis and hope

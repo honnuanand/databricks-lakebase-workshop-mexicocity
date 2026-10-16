@@ -1,110 +1,111 @@
 # Human-in-the-loop, expected results
 
-Use this to check your run. Claude's exact extractions will vary, but the *shape* is what matters:
-high-confidence entries auto-accept, low-confidence route to review, and corrections are recorded
-atomically with confidence and status fields.
+Use this to check your run. The extraction step calls a live model (`FM_ENDPOINT`, default
+`databricks-claude-opus-4-8`), which sets its own confidence, so exact labels and scores vary.
+What matters is the *shape*: clear notes auto-accept, vague ones route to review, and the
+correction is written back to the same row. The examples below are from live runs on
+2026-10-15; three runs gave the same 3 auto-accepted / 2 review split.
 
-## Step 1, table structure
+If the endpoint is unavailable, the notebook prints `(FM API unavailable: ...; using fallback)`
+and uses fixed extractions instead (2 auto-accepted, 3 needs review).
 
-```text
-note_id | account_id | ts | writeup | category | finding | action | confidence
-```
-
-The raw input (first 4 columns) and the AI extraction (last 4 columns).
-
-## Step 2, seed
+## Step 1, seed
 
 ```text
-(_, 'CTA-100240', ..., 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.')
-(_, 'CTA-300421', ..., 'Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML.')
-(_, 'CTA-200311', ..., 'Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records.')
-(_, 'CTA-100235', ..., 'A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review.')
-(_, 'CTA-100240', ..., 'Something looked off on the account this morning, maybe the login location? not sure, flagging it.')
+Seeded 5 analyst case notes
 ```
 
-Five messy, real-world analyst case notes. The `note_id` values are serial and depend on how many
-notes already sat in the table, so they will not necessarily start at 1.
+The cell deletes every row in `bank.case_note` and seeds five notes. Reset your branch afterwards
+if a later journey needs the original case notes.
 
-## Step 3, extract
+## Step 2, show the case notes
 
 ```text
-Running AI extraction (5 write-ups):
-  - Note 25: category=fraud, confidence=0.92, status=auto_accepted
-  - Note 26: category=AML, confidence=0.90, status=auto_accepted
-  - Note 27: category=dispute, confidence=0.60, status=needs_review
-  - Note 28: category=fraud, confidence=0.50, status=needs_review
-  - Note 29: category=fraud, confidence=0.30, status=needs_review
+Analyst case notes (5 total):
+  5 CTA-100240: Three card-not-present charges overnight to a foreign merchant the cus...
+  6 CTA-300421: Four outbound SPEI transfers in two days to a CLABE registered yesterd...
+  7 CTA-200311: Customer disputes a CoDi payment they say was charged twice at a Monte...
+  8 CTA-100235: A few small USD charges followed by a larger one, same online merchant...
+  9 CTA-100240: Something looked off on the account this morning, maybe a login from a...
 ```
 
-The exact category/finding values and confidences will vary (Claude's extraction is probabilistic),
-but the pattern is clear:
-- The two clearest notes (card fraud, AML wire): high confidence (over 0.75), auto-accepted
-- The ambiguous notes (dispute, FX charges, the vague login note): lower confidence, routed to review
+The `note_id` values are serial and keep counting across runs, so they will not necessarily
+start at 1.
 
-## Step 4, after extraction
+## Step 3, extraction with confidence routing
 
 ```text
-(25, 'Three card-not-present...', 'fraud', 'card_compromise', 0.92, 'auto_accepted')
-(26, 'Large outbound wire...', 'AML', 'possible_structuring', 0.90, 'auto_accepted')
-(27, 'Customer disputes...', 'dispute', 'double_charge_claim', 0.60, 'needs_review')
-(28, 'A few small foreign-currency...', 'fraud', 'possible_card_testing', 0.50, 'needs_review')
-(29, 'Something looked off...', 'fraud', 'unclear', 0.30, 'needs_review')
+Extraction results:
+  Auto-accepted (conf >= 0.75): 3
+  Needs review   (conf <  0.75): 2
+
+Auto-accepted entries:
+  fraud/card_compromise: conf=0.90
+  AML/possible_structuring: conf=0.90
+  dispute/possible_duplicate_charge: conf=0.78
+
+Needs review:
+  fraud/possible_card_testing: conf=0.55
+  other/possible_unusual_login: conf=0.30
 ```
 
-## Step 5, after correction
+Labels vary (another run returned `card_not_present_fraud` and `possible_suspicious_login`).
+The pattern held in every run:
+- The card-fraud and AML (PLD) notes: confidence 0.90–0.95, auto-accepted.
+- The CoDi dispute: about 0.78, just over the threshold, auto-accepted.
+- The USD-charges note (card testing or travel) and the vague login note: 0.30–0.55, sent to review.
 
-The script picks the lowest-confidence needs_review row dynamically and corrects it:
+## Step 4, human correction
 
 ```text
-Before:  category=fraud, finding=unclear, confidence=0.30, status=needs_review
-After:   category=fraud, finding=account_takeover_suspected, confidence=0.30, status=corrected
+Analyst corrected note_id=9: category=fraud, finding=account_takeover_suspected, status=corrected
 ```
 
-The row is atomically updated; no second table, no sync.
+The analyst corrects the lowest-confidence `needs_review` row, the vague login note. The
+correction lands in the same row; no second table, no sync.
 
-## Step 6, analytics
+## Step 5, analytics
 
 ```text
-Analytics:
-  Total: 5
-  Auto-accepted: 2
-  Needs review: 2
-  Corrected by human: 1
-  Avg confidence (auto-accepted): 0.910
-  Avg confidence (needs review): 0.550
-  Accuracy of auto-accepted: 100% (no corrections needed)
-```
+=== Learning Loop Analytics ===
 
-The entire learning loop is one table with confidence, status, and audit fields.
+Processed: 5
+  Auto-accepted: 3
+  Needs review:  1
+  Corrected:     1
+
+Avg confidence (auto-accepted): 0.877
+Avg confidence (needs review):  0.550
+```
 
 ## Full run
 
-Running `python learning_loop.py` with no arguments prints the whole story:
+Running `python learning_loop.py` with no arguments prints the whole story (live run, 2026-10-15):
 
 ```text
 Seeding analyst case notes (5 entries):
-  - CTA-100240: Three card-not-present charges overnight to an overseas merc...
-  - CTA-300421: Large outbound wire to a brand-new beneficiary in a high-ris...
-  - CTA-200311: Customer disputes a charge they say posted twice; merchant p...
-  - CTA-100235: A few small foreign-currency charges followed by a larger on...
-  - CTA-100240: Something looked off on the account this morning, maybe the ...
+  - CTA-100240: Three card-not-present charges overnight to a foreign mercha...
+  - CTA-300421: Four outbound SPEI transfers in two days to a CLABE register...
+  - CTA-200311: Customer disputes a CoDi payment they say was charged twice ...
+  - CTA-100235: A few small USD charges followed by a larger one, same onlin...
+  - CTA-100240: Something looked off on the account this morning, maybe a lo...
 
 Running AI extraction (5 write-ups):
-  - Note 25: category=fraud, confidence=0.92, status=auto_accepted
-  - Note 26: category=AML, confidence=0.90, status=auto_accepted
-  - Note 27: category=dispute, confidence=0.60, status=needs_review
-  - Note 28: category=fraud, confidence=0.50, status=needs_review
-  - Note 29: category=fraud, confidence=0.30, status=needs_review
+  - Note 6: category=fraud, confidence=0.90, status=auto_accepted
+  - Note 7: category=AML, confidence=0.93, status=auto_accepted
+  - Note 8: category=dispute, confidence=0.78, status=auto_accepted
+  - Note 9: category=fraud, confidence=0.55, status=needs_review
+  - Note 10: category=other, confidence=0.40, status=needs_review
 
 Human correction (analyst reviews uncertain entries):
-  - Note 29: analyst set category=fraud, finding=account_takeover_suspected (was uncertain)
+  - Note 10: analyst set category=fraud, finding=account_takeover_suspected (was uncertain)
 
 Analytics:
   Total: 5
-  Auto-accepted: 2
-  Needs review: 2
+  Auto-accepted: 3
+  Needs review: 1
   Corrected by human: 1
-  Avg confidence (auto-accepted): 0.910
+  Avg confidence (auto-accepted): 0.870
   Avg confidence (needs review): 0.550
   Accuracy of auto-accepted: 100% (no corrections needed)
 
@@ -116,9 +117,8 @@ Done. One table is the store, the review queue, the audit trail, and the analyti
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
 | auto-accept threshold | 0.75 confidence | typical ML threshold (tunable) |
-| extractions routed to review | ~40-60% in real data | depends on note clarity |
-| FM API latency per extraction | 1-2 seconds | single model call, no round-trips |
-| human correction latency | atomic UPDATE | one row, one transaction |
+| routed to review in this run | 2 of 5 | the vague notes go to a person |
+| human correction | one UPDATE on the same row | AI output and correction live together |
 | accuracy tracking | stored in same table | no data movement, instant analytics |
 
 > **From the field**

@@ -1,109 +1,111 @@
 # Agent memory, expected results
 
-Use this to check your run. The exact responses will differ slightly (Claude varies), but the
-*shape* and timing are what matter: the seed inserts cleanly, the agents append their turns,
-and the table reads back with all the rows in order.
+Use this to check your run. Both agents call a live model (`FM_ENDPOINT`, default
+`databricks-claude-opus-4-8`), so their exact words differ on every run. What matters is the
+*shape*: the seed inserts cleanly, each agent's answer is grounded in the shared notes, and the
+table reads back with all the rows in order. The examples below are from a live run on
+2026-10-15.
 
-## Step 1, table check
+If the endpoint is unavailable, each agent cell prints
+`(FM API unavailable: ...; using fallback simulation)` and uses a fixed reply instead.
 
-```text
-0
-```
-
-Or a small count if you ran this before. Either is fine; the script is idempotent.
-
-## Step 2, seed
+## Step 1, seed shared memory
 
 ```text
-(1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.', ...)
+Seeded agent_memory with prior fraud note
 ```
 
-One row inserted.
+One row inserted. The cell deletes this session's earlier rows first, so a rerun starts clean.
+
+## Step 2, read prior memory
+
+```text
+Prior memory (1 rows):
+  fraud_advisor: CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly...
+```
 
 ## Step 3, fraud advisor
 
 ```text
-Fraud Advisor sees prior memory:
-  - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.
-
-Fraud Advisor response:
-CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight card-not-present spike is a strong fraud signal. Keep the hold in place and verify the recent charges with the cardholder before releasing any funds.
+fraud_advisor appended:
+  Keep CTA-100240 on hold — per prior notes, the late-night MXN 38,500 SPEI transfer to a new beneficiary (anomaly score 8.7) warrants holding until the customer is reached and verifies the transaction.
 ```
 
-The exact wording varies. The key is that:
-1. The agent saw the seeded memory (the fraud note).
-2. It generated a response grounded in that note.
-3. The response appeared in the output.
+The wording varies. Check that:
+1. The answer is "keep the hold" (not "clear").
+2. It cites the note: the SPEI transfer, the 8.7 score, or reaching the customer.
 
-After this step, the memory table should have 3 rows: the seed, the user question, and the
-assistant response.
+After this step the table has 3 rows: the seed, the question, and the answer.
 
 ## Step 4, ops assistant
 
 ```text
-Ops Assistant sees prior memory:
-  - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.
-  - fraud_advisor (assistant): CTA-100240 is not cleared. An anomaly score of 8.7...
+Full memory for ops assistant (3 rows):
+  fraud_advisor: CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiar...
+  fraud_advisor: Is CTA-100240 cleared, or do we freeze it for suspected fraud?
+  fraud_advisor: Keep CTA-100240 on hold — per prior notes, the late-night MXN 38,500 S...
 
-Ops Assistant response:
-I will keep the hold on CTA-100240 in place and not release funds, in line with the fraud advisor's determination. I will contact the cardholder to confirm the overnight charges before any further action.
+ops_assistant appended:
+  The hold on CTA-100240 stays in place per the fraud advisor's determination — the late-night MXN 38,500 SPEI transfer to a new beneficiary (anomaly score 8.7) must remain held until the customer is reached and verifies the transaction.
 ```
 
-Again, the wording varies. The key is:
-1. The ops assistant read both the seeded note AND the fraud advisor's prior response.
-2. It responded based on that context.
-3. The two agents never directly messaged; they only read/wrote the shared table.
+The ops assistant read both the seed note and the fraud advisor's answer, and defers to it. The
+two agents never messaged each other; they only read and wrote the shared table.
 
-After this step, the memory table should have 5 rows.
-
-## Step 5, full memory table
+## Step 5, final memory
 
 ```text
-(1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...', ...)
-(2, 'default', 'sess-01', 'ops_assistant', 'user', 'Can we release the hold on CTA-100240, or does it stay frozen?', ...)
-(3, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240 is not cleared. An anomaly score of 8.7...', ...)
-(4, 'default', 'sess-01', 'ops_assistant', 'user', 'Can we release the hold on CTA-100240, or does it stay frozen?', ...)
-(5, 'default', 'sess-01', 'ops_assistant', 'assistant', 'I will keep the hold on CTA-100240 in place...', ...)
+Final memory (5 total rows):
+  [fraud_advisor] CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score 8.7. Keep on watch, do not release the hold until the customer is reached.
+  [fraud_advisor] Is CTA-100240 cleared, or do we freeze it for suspected fraud?
+  [fraud_advisor] Keep CTA-100240 on hold — ...
+  [ops_assistant] Is CTA-100240 cleared, or do we freeze it for suspected fraud?
+  [ops_assistant] The hold on CTA-100240 stays in place per the fraud advisor's determination — ...
 ```
 
-All rows in order, with timestamps increasing. This is the agents' shared brain as plain SQL.
+Five rows, in the order they were written.
 
 ## Full run
 
-Running `python agent_memory.py` with no arguments prints the whole story:
+Running `python agent_memory.py` with no arguments prints the whole story (live run, 2026-10-15):
 
 ```text
 Seeding shared memory with a fraud note...
-  Seed row: (1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, do not release the hold until cardholder is reached.')
+  Seed row: (1, 'default', 'sess-01', 'fraud_advisor', 'assistant', 'CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score 8.7. Keep on watch, do not release the hold until the customer is reached.', datetime.datetime(...))
 
 1. Fraud Advisor turn:
-  Prior memory (1 row):
-    - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
-  Question: Is CTA-100240 cleared, or do we freeze it for suspected fraud?
-  Response: CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight spike...
-  Memory after: 3 rows
+Prior memory (1 row):
+  - fraud_advisor (assistant): CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score 8.7. Keep on
+Response:
+  Keep CTA-100240 frozen/on hold — per prior notes, the late-night MXN 38,500 SPEI transfer to a new beneficiary scored 8.7, and the hold should not be released until the customer is reached.
+
+Memory now: 3 total rows
 
 2. Ops Assistant turn:
-  Prior memory (3 rows):
-    - CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch...
-    - fraud_advisor (assistant): CTA-100240 is not cleared. An anomaly score of 8.7...
-    - ops_assistant (user): Is CTA-100240 cleared, or do we freeze it for suspected fraud?
-  Response: I will keep the hold on CTA-100240 in place and not release funds...
-  Memory after: 5 rows
+Prior memory (3 rows):
+  - fraud_advisor (assistant): CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score 8.7. Keep on
+  - fraud_advisor (user): Is CTA-100240 cleared, or do we freeze it for suspected fraud?
+  - fraud_advisor (assistant): Keep CTA-100240 frozen/on hold — per prior notes, the late-night MXN 38,500 SPEI transfer to a new b
+Response:
+  CTA-100240 is not cleared — the hold stays in place per the fraud advisor's determination, and should not be released until the customer is reached and verifies the late-night MXN 38,500 SPEI transfer to the new beneficiary.
+
+Memory now: 5 total rows
 
 Done. Both agents wrote to and read from the same governed table.
 ```
+
+The script does not delete earlier rows, so the seed row id and the row counts grow if you run it
+more than once on the same branch.
 
 ## The numbers that matter
 
 | What | Expected | Why it matters |
 | ---- | -------- | -------------- |
 | seed insert | 1 row | shared memory initialized with context |
-| fraud advisor appends | 2 rows (user + response) | agent writes are durable |
-| ops assistant reads + sees all prior | 3 rows before its turn | agent reads are consistent |
-| ops assistant appends | 2 rows (user + response) | second agent can also write |
+| fraud advisor appends | 2 rows (question + answer) | agent writes are durable |
+| ops assistant reads before its turn | 3 rows | it sees the other agent's answer |
+| ops assistant appends | 2 rows (question + answer) | a second agent can also write |
 | total rows after both agents | 5 rows | shared memory is a real table, not a cache |
-| FM API latency per agent | 1-3 seconds | single-hop, no orchestration |
 
 > **From the field**
 > Real agent deployments vary the memory schema (add fields like `session_id`, `namespace`,

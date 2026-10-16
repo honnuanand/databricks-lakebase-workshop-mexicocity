@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will demonstrate a closed-loop learning system: seed analyst case notes, extract structured data with AI, route by confidence (high=auto, low=review), simulate human correction, and analyze accuracy and drift.
 # MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. The extraction step calls a Foundation Model endpoint (FM_ENDPOINT, default: databricks-claude-opus-4-8); if it is unavailable, the notebook uses fixed extractions instead.
 
 # COMMAND ----------
 
@@ -38,13 +38,34 @@ notebook_env(dbutils);
 
 # COMMAND ----------
 
-import os, sys
+import os, sys, json
+import requests
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, _env, client
 
+FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 CONF_THRESHOLD = 0.75
 TABLE = "bank.case_note"
+
+def fm_call(messages, max_tokens=300):
+    """Call the Foundation Model API; return text, or None to use the fallback."""
+    try:
+        w = client()
+        tok = w.config.authenticate()["Authorization"][len("Bearer "):]
+        r = requests.post(
+            f"{w.config.host}/serving-endpoints/{FM_ENDPOINT}/invocations",
+            headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json"},
+            json={"messages": messages, "max_tokens": max_tokens},
+            timeout=60,
+        )
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"  (FM API unavailable: {e}; using fallback)")
+        return None
+
 print("Learning loop: seed -> extract -> route -> correct -> analyze")
+print(f"FM endpoint: {FM_ENDPOINT}")
 
 # COMMAND ----------
 
@@ -55,7 +76,7 @@ print("Learning loop: seed -> extract -> route -> correct -> analyze")
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO bank.case_note (account_id, writeup)
-# MAGIC VALUES ('CTA-100240', 'Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue.');
+# MAGIC VALUES ('CTA-100240', 'Three card-not-present charges overnight to a foreign merchant the customer does not recognize, velocity spike. Froze the card and opened a reissue.');
 # MAGIC ```
 
 # COMMAND ----------
@@ -67,11 +88,11 @@ with connect() as conn:
 
 # Real accounts and their analyst case notes.
 writeups = [
-    ("CTA-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
-    ("CTA-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
-    ("CTA-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
-    ("CTA-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
-    ("CTA-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
+    ("CTA-100240", "Three card-not-present charges overnight to a foreign merchant the customer does not recognize, velocity spike. Froze the card and opened a reissue."),
+    ("CTA-300421", "Four outbound SPEI transfers in two days to a CLABE registered yesterday, each just under the reporting threshold. Possible structuring, referred to the PLD (AML) team."),
+    ("CTA-200311", "Customer disputes a CoDi payment they say was charged twice at a Monterrey store; the merchant's receipt is ambiguous. Needs a closer look at the settlement records."),
+    ("CTA-100235", "A few small USD charges followed by a larger one, same online merchant. Could be card testing, or the customer is traveling in the US. Hold for review."),
+    ("CTA-100240", "Something looked off on the account this morning, maybe a login from another city? not sure, flagging it."),
 ]
 
 with connect() as conn:
@@ -111,15 +132,28 @@ for note_id, mid, writeup in rows:
 # MAGIC ## Step 3 - Extraction with confidence routing
 # MAGIC
 # MAGIC Extract structured data (category, finding, action, confidence) from each case note, then write
-# MAGIC the extraction and routing status back to the same table. Here we use a fixed set of extractions
-# MAGIC so the notebook runs deterministically; the standalone `learning_loop.py` calls the live Claude
-# MAGIC endpoint for the same step. High confidence auto-accepts; low confidence routes to review.
+# MAGIC the extraction and routing status back to the same table. The model
+# MAGIC (`FM_ENDPOINT`, default `databricks-claude-opus-4-8`) reads each note and returns JSON with its
+# MAGIC own confidence, so your counts can differ slightly from run to run. If the endpoint is
+# MAGIC unavailable, a fixed set of extractions is used instead. High confidence auto-accepts; low
+# MAGIC confidence routes to review.
 
 # COMMAND ----------
 
-# One extraction per case note, in note_id order. These mirror what the model returns for notes
-# this clear and this vague: the card-fraud and AML notes are unambiguous, the rest are not.
-extractions = [
+EXTRACT_PROMPT = (
+    "You are a fraud/AML triage assistant. From a free-text analyst case note, "
+    "extract category (fraud, AML, dispute, or other), finding (the specific issue, as a short "
+    "snake_case label such as card_compromise or possible_structuring), "
+    "action (what was done), and confidence (0-1, how certain you are the extraction "
+    "is correct and unambiguous). "
+    "Respond with ONLY a JSON object: {\"category\": \"...\", \"finding\": \"...\", "
+    "\"action\": \"...\", \"confidence\": 0.X}"
+)
+
+# Fallback, one per case note in note_id order, used only if the model call fails. These mirror
+# what the model returns for notes this clear and this vague: the card-fraud and AML notes are
+# unambiguous, the rest are not.
+fallback = [
     {"category": "fraud",   "finding": "card_compromise",       "action": "froze_and_reissued", "confidence": 0.93},
     {"category": "AML",     "finding": "possible_structuring",  "action": "referred_to_aml",    "confidence": 0.88},
     {"category": "dispute", "finding": "double_charge_claim",   "action": "review_settlement",  "confidence": 0.64},
@@ -127,11 +161,29 @@ extractions = [
     {"category": "fraud",   "finding": "unclear",               "action": "investigate",        "confidence": 0.28},
 ]
 
+def extract(writeup, i):
+    """Ask the model for an extraction; parse its JSON, or use the fallback."""
+    response = fm_call([{"role": "system", "content": EXTRACT_PROMPT},
+                        {"role": "user", "content": writeup}])
+    if response is None:
+        return dict(fallback[i])
+    try:
+        e = json.loads(response[response.find("{"):response.rfind("}") + 1])
+    except Exception:
+        e = {"category": "?", "finding": "(parse failed)", "action": "?", "confidence": 0.3}
+    e["confidence"] = max(0.0, min(1.0, float(e.get("confidence", 0.5))))
+    return e
+
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute(f"SELECT note_id FROM {TABLE} ORDER BY note_id")
-        note_ids = [r[0] for r in cur.fetchall()]
-        for note_id, e in zip(note_ids, extractions):
+        cur.execute(f"SELECT note_id, writeup FROM {TABLE} ORDER BY note_id")
+        notes = cur.fetchall()
+
+extractions = [extract(writeup, i) for i, (_, writeup) in enumerate(notes)]
+
+with connect() as conn:
+    with conn.cursor() as cur:
+        for (note_id, _), e in zip(notes, extractions):
             status = "auto_accepted" if e["confidence"] >= CONF_THRESHOLD else "needs_review"
             e["status"] = status
             cur.execute(

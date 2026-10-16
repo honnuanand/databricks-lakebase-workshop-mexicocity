@@ -1,6 +1,5 @@
 # Databricks notebook source
-# COMMAND ----------
-
+# MAGIC %md
 # MAGIC # Feature store served online, step by step
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time. You will create raw events, materialize features into a fast table, and measure single-digit-millisecond lookup latency for fraud scoring.
@@ -34,7 +33,9 @@ notebook_env(dbutils);
 
 # COMMAND ----------
 
+# MAGIC %md
 # MAGIC ## Setup — connect
+
 # COMMAND ----------
 
 import os, sys, time
@@ -49,6 +50,7 @@ print('Ready.')
 
 # COMMAND ----------
 
+# MAGIC %md
 # MAGIC ## Step 1 — Create raw events table
 # MAGIC
 # MAGIC ```sql
@@ -62,6 +64,7 @@ print('Ready.')
 # MAGIC     util_pct NUMERIC(6,2)
 # MAGIC );
 # MAGIC ```
+
 # COMMAND ----------
 
 with connect() as conn:
@@ -82,12 +85,14 @@ with connect() as conn:
 
 # COMMAND ----------
 
+# MAGIC %md
 # MAGIC ## Step 2 — Seed raw events (10k events across 100 accounts)
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO account_events_for_features(...)
 # MAGIC SELECT ... FROM generate_series(1, 10000) g
 # MAGIC ```
+
 # COMMAND ----------
 
 with connect() as conn:
@@ -95,11 +100,11 @@ with connect() as conn:
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{EVENTS_TABLE}(account_id, event_ts, event_type, amount, anomaly_score, util_pct)
             SELECT
-                'CTA-' || (g % 100),
+                'CTA-' || (900000 + g % 100),
                 now() - ((g / 100) || ' days')::interval,
-                (ARRAY['purchase', 'wire', 'dispute', 'chargeback'])[1 + (g % 4)],
+                (ARRAY['purchase', 'wire', 'dispute', 'chargeback'])[1 + ((g / 100) % 4)],
                 (g % 5000) + (g % 100)::numeric / 100,
-                (g % 10)::numeric + (g % 100)::numeric / 100,
+                ((g / 100) % 10)::numeric + (g % 100)::numeric / 100,
                 30 + (g % 70)::numeric
             FROM generate_series(1, 10000) g
         """)
@@ -107,6 +112,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
+# MAGIC %md
 # MAGIC ## Step 3 — Create online feature table
 # MAGIC
 # MAGIC ```sql
@@ -120,6 +126,7 @@ with connect() as conn:
 # MAGIC     computed_at TIMESTAMPTZ
 # MAGIC );
 # MAGIC ```
+
 # COMMAND ----------
 
 with connect() as conn:
@@ -140,6 +147,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
+# MAGIC %md
 # MAGIC ## Step 4 — Materialize features from events
 # MAGIC
 # MAGIC ```sql
@@ -153,6 +161,7 @@ with connect() as conn:
 # MAGIC WHERE e.event_ts >= now() - interval '30 days'
 # MAGIC GROUP BY e.account_id;
 # MAGIC ```
+
 # COMMAND ----------
 
 with connect() as conn:
@@ -175,6 +184,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
+# MAGIC %md
 # MAGIC ## Step 5 — Measure online serving latency
 # MAGIC
 # MAGIC Run 100 primary-key lookups and time each one.
@@ -183,10 +193,11 @@ with connect() as conn:
 # MAGIC latencies = []
 # MAGIC for account_id in range(100):
 # MAGIC     t0 = time.perf_counter()
-# MAGIC     cur.execute(f"SELECT * FROM account_features_online WHERE account_id = %s", [f'CTA-{account_id}'])
+# MAGIC     cur.execute(f"SELECT * FROM account_features_online WHERE account_id = %s", [f'CTA-{900000 + account_id}'])
 # MAGIC     cur.fetchone()
 # MAGIC     latencies.append((time.perf_counter() - t0) * 1000)
 # MAGIC ```
+
 # COMMAND ----------
 
 with connect() as conn:
@@ -194,7 +205,7 @@ with connect() as conn:
         latencies = []
         for account_id in range(100):
             t0 = time.perf_counter()
-            cur.execute(f"SELECT * FROM {SCHEMA}.{ONLINE_TABLE} WHERE account_id = %s", [f'CTA-{account_id % 100}'])
+            cur.execute(f"SELECT * FROM {SCHEMA}.{ONLINE_TABLE} WHERE account_id = %s", [f'CTA-{900000 + account_id}'])
             row = cur.fetchone()
             latencies.append((time.perf_counter() - t0) * 1000)
 
@@ -210,6 +221,7 @@ with connect() as conn:
 
 # COMMAND ----------
 
+# MAGIC %md
 # MAGIC ## What you learned
 # MAGIC
 # MAGIC Feature stores work by materializing, computing offline, and serving online, fast lookups at prediction time. Materialize aggregates from raw events into a dedicated table, indexed for speed. Serve means primary-key lookups, single-digit-millisecond latency, no computation at prediction time. Same database for both; no sync between systems.

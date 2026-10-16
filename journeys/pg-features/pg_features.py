@@ -54,11 +54,11 @@ def setup(conn):
         cur.execute(f"""
             INSERT INTO {schema}.{EVENTS_TABLE}(account_id, event_ts, event_type, amount, anomaly_score, util_pct)
             SELECT
-                'CTA-' || (g % 100),
-                now() - (g % 3600 || ' seconds')::interval,
-                (ARRAY['purchase', 'wire', 'dispute', 'chargeback'])[1 + (g % 4)],
+                'CTA-' || (900000 + g % 100),
+                now() - ((g / 100) || ' days')::interval,
+                (ARRAY['purchase', 'wire', 'dispute', 'chargeback'])[1 + ((g / 100) % 4)],
                 (g % 5000) + (g % 100)::numeric / 100,
-                (g % 10)::numeric + (g % 100)::numeric / 100,
+                ((g / 100) % 10)::numeric + (g % 100)::numeric / 100,
                 30 + (g % 70)::numeric
             FROM generate_series(1, 10000) g
         """)
@@ -121,7 +121,7 @@ def serve_online(conn):
         # Now measure: 100 feature lookups
         times = []
         for i in range(100):
-            account_id = f"CTA-{i % 10}"  # query 10 different accounts repeatedly
+            account_id = f"CTA-{900000 + i}"  # one lookup per account
             start = time.perf_counter()
             cur.execute(
                 f"SELECT * FROM {schema}.{FEATURE_TABLE} WHERE account_id = %s",
@@ -136,16 +136,16 @@ def serve_online(conn):
         max_ms = max(times)
 
         print(f"\nFeature lookup latency (primary-key access):")
-        print(f"  100 lookups across 10 accounts")
+        print(f"  100 lookups across 100 accounts")
         print(f"  Average: {avg_ms:.2f} ms")
         print(f"  Min: {min_ms:.2f} ms, Max: {max_ms:.2f} ms")
         print(f"  ✓ Fast enough for real-time fraud scoring at authorization time")
 
         # Show a sample feature vector
-        cur.execute(f"SELECT * FROM {schema}.{FEATURE_TABLE} WHERE account_id = 'CTA-0'")
+        cur.execute(f"SELECT * FROM {schema}.{FEATURE_TABLE} WHERE account_id = 'CTA-900000'")
         row = cur.fetchone()
         if row:
-            print(f"\nSample feature vector for CTA-0:")
+            print(f"\nSample feature vector for CTA-900000:")
             cols = [desc[0] for desc in cur.description]
             for col, val in zip(cols, row):
                 print(f"  {col}: {val}")

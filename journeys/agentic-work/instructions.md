@@ -67,7 +67,7 @@ You should see output like:
 Agent tool calls:
   - get_account_risk('CTA-100240'): returns ('watch', 8.7)
   - place_hold('CTA-100240'): froze account, wrote case_note flag
-Agent decision: Hold placed on CTA-100240 due to anomaly score 8.7 on a card-not-present charge.
+Agent decision: Hold placed on CTA-100240 due to anomaly score 8.7 on a late-night SPEI transfer to a new beneficiary.
 Memory after: placed hold on CTA-100240
 ```
 

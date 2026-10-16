@@ -38,8 +38,8 @@ TABLE = "bank.agent_memory"
 
 QUESTION = "Is CTA-100240 cleared, or do we freeze it for suspected fraud?"
 SEED_NOTE = (
-    "CTA-100240: card-not-present spike overnight, anomaly score 8.7. Keep on watch, "
-    "do not release the hold until cardholder is reached."
+    "CTA-100240: late-night SPEI transfer of MXN 38,500 to a new beneficiary, anomaly score 8.7. "
+    "Keep on watch, do not release the hold until the customer is reached."
 )
 
 
@@ -113,15 +113,15 @@ def _call_agent(agent_id: str, question: str) -> str:
     if response is None:
         if agent_id == "fraud_advisor":
             response = (
-                "CTA-100240 is not cleared. An anomaly score of 8.7 on an overnight "
-                "card-not-present spike is a strong fraud signal. Keep the hold in place and "
-                "verify the recent charges with the cardholder before releasing any funds."
+                "CTA-100240 is not cleared. An anomaly score of 8.7 on a late-night SPEI "
+                "transfer to a new beneficiary is a strong fraud signal. Keep the hold in place "
+                "and verify the transfer with the customer before releasing any funds."
             )
         else:  # ops_assistant
             response = (
                 "I will keep the hold on CTA-100240 in place and not release funds, in line "
-                "with the fraud advisor's determination. I will contact the cardholder to "
-                "confirm the overnight charges before any further action."
+                "with the fraud advisor's determination. I will contact the customer to "
+                "confirm the late-night transfer before any further action."
             )
 
     print(f"Response:\n  {response}\n")

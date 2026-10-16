@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will demonstrate an agent with real function calling that reads account risk, decides to place a hold on a flagged account, and remembers what it did in a table. On the second call, the agent refuses to double-hold based on memory.
 # MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. The agent's explanations come from a Foundation Model endpoint (FM_ENDPOINT, default: databricks-claude-opus-4-8); if it is unavailable, the notebook prints a fixed line instead.
 
 # COMMAND ----------
 
@@ -39,18 +39,37 @@ notebook_env(dbutils);
 # COMMAND ----------
 
 import os, sys
+import requests
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import connect, _env, client
 
 NAMESPACE = "default"
 SESSION_ID = "sess-01"
 ACCOUNT_ID = "CTA-100240"
+FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 TABLE_MEMORY = "bank.agent_memory"
 TABLE_ACCOUNT = "bank.account"
 TABLE_TXN = "bank.txn"
 TABLE_CASE = "bank.case_note"
 
-print(f"Account under review: {ACCOUNT_ID}")
+def fm_call(messages, max_tokens=300):
+    """Call the Foundation Model API; return text, or None to use the fallback."""
+    try:
+        w = client()
+        tok = w.config.authenticate()["Authorization"][len("Bearer "):]
+        r = requests.post(
+            f"{w.config.host}/serving-endpoints/{FM_ENDPOINT}/invocations",
+            headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json"},
+            json={"messages": messages, "max_tokens": max_tokens},
+            timeout=60,
+        )
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"  (FM API unavailable: {e}; using fallback)")
+        return None
+
+print(f"Account under review: {ACCOUNT_ID}, FM endpoint: {FM_ENDPOINT}")
 
 # COMMAND ----------
 
@@ -125,7 +144,7 @@ if top_score and float(top_score) >= 8.0:
 # MAGIC %md
 # MAGIC ## Step 3 - Agent's function call 2: place the hold
 # MAGIC
-# MAGIC The agent freezes the account and writes a flag row to case_note. One logical action, two writes. The SQL:
+# MAGIC The agent freezes the account and writes a flag row to case_note. One logical action, two writes. Then the model explains the action in a sentence or two. The SQL:
 # MAGIC
 # MAGIC ```sql
 # MAGIC UPDATE bank.account SET status='frozen' WHERE account_id='CTA-100240';
@@ -142,11 +161,27 @@ with connect() as conn:
             f"""INSERT INTO {TABLE_CASE} (account_id, writeup, category, finding, action, confidence)
                VALUES (%s, %s, 'fraud', %s, 'hold_placed', 0.95)""",
             [ACCOUNT_ID,
-             f"Automated hold: anomaly_score {top_score} on a card-not-present charge.",
-             f"card_not_present_anomaly_{top_score}"]
+             f"Automated hold: anomaly_score {top_score} on a late-night SPEI transfer to a new beneficiary.",
+             f"spei_new_beneficiary_anomaly_{top_score}"]
         )
 
 print(f"Placed hold on {ACCOUNT_ID}: account frozen, case_note flag written")
+
+# Let the model narrate the decision; fall back to a canned line.
+narrated = fm_call([
+    {"role": "system", "content": (
+        "You are a fraud-ops agent at a retail bank. You just read an account's status and "
+        "its top transaction anomaly score (0-10, higher is riskier), and placed a hold. "
+        "State the action and the reason in one or two sentences.")},
+    {"role": "user", "content": (
+        f"Account {ACCOUNT_ID} status was '{status}', top anomaly_score {top_score}. "
+        f"You placed a hold. Summarize.")},
+])
+response = narrated or (
+    f"Hold placed on {ACCOUNT_ID} due to anomaly score {top_score} on a late-night SPEI transfer "
+    f"to a new beneficiary. Account frozen pending customer verification."
+)
+print(f"\nAgent response:\n  {response}")
 
 # COMMAND ----------
 
@@ -177,7 +212,7 @@ print(f"Remembered the hold in agent_memory")
 # MAGIC %md
 # MAGIC ## Step 5 - Agent called again: refuses duplicate
 # MAGIC
-# MAGIC On a second call, the agent reads memory, finds the hold already exists, and refuses to double-hold.
+# MAGIC On a second call, the agent reads memory, finds the hold already exists, and refuses to double-hold. The model phrases the refusal.
 
 # COMMAND ----------
 
@@ -193,6 +228,15 @@ with connect() as conn:
 if prior:
     print(f"Agent reads memory: \"{prior[0]}\"")
     print(f"REFUSE: {ACCOUNT_ID} is already on hold. No double-action.")
+    # Let the model phrase the refusal; fall back to a canned line.
+    refusal = fm_call([
+        {"role": "system", "content": (
+            "You are a fraud-ops agent. You previously placed a hold on this account. "
+            "Decline to act again in one sentence.")},
+        {"role": "user", "content": f"Prior memory says: a hold is already placed on "
+                                     f"{ACCOUNT_ID}. The request is: Review {ACCOUNT_ID} and act on the fraud signal"},
+    ])
+    print(f"\nAgent response:\n  {refusal or f'{ACCOUNT_ID} is already on hold. No duplicate action needed.'}")
 else:
     print(f"No prior hold found")
 
