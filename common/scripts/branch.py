@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Create, check, or reset YOUR personal zero-copy branch.
 
-Your branch (LB_BRANCH, e.g. u-alex) is where every journey runs. It forks the
-shared `production` branch copy-on-write, so creating it copies no data and a
-whole room can each have their own without colliding.
+Your branch (LB_BRANCH, e.g. u-alex) is where every journey runs. It forks your
+project's `production` branch copy-on-write, so creating it copies no data, and
+it starts with the bank that 00-setup/setup_databricks loaded into `production`.
 
 Usage:
     python branch.py --create        # create u-<name> off production (idempotent), wait ACTIVE
     python branch.py --status        # show your branch's endpoint state + host
-    python branch.py --reset         # drop and recreate your branch (fresh start), then reload bank
+    python branch.py --reset         # drop and recreate your branch (fresh start from production)
     python branch.py --delete        # drop your branch (leaves nothing behind)
 
 Env: LB_PROFILE, LB_PROJECT, LB_BRANCH (see 00-setup/).
@@ -47,7 +47,7 @@ def create(reload: bool = False) -> None:
             branch_id=branch, replace_existing=False)
         ms = (time.time() - t0) * 1000
         print(_t(f"create_branch API returned in {ms:.0f} ms", f"la API create_branch respondió en {ms:.0f} ms"))
-    waited = wait_active(w, project, branch)
+    waited = wait_active(w, project, branch, idle_ok=True)
     host, _, state = branch_endpoint(w, project, branch)
     print(_t(f"branch {branch} is {state} in ~{waited:.1f}s  (host {host})",
              f"la rama {branch} está {state} en ~{waited:.1f}s  (host {host})"))
@@ -87,10 +87,14 @@ def reset() -> None:
 
 def _reload_bank() -> None:
     # import here so create/status don't require the SQL files
-    from load_bank import main as load_main
-    import sys
-    sys.argv = ["load_bank.py"]
-    load_main()
+    from load_bank import main as load_main, is_loaded
+    from lakebase import connect
+    # A fork of a loaded production already has the bank; loading again would duplicate
+    # the txn and case_note rows.
+    with connect() as conn:
+        if is_loaded(conn):
+            return
+    load_main([])
 
 
 def main() -> None:

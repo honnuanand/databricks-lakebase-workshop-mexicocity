@@ -22,16 +22,18 @@
 # MAGIC
 # MAGIC The **Lakebase Data API** exposes your tables as a REST API: `GET <url>/bank/account` returns rows as
 # MAGIC JSON, with filters and column selection as URL parameters, authenticated with a Databricks OAuth
-# MAGIC token. In this lab you find your branch's Data API, get a token, and call it. **Not yet tested end to
-# MAGIC end:** the REST calls follow the Databricks documentation, but the account that built the workshop owns
-# MAGIC the project, and the project owner can't call the Data API; the setup checks were run.
+# MAGIC token. In this lab you find your branch's Data API, get a token, and call it.
+# MAGIC
+# MAGIC One twist: the Data API refuses requests from the project owner, and you own your project. So you call
+# MAGIC it the way a real app would, as a **service principal**: the workshop's own, which
+# MAGIC `00-setup/setup_databricks` gave read-only access to your bank.
 # MAGIC
 # MAGIC ## Learning objectives
 # MAGIC
 # MAGIC By the end of this lab, you will be able to:
 # MAGIC
 # MAGIC 1. **Find your branch's Data API URL** and what has to be set up for it.
-# MAGIC 2. **Authenticate with an OAuth token** in the `Authorization` header.
+# MAGIC 2. **Authenticate as a service principal** with an OAuth token in the `Authorization` header.
 # MAGIC 3. **Read and filter rows over HTTPS** with REST query parameters.
 # MAGIC 4. **Compare the REST call with the SQL** it replaces, and know when each fits.
 
@@ -43,7 +45,8 @@
 # MAGIC - **REST API:** an HTTPS interface: you `GET` a URL and receive JSON. Any language or device that speaks HTTPS can use it, with no database driver.
 # MAGIC - **Data API:** Lakebase's REST interface to your tables (PostgREST-compatible). It's enabled per branch, and only exposes the schemas you choose.
 # MAGIC - **OAuth token (JWT):** a short-lived signed token that proves who you are. The Data API needs one in the `Authorization: Bearer` header.
-# MAGIC - **`authenticator` role:** the Postgres role the Data API connects as. It switches to your role for each request, so your role must be set up for it (an instructor step).
+# MAGIC - **`authenticator` role:** the Postgres role the Data API connects as. For each request it switches to the caller's role, so the caller's role must be granted to `authenticator`. It can't be granted the project owner's role, which is why the owner can't call the Data API.
+# MAGIC - **Service principal:** a Databricks identity for an app or a script rather than a person. It signs in with a client id and a secret. The workshop's service principal has a Postgres role on your branch with `SELECT` on the `bank` tables, created by setup.
 # MAGIC
 # MAGIC More terms are defined in `docs/glossary.md` in the workshop folder.
 
@@ -55,9 +58,11 @@
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Before you start</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Run <code>00-setup/setup_databricks</code> once to create your branch and load the bank.
+# MAGIC     Run <code>00-setup/setup_databricks</code> once to create your project and branch and load the bank.
 # MAGIC     Attach this notebook to <strong>serverless</strong> compute.
-# MAGIC     Needs: the <strong>Data API enabled on your branch</strong> with the <code>bank</code> schema exposed, and your Postgres role set up for it by your instructor (C1 explains). Without it, the REST steps skip themselves.
+# MAGIC     Needs: the <code>lakebase-workshop</code> secret scope with the workshop service principal's client id
+# MAGIC     and secret, which your instructor creates before the session. Setup step 5 then enables the Data API
+# MAGIC     and sets up the service principal's role. Without it, the REST steps skip themselves.
 # MAGIC   </div>
 # MAGIC </div>
 
@@ -94,7 +99,7 @@ notebook_env(dbutils);
 # MAGIC
 # MAGIC ```
 # MAGIC signed in as alex.kim@example.com
-# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_PROJECT = bank-alex-kim
 # MAGIC   LB_BRANCH = u-alex-kim
 # MAGIC   LB_SCHEMA = bank
 # MAGIC ```
@@ -201,7 +206,7 @@ print(f"  Data API URL: {rest_url or '(the Data API is not enabled on this branc
 # MAGIC
 # MAGIC ```
 # MAGIC Connection info:
-# MAGIC   Project: bank
+# MAGIC   Project: bank-alex-kim
 # MAGIC   Branch: u-alex-kim
 # MAGIC   Host: ep-....database.us-east-2.cloud.databricks.com
 # MAGIC   Data API URL: https://ep-....database.us-east-2.cloud.databricks.com/api/2.0/workspace/<workspace id>/rest/databricks_postgres
@@ -221,30 +226,40 @@ print(f"  Data API URL: {rest_url or '(the Data API is not enabled on this branc
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### B2. Get an OAuth token
+# MAGIC ### B2. Get an OAuth token for the service principal
 # MAGIC
-# MAGIC The Data API accepts a Databricks OAuth token (a JWT) in the `Authorization: Bearer` header. In a
-# MAGIC notebook, the simplest way to get one is the short-lived database credential, valid for about an hour.
+# MAGIC The Data API accepts a Databricks OAuth token (a JWT) in the `Authorization: Bearer` header. This cell
+# MAGIC reads the workshop service principal's client id and secret from the `lakebase-workshop` secret scope
+# MAGIC and exchanges them for a token at the workspace's OAuth endpoint, `/oidc/v1/token`. This is the OAuth
+# MAGIC *client credentials* flow that apps and scripts use. The token is valid for about an hour.
 
 # COMMAND ----------
 
+import requests
+
 def get_oauth_token() -> str:
-    """Get a Databricks OAuth token (a JWT) for the signed-in user.
+    """Get a Databricks OAuth token (a JWT) for the workshop service principal."""
+    client_id = dbutils.secrets.get("lakebase-workshop", "sp-client-id")
+    client_secret = dbutils.secrets.get("lakebase-workshop", "sp-client-secret")
+    response = requests.post(f"{w.config.host}/oidc/v1/token", auth=(client_id, client_secret),
+                             data={"grant_type": "client_credentials", "scope": "all-apis"}, timeout=20)
+    response.raise_for_status()
+    return response.json()["access_token"]
 
-    The Data API needs an OAuth JWT. Inside a notebook, the SDK's own login is a workspace token,
-    which the Data API rejects ("not a valid JWT encoding"), so this uses the same short-lived
-    database credential that the other journeys use as their Postgres password."""
-    return w.postgres.generate_database_credential(
-        endpoint=f"projects/{project}/branches/{branch}/endpoints/{endpoint_id}").token
-
-token = get_oauth_token()
-print(f"OAuth token acquired.")
-print(f"  Token: {token[:20]}... (truncated)")
+try:
+    token = get_oauth_token()
+    print(f"OAuth token acquired for the workshop service principal.")
+    print(f"  Token: {token[:20]}... (truncated)")
+except Exception as e:
+    token = ""
+    print(f"No token: {str(e)[:200]}")
+    print("  Check that the lakebase-workshop secret scope exists and you can read it.")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Expected result:** `OAuth token acquired.` and the first characters of the token.
+# MAGIC **Expected result:** `OAuth token acquired for the workshop service principal.` and the first characters of the
+# MAGIC token. Notebooks hide secret values in their output, so the client secret never prints.
 
 # COMMAND ----------
 
@@ -259,24 +274,20 @@ print(f"  Token: {token[:20]}... (truncated)")
 # MAGIC A `GET` for one account. The answer tells you what, if anything, is missing:
 # MAGIC
 # MAGIC - **200:** ready.
-# MAGIC - **Not enabled:** enable it on your branch (the cell prints how) and add `bank` under **Exposed schemas**.
+# MAGIC - **Not enabled, or no token:** setup step 5 didn't run; the cell prints what to do.
 # MAGIC - **406:** the `bank` schema isn't exposed.
-# MAGIC - **403 `permission denied to set role`:** your Postgres role isn't set up for the Data API; your
-# MAGIC   instructor creates it with `databricks_create_role()` and grants it to `authenticator`.
+# MAGIC - **403 `permission denied to set role`:** the caller's Postgres role isn't granted to `authenticator`.
+# MAGIC   This is what the project owner gets, and why this journey uses the service principal.
 
 # COMMAND ----------
 
 headers = {"Authorization": f"Bearer {token}"}
 data_api_enabled = False
 
-if not rest_url:
-    print("The Data API is not enabled on your branch.")
-    print()
-    print("To enable it:")
-    print("  1. Open the Lakebase Postgres app, then your project and your branch")
-    print("  2. Open Data API and choose Enable Data API")
-    print("  3. Under Exposed schemas, add bank")
-    print("  4. Re-run this notebook from B1")
+if not rest_url or not token:
+    print("The Data API isn't set up on your branch, or there's no service principal token.")
+    print("  Ask your instructor for the lakebase-workshop secret scope, then rerun")
+    print("  00-setup/setup_databricks (step 5) and this notebook from B1.")
 else:
     url = f"{rest_url}/bank/account"
     print(f"Checking Data API:")
@@ -290,10 +301,9 @@ else:
             print("SUCCESS: the Data API answers for bank.account")
             data_api_enabled = True
         elif response.status_code == 403:
-            print("403: your Postgres role isn't set up for the Data API yet.")
-            print("  Your role must be created with databricks_create_role() and granted to the")
-            print("  Data API's 'authenticator' role. Ask your instructor. (The project owner's")
-            print("  account can't be used with the Data API.)")
+            print("403: the service principal's Postgres role isn't set up on your branch.")
+            print("  Rerun 00-setup/setup_databricks (step 5), which creates it on production;")
+            print("  a branch created before that doesn't have it, so reset yours afterward.")
             print(f"  Response: {response.text[:200]}")
         elif response.status_code == 406:
             print("406: the bank schema isn't exposed. In your branch's Data API settings, add bank")
@@ -307,14 +317,14 @@ else:
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `SUCCESS: the Data API answers for bank.account` once everything is set up. In the workshop's
-# MAGIC own test run, as the project owner, it stopped here, as expected:
+# MAGIC **Expected result:**
 # MAGIC
 # MAGIC ```
-# MAGIC 403: your Postgres role isn't set up for the Data API yet.
-# MAGIC   Your role must be created with databricks_create_role() and granted to the
-# MAGIC   Data API's 'authenticator' role. Ask your instructor. (The project owner's
-# MAGIC   account can't be used with the Data API.)
+# MAGIC Checking Data API:
+# MAGIC   URL: https://ep-....database.us-west-2.cloud.databricks.com/api/2.0/workspace/<workspace id>/rest/databricks_postgres/bank/account
+# MAGIC   Method: GET
+# MAGIC
+# MAGIC SUCCESS: the Data API answers for bank.account
 # MAGIC ```
 # MAGIC
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
@@ -359,8 +369,9 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Expected result:** `Result: 8 accounts`, then the first one as JSON. (Not yet run successfully in the workshop's
-# MAGIC workspace; see the note at the top.) If C1 didn't succeed, the cell prints `Skipping`.
+# MAGIC **Expected result:** `Result: 8 accounts`, then the first one as JSON, such as
+# MAGIC `{'account_id': 'CTA-100234', 'branch_id': 'BR-CDMX', 'line': 'Checking', ...}`. If C1 didn't succeed, the
+# MAGIC cell prints `Skipping`.
 
 # COMMAND ----------
 
@@ -402,8 +413,8 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Expected result:** `Result: 5 good_standing accounts` and three of them, such as `{'account_id': 'CTA-100234', 'status': 'good_standing'}`
-# MAGIC (not yet run successfully; see the note at the top). If C1 didn't succeed, the cell prints `Skipping`.
+# MAGIC **Expected result:** `Result: 5 good_standing accounts` and three of them, such as `{'account_id': 'CTA-100234', 'status': 'good_standing'}`.
+# MAGIC If C1 didn't succeed, the cell prints `Skipping`.
 
 # COMMAND ----------
 
@@ -476,9 +487,9 @@ else:
 # MAGIC </details>
 # MAGIC
 # MAGIC <details>
-# MAGIC <summary><strong>2. Why can't the project owner's account call the Data API?</strong></summary>
+# MAGIC <summary><strong>2. Why does this journey call the Data API as a service principal, not as you?</strong></summary>
 # MAGIC
-# MAGIC The Data API connects as `authenticator` and switches to the caller's role; the owner's role can't be granted to `authenticator`.
+# MAGIC You own your project, and the Data API refuses the owner: it connects as `authenticator` and switches to the caller's role, and the owner's role can't be granted to `authenticator`. The service principal has an ordinary role that can.
 # MAGIC
 # MAGIC </details>
 # MAGIC
@@ -499,7 +510,8 @@ else:
 # MAGIC 1. **The Data API turns tables into REST endpoints,** `<url>/<schema>/<table>`, returning JSON.
 # MAGIC 2. **It's enabled per branch** and exposes only the schemas you choose.
 # MAGIC 3. **Every call carries an OAuth token,** and the API acts as the caller's Postgres role, so the usual
-# MAGIC    permissions and row-level security apply.
+# MAGIC    permissions and row-level security apply. The project owner can't be that caller, so apps call it as
+# MAGIC    a service principal with only the grants they need.
 # MAGIC 4. **REST suits clients without a database driver;** SQL stays best for heavy queries.
 # MAGIC
 # MAGIC The last journey in this track puts a full web app on the same bank.

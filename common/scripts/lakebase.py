@@ -9,7 +9,7 @@ Config comes from environment (or a .env you export), so nothing here is
 hard-coded to any workspace:
 
     LB_PROFILE      Databricks CLI profile to auth as (from 00-setup/auth.md)
-    LB_PROJECT      the Lakebase project id (from 00-setup/provision.md)
+    LB_PROJECT      your Lakebase project id, e.g. bank-alex (created by 00-setup/setup_databricks)
     LB_BRANCH       your branch id, e.g. u-alex (from 00-setup/your-branch.md)
     LB_SCHEMA       schema to use (default: bank)
     LB_LANG         language for printed messages: en (default) or es
@@ -82,12 +82,16 @@ def branch_endpoint(w: WorkspaceClient, project: str, branch: str) -> tuple[str,
     return host, eid, state
 
 
-def wait_active(w: WorkspaceClient, project: str, branch: str, timeout_s: int = 30) -> float:
-    """Poll until the branch endpoint is ACTIVE with a host. Returns seconds waited."""
+def wait_active(w: WorkspaceClient, project: str, branch: str, timeout_s: int = 30,
+                idle_ok: bool = False) -> float:
+    """Poll until the branch endpoint is ACTIVE with a host. Returns seconds waited.
+
+    idle_ok=True also accepts IDLE: a suspended endpoint wakes on the next connection, so it's
+    ready to use, and polling alone never wakes it."""
     t0 = time.time()
     while time.time() - t0 < timeout_s:
         host, _, state = branch_endpoint(w, project, branch)
-        if state == "ACTIVE" and host:
+        if host and (state == "ACTIVE" or (idle_ok and state == "IDLE")):
             return time.time() - t0
         time.sleep(0.4)
     raise TimeoutError(_t(f"branch {branch} not ACTIVE within {timeout_s}s",
@@ -128,21 +132,31 @@ def run_sql(sql: str, project: Optional[str] = None, branch: Optional[str] = Non
             return cur.fetchall() if cur.description else []
 
 
+def _email_name(user_name: str) -> str:
+    """The part of an email before the @, as lowercase letters, digits, and hyphens."""
+    return re.sub(r"[^a-z0-9]+", "-", user_name.split("@")[0].lower()).strip("-")
+
+
 def default_branch(user_name: str) -> str:
     """The workshop's branch name for a user: u-<email name>, e.g.
     alex.kim@example.com -> u-alex-kim. Lowercase letters, digits, and hyphens only."""
-    name = re.sub(r"[^a-z0-9]+", "-", user_name.split("@")[0].lower()).strip("-")
-    return f"u-{name}"[:63]
+    return f"u-{_email_name(user_name)}"[:63]
 
 
-def notebook_env(dbutils, project: str = "bank", schema: str = "bank", lang: str = "en") -> dict:
+def default_project(user_name: str) -> str:
+    """The workshop's project name for a user: bank-<email name>, e.g.
+    alex.kim@example.com -> bank-alex-kim. Each attendee creates their own."""
+    return f"bank-{_email_name(user_name)}"[:63]
+
+
+def notebook_env(dbutils, project: Optional[str] = None, schema: str = "bank", lang: str = "en") -> dict:
     """For Databricks notebooks: set LB_PROJECT, LB_BRANCH, LB_SCHEMA from widgets.
 
     A workspace has no workshop.env, so each notebook calls this once. It adds
-    three widgets at the top of the notebook; LB_BRANCH defaults to your
-    default_branch(), the branch 00-setup/setup_databricks creates. LB_PROFILE
-    stays unset, so the SDK signs in as you automatically. lang="es" sets LB_LANG so the
-    shared scripts print their messages in Spanish."""
+    three widgets at the top of the notebook; LB_PROJECT defaults to your
+    default_project() and LB_BRANCH to your default_branch(), the project and branch
+    00-setup/setup_databricks creates. LB_PROFILE stays unset, so the SDK signs in as you
+    automatically. lang="es" sets LB_LANG so the shared scripts print their messages in Spanish."""
     os.environ["LB_LANG"] = lang
     w = client()
     if not hasattr(w, "postgres"):
@@ -154,7 +168,7 @@ def notebook_env(dbutils, project: str = "bank", schema: str = "bank", lang: str
             f"databricks-sdk {v} es anterior a la API de Lakebase. Ejecuta la celda "
             f'%pip install "databricks-sdk>=0.120.0" y la celda de reinicio de arriba, y luego vuelve a ejecutar esta.'))
     me = w.current_user.me().user_name
-    dbutils.widgets.text("LB_PROJECT", project)
+    dbutils.widgets.text("LB_PROJECT", project or default_project(me))
     dbutils.widgets.text("LB_BRANCH", default_branch(me))
     dbutils.widgets.text("LB_SCHEMA", schema)
     env = {k: dbutils.widgets.get(k).strip() for k in ("LB_PROJECT", "LB_BRANCH", "LB_SCHEMA")}

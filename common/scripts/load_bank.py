@@ -59,7 +59,8 @@ def main(argv: list[str] | None = None) -> None:
 
     with connect() as conn:
         if args.check:
-            print(_t("Bank tables on your branch:", "Tablas del banco en tu rama:"))
+            branch = os.getenv("LB_BRANCH", "")
+            print(_t(f"Bank tables on branch {branch}:", f"Tablas del banco en la rama {branch}:"))
             _counts(conn)
             return
         with conn.cursor() as cur:
