@@ -59,25 +59,25 @@
 # MAGIC %md
 # MAGIC ## Parte 2. Elige una ruta
 # MAGIC
-# MAGIC Los notebooks de la Parte 2 están **en inglés**.
-# MAGIC
 # MAGIC ### Desarrolladores de aplicaciones (unas 2.5 horas)
 # MAGIC
 # MAGIC | # | Recorrido | Tiempo | Qué vas a hacer |
 # MAGIC | - | --------- | ------ | --------------- |
-# MAGIC | 1 | <a href="$./journeys/pg-json/pg_json_databricks">JSON Data with JSONB</a> | 20 min | Guarda fichas técnicas variables de instrumentos y fondos como JSONB, consúltalas con SQL e indéxalas con GIN. |
-# MAGIC | 2 | <a href="$./journeys/pg-vector/pg_vector_databricks">Vector Similarity Search</a> | 20 min | Encuentra los instrumentos más parecidos a una posición por similitud de embeddings, junto a tus datos transaccionales. |
-# MAGIC | 3 | <a href="$./journeys/pg-search/pg_search_databricks">Full-Text and Fuzzy Search</a> | 30 min | Búsqueda por palabras clave, tolerante a errores de escritura e híbrida sobre notas de casos de fraude y PLD. |
-# MAGIC | 4 | <a href="$./journeys/pg-booking/pg_booking_databricks">Preventing Overlapping Schedules</a> | 20 min | La base de datos rechaza dos ventanas de liquidación que se traslapan en la misma cuenta. |
-# MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks">Lakebase Data API</a> | 20 min | Consulta tus tablas por HTTPS con un token OAuth y recibe JSON. |
-# MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks">Building a Databricks App on Lakebase</a> | 45 min | Despliega un tablero en FastAPI en Databricks Apps, con Lakebase como backend. |
+# MAGIC | 1 | <a href="$./journeys/pg-json/pg_json_databricks_es">Datos JSON con JSONB</a> | 20 min | Guarda fichas técnicas variables de instrumentos y fondos como JSONB, consúltalas con SQL e indéxalas con GIN. |
+# MAGIC | 2 | <a href="$./journeys/pg-vector/pg_vector_databricks_es">Búsqueda por similitud de vectores</a> | 20 min | Encuentra los instrumentos más parecidos a una posición por similitud de embeddings, junto a tus datos transaccionales. |
+# MAGIC | 3 | <a href="$./journeys/pg-search/pg_search_databricks_es">Búsqueda de texto completo y aproximada</a> | 30 min | Búsqueda por palabras clave y tolerante a errores de escritura sobre notas de casos de fraude y PLD, y cómo se combinaría con búsqueda vectorial. |
+# MAGIC | 4 | <a href="$./journeys/pg-booking/pg_booking_databricks_es">Evitar horarios que se traslapan</a> | 20 min | La base de datos rechaza dos ventanas de liquidación que se traslapan en la misma cuenta. |
+# MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks_es">API de datos de Lakebase</a> | 20 min | Consulta tus tablas por HTTPS con un token OAuth y recibe JSON. Necesita la Data API habilitada en tu rama. |
+# MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks_es">Crear una app de Databricks sobre Lakebase</a> | 45 min | Despliega desde un notebook un tablero en FastAPI en Databricks Apps, con Lakebase como backend. Necesita permiso para crear apps. |
 # MAGIC
 # MAGIC ### Desarrolladores de agentes (unas 1.5 horas)
+# MAGIC
+# MAGIC Los notebooks de esta ruta todavía están **en inglés**.
 # MAGIC
 # MAGIC | # | Recorrido | Tiempo | Qué vas a hacer |
 # MAGIC | - | --------- | ------ | --------------- |
 # MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks">Shared Agent Memory</a> | 20 min | Dos agentes comparten una tabla de memoria: uno escribe una nota de fraude y el otro la lee y actúa. |
 # MAGIC | 2 | <a href="$./journeys/agentic-work/agentic_work_databricks">Tool-Calling Agents</a> | 20 min | Un agente lee transacciones en vivo con una herramienta, bloquea una cuenta marcada y lo recuerda para no bloquearla dos veces. |
 # MAGIC | 3 | <a href="$./journeys/learning-loop/learning_loop_databricks">Human Review of AI Output</a> | 25 min | La IA extrae hallazgos de notas de casos con un nivel de confianza; los de baja confianza pasan a un analista. |
-# MAGIC | 4 | <a href="$./journeys/pg-vector/pg_vector_databricks">Vector Similarity Search</a> | 20 min | Encuentra los instrumentos más parecidos a una posición por similitud de embeddings, junto a tus datos transaccionales. |
+# MAGIC | 4 | <a href="$./journeys/pg-vector/pg_vector_databricks_es">Búsqueda por similitud de vectores</a> (en español) | 20 min | Encuentra los instrumentos más parecidos a una posición por similitud de embeddings, junto a tus datos transaccionales. |
 # MAGIC | 5 | <a href="$./journeys/pg-features/pg_features_databricks">Online Feature Serving</a> | 10 min | Sirve desde Lakebase las variables de riesgo de fraude de una cuenta con una búsqueda rápida por llave. |

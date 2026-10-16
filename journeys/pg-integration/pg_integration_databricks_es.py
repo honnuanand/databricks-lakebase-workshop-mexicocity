@@ -448,9 +448,9 @@ for row in rows:
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Terminaste la Parte 1.** Para la Parte 2, elige una ruta (los notebooks están en inglés):
+# MAGIC **Terminaste la Parte 1.** Para la Parte 2, elige una ruta:
 # MAGIC
-# MAGIC - Desarrolladores de aplicaciones: <a href="$../pg-json/pg_json_databricks">JSON Data with JSONB →</a>
-# MAGIC - Desarrolladores de agentes: <a href="$../agent-memory/agent_memory_databricks">Shared Agent Memory →</a>
+# MAGIC - Desarrolladores de aplicaciones: <a href="$../pg-json/pg_json_databricks_es">Datos JSON con JSONB →</a>
+# MAGIC - Desarrolladores de agentes (en inglés por ahora): <a href="$../agent-memory/agent_memory_databricks">Shared Agent Memory →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE_es">← Volver al índice</a>
