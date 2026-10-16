@@ -25,8 +25,8 @@
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Cómo funcionan los notebooks</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     Conecta cada notebook a cómputo <strong>serverless</strong> y ejecútalo de arriba abajo, una celda a
-# MAGIC     la vez. Cada recorrido se ejecuta en tu propia rama de la base de datos del banco, así que nada de lo
-# MAGIC     que hagas afecta a nadie más. Todos empiezan con las mismas tres celdas de configuración y muestran
+# MAGIC     la vez. Cada recorrido se ejecuta en tu propia rama, dentro de tu propio proyecto de Lakebase, así que
+# MAGIC     nada de lo que hagas afecta a nadie más. Todos empiezan con las mismas tres celdas de configuración y muestran
 # MAGIC     el resultado esperado debajo de cada celda.
 # MAGIC   </div>
 # MAGIC </div>
@@ -36,8 +36,9 @@
 # MAGIC %md
 # MAGIC ## Antes de empezar
 # MAGIC
-# MAGIC <a href="$./00-setup/setup_databricks_es">Configuración: crea tu rama</a>: crea tu propia rama de la
-# MAGIC base de datos del banco, carga los datos y comprueba la conexión. Ejecútalo una vez, de arriba abajo.
+# MAGIC <a href="$./00-setup/setup_databricks_es">Configuración: crea tu proyecto y tu rama</a>: crea tu propio
+# MAGIC proyecto de Lakebase, carga en él la base de datos del banco, crea tu rama y comprueba la conexión.
+# MAGIC Ejecútalo una vez, de arriba abajo.
 
 # COMMAND ----------
 
@@ -67,7 +68,7 @@
 # MAGIC | 2 | <a href="$./journeys/pg-vector/pg_vector_databricks_es">Búsqueda por similitud de vectores</a> | 20 min | Encuentra los instrumentos más parecidos a una posición por similitud de embeddings, junto a tus datos transaccionales. |
 # MAGIC | 3 | <a href="$./journeys/pg-search/pg_search_databricks_es">Búsqueda de texto completo y aproximada</a> | 30 min | Búsqueda por palabras clave y tolerante a errores de escritura sobre notas de casos de fraude y PLD, y cómo se combinaría con búsqueda vectorial. |
 # MAGIC | 4 | <a href="$./journeys/pg-booking/pg_booking_databricks_es">Evitar horarios que se traslapan</a> | 20 min | La base de datos rechaza dos ventanas de liquidación que se traslapan en la misma cuenta. |
-# MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks_es">API de datos de Lakebase</a> | 20 min | Consulta tus tablas por HTTPS con un token OAuth y recibe JSON. Necesita la Data API habilitada en tu rama. |
+# MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks_es">API de datos de Lakebase</a> | 20 min | Consulta tus tablas por HTTPS con un token OAuth y recibe JSON. Necesita el secret scope `lakebase-workshop` que prepara tu instructor. |
 # MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks_es">Crear una app de Databricks sobre Lakebase</a> | 45 min | Despliega desde un notebook un tablero en FastAPI en Databricks Apps, con Lakebase como backend. Necesita permiso para crear apps. |
 # MAGIC
 # MAGIC ### Desarrolladores de agentes (unas 1.5 horas)

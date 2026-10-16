@@ -41,9 +41,9 @@
 # MAGIC ## Conceptos clave
 # MAGIC
 # MAGIC - **Cómputo vs. almacenamiento:** Lakebase separa el servidor de Postgres que ejecuta las consultas (cómputo) del lugar donde se guardan los datos (almacenamiento). El cómputo puede detenerse y arrancar sin tocar el almacenamiento.
-# MAGIC - **Unidad de capacidad (CU):** la forma de medir el tamaño del cómputo. El proyecto del taller usa 1 CU fija por rama.
+# MAGIC - **Unidad de capacidad (CU):** la forma de medir el tamaño del cómputo. Tu proyecto del taller usa 1 CU fija por rama.
 # MAGIC - **ACTIVE e IDLE:** el estado de un endpoint. `ACTIVE` está encendido y genera costo de cómputo; `IDLE` está suspendido, sin costo de cómputo.
-# MAGIC - **Suspend timeout (tiempo de suspensión):** cuánto espera un endpoint sin consultas antes de suspenderse: 5 minutos en el proyecto del taller. El almacenamiento se sigue cobrando mientras el endpoint está inactivo.
+# MAGIC - **Suspend timeout (tiempo de suspensión):** cuánto espera un endpoint sin consultas antes de suspenderse: 5 minutos en tu proyecto del taller. El almacenamiento se sigue cobrando mientras el endpoint está inactivo.
 # MAGIC
 # MAGIC Encontrarás más términos en `docs/glosario-es.md`, en la carpeta del taller.
 
@@ -55,7 +55,7 @@
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Antes de empezar</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu rama y cargar el banco.
+# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu proyecto y tu rama y cargar el banco.
 # MAGIC     Conecta este notebook a cómputo <strong>serverless</strong>.
 # MAGIC   </div>
 # MAGIC </div>
@@ -93,7 +93,7 @@ notebook_env(dbutils, lang="es");
 # MAGIC
 # MAGIC ```
 # MAGIC sesión iniciada como alex.kim@example.com
-# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_PROJECT = bank-alex-kim
 # MAGIC   LB_BRANCH = u-alex-kim
 # MAGIC   LB_SCHEMA = bank
 # MAGIC ```
@@ -211,7 +211,7 @@ print("IDLE = suspendido en cero (sin costo de cómputo); ACTIVE = atendiendo co
 # MAGIC   </div>
 # MAGIC </div>
 # MAGIC
-# MAGIC **En el proyecto del taller, el suspend timeout es de 5 minutos.** Si B mostró `ACTIVE`, todavía puedes
+# MAGIC **En tu proyecto del taller, el suspend timeout es de 5 minutos.** Si B mostró `ACTIVE`, todavía puedes
 # MAGIC ver un arranque en frío: no uses tu rama durante 5 minutos (lee las notas de abajo o tómate un descanso)
 # MAGIC y vuelve a ejecutar la celda de B. Cuando muestre `IDLE`, ejecuta D. Revisar el estado no cuenta como
 # MAGIC consulta, así que no mantiene despierto el cómputo.

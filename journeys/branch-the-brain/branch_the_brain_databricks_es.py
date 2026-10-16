@@ -41,7 +41,7 @@
 # MAGIC %md
 # MAGIC ## Conceptos clave
 # MAGIC
-# MAGIC - **Rama:** una copia completa e independiente de una base de datos dentro de un proyecto de Lakebase, como una rama de git pero para datos. `production` es la original compartida; `u-tunombre` es la tuya.
+# MAGIC - **Rama:** una copia completa e independiente de una base de datos dentro de un proyecto de Lakebase, como una rama de git pero para datos. `production` es la original de tu proyecto; `u-tunombre` es tu rama de trabajo.
 # MAGIC - **Copy-on-write (copia en escritura):** una rama nueva comparte los datos almacenados de su rama de origen y solo escribe las páginas que cambias. Por eso una rama se crea sin copiar datos.
 # MAGIC - **Endpoint (cómputo):** el servidor de Postgres en ejecución al que te conectas. La rama guarda los datos; su endpoint ejecuta tus consultas. Cada rama tiene su propio endpoint.
 # MAGIC - **Control plane (plano de control) vs. SQL:** crear, listar y borrar ramas son acciones de administración que se hacen con la API de Lakebase (aquí, con el SDK de Databricks). Leer y cambiar datos se hace con SQL.
@@ -56,7 +56,7 @@
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Antes de empezar</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu rama y cargar el banco.
+# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu proyecto y tu rama y cargar el banco.
 # MAGIC     Conecta este notebook a cómputo <strong>serverless</strong>.
 # MAGIC   </div>
 # MAGIC </div>
@@ -94,7 +94,7 @@ notebook_env(dbutils, lang="es");
 # MAGIC
 # MAGIC ```
 # MAGIC sesión iniciada como alex.kim@example.com
-# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_PROJECT = bank-alex-kim
 # MAGIC   LB_BRANCH = u-alex-kim
 # MAGIC   LB_SCHEMA = bank
 # MAGIC ```
@@ -176,16 +176,16 @@ print("conectado como", w.current_user.me().user_name)
 # MAGIC %md-sandbox
 # MAGIC ## B. Bifurca tu rama
 # MAGIC
-# MAGIC Tu rama, `u-tunombre`, se bifurcó de la rama compartida `production` durante la configuración. En esta
+# MAGIC Tu rama, `u-tunombre`, se bifurcó de la rama `production` de tu proyecto durante la configuración. En esta
 # MAGIC sección bifurcas **tu** rama en una rama de experimento de corta duración, `u-tunombre-exp`.
 # MAGIC
 # MAGIC <div style="max-width:720px; margin:12px auto; font-family:sans-serif;">
 # MAGIC <svg viewBox="0 0 720 230" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;" font-family="sans-serif">
 # MAGIC   <rect x="10" y="10" width="700" height="210" rx="10" fill="#F9F7F4" stroke="#E0E0E0"/>
-# MAGIC   <text x="30" y="38" font-size="15" font-weight="700" fill="#0b2026">Proyecto: bank</text>
+# MAGIC   <text x="30" y="38" font-size="15" font-weight="700" fill="#0b2026">Proyecto: bank-tunombre</text>
 # MAGIC   <rect x="40" y="60" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#1B5162" stroke-width="2"/>
 # MAGIC   <text x="135" y="84" text-anchor="middle" font-size="14" font-weight="700" fill="#0b2026">production</text>
-# MAGIC   <text x="135" y="104" text-anchor="middle" font-size="12" fill="#5A6F77">compartida, nunca se toca</text>
+# MAGIC   <text x="135" y="104" text-anchor="middle" font-size="12" fill="#5A6F77">el banco limpio, nunca se toca</text>
 # MAGIC   <rect x="280" y="60" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#1B5162" stroke-width="2"/>
 # MAGIC   <text x="375" y="84" text-anchor="middle" font-size="14" font-weight="700" fill="#0b2026">u-tunombre</text>
 # MAGIC   <text x="375" y="104" text-anchor="middle" font-size="12" fill="#5A6F77">tu rama, de la configuración</text>
@@ -289,7 +289,7 @@ print(f"API del fork {api_ms:.0f} ms; endpoint ACTIVE en ~{waited:.1f}s")
 # MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Solución de problemas</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     <ul style="margin:0; padding-left:20px;">
-# MAGIC       <li><strong>Error de permisos:</strong> crear una rama requiere <code>CAN_MANAGE</code> en el proyecto. Pídele a tu instructor que te lo otorgue.</li>
+# MAGIC       <li><strong>Error de permisos:</strong> crear una rama requiere <code>CAN_MANAGE</code> en el proyecto. Como el proyecto es tuyo, ya lo tienes: revisa que el widget <code>LB_PROJECT</code> tenga tu proyecto, <code>bank-tunombre</code>.</li>
 # MAGIC       <li><code>TimeoutError: la rama ... no llegó a ACTIVE en 30s</code>: la primera rama de una sesión puede tardar más. Vuelve a ejecutar la celda.</li>
 # MAGIC     </ul>
 # MAGIC   </div>
@@ -382,8 +382,7 @@ print("ramas ahora:", [b.branch_id for b in w.postgres.list_branches(parent=f"pr
 
 # MAGIC %md
 # MAGIC **Resultado esperado:** `descartado u-tunombre-exp` y luego una lista de ramas que incluye
-# MAGIC `production` y tu rama, pero no el fork. En un proyecto compartido de la clase, la lista también
-# MAGIC muestra las ramas de los demás participantes.
+# MAGIC `production` y tu rama, pero no el fork.
 # MAGIC
 # MAGIC **Qué demuestra:** el experimento ya no existe y tu rama sigue ahí, sin cambios.
 

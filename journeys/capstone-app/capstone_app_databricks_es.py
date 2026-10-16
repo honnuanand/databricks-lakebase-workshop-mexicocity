@@ -54,10 +54,10 @@
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Antes de empezar</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu rama y cargar el banco.
+# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu proyecto y tu rama y cargar el banco.
 # MAGIC     Conecta este notebook a cómputo <strong>serverless</strong>.
 # MAGIC     Necesitas permiso para crear Databricks Apps en este workspace y <code>CAN_MANAGE</code> en el proyecto
-# MAGIC     de Lakebase (la configuración de la clase te da los dos). Crear la app y su primer despliegue tardan unos minutos.
+# MAGIC     de Lakebase (lo tienes, porque el proyecto es tuyo). Crear la app y su primer despliegue tardan unos minutos.
 # MAGIC   </div>
 # MAGIC </div>
 
@@ -94,7 +94,7 @@ notebook_env(dbutils, lang="es");
 # MAGIC
 # MAGIC ```
 # MAGIC sesión iniciada como alex.kim@example.com
-# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_PROJECT = bank-alex-kim
 # MAGIC   LB_BRANCH = u-alex-kim
 # MAGIC   LB_SCHEMA = bank
 # MAGIC ```
@@ -150,7 +150,7 @@ print("código fuente:   ", SOURCE)
 # MAGIC
 # MAGIC ```
 # MAGIC nombre de la app: bank-dash-alex-kim
-# MAGIC atiende:          proyecto bank, rama u-alex-kim, esquema bank
+# MAGIC atiende:          proyecto bank-alex-kim, rama u-alex-kim, esquema bank
 # MAGIC código fuente:    /Workspace/Users/alex.kim@example.com/<carpeta>/journeys/capstone-app/app
 # MAGIC ```
 # MAGIC
@@ -231,7 +231,7 @@ print(f"se otorgó CAN_USE en el proyecto {PROJECT} al service principal de la a
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Resultado esperado:** `se otorgó CAN_USE en el proyecto bank al service principal de la app`
+# MAGIC **Resultado esperado:** `se otorgó CAN_USE en el proyecto bank-alex-kim al service principal de la app`
 
 # COMMAND ----------
 

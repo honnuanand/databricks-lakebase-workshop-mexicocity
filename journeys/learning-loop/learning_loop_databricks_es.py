@@ -56,7 +56,7 @@
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Antes de empezar</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu rama y cargar el banco.
+# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu proyecto y tu rama y cargar el banco.
 # MAGIC     Conecta este notebook a cómputo <strong>serverless</strong>. El paso de extracción llama al endpoint
 # MAGIC     de Foundation Model <code>databricks-claude-opus-4-8</code> (barra lateral izquierda,
 # MAGIC     <strong>Serving</strong>); si no está disponible, el notebook usa extracciones fijas. Este laboratorio
@@ -123,7 +123,7 @@ notebook_env(dbutils, lang="es");
 # MAGIC
 # MAGIC ```
 # MAGIC sesión iniciada como alex.kim@example.com
-# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_PROJECT = bank-alex-kim
 # MAGIC   LB_BRANCH = u-alex-kim
 # MAGIC   LB_SCHEMA = bank
 # MAGIC ```

@@ -92,9 +92,8 @@ def _reload_bank() -> None:
     # A fork of a loaded production already has the bank; loading again would duplicate
     # the txn and case_note rows.
     with connect() as conn:
-        if is_loaded(conn):
-            return
-    load_main([])
+        loaded = is_loaded(conn)
+    load_main(["--check"] if loaded else [])
 
 
 def main() -> None:

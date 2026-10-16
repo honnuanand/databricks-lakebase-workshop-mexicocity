@@ -11,7 +11,8 @@ como `ACTIVE` e `IDLE`) se quedan en inglés.
 
 | Inglés | Español | Nota |
 | --- | --- | --- |
-| branch | **rama** | `production` es la rama compartida; `u-tunombre` es la tuya. |
+| project | **proyecto** | Tu propio proyecto de Lakebase, `bank-tunombre`: una base de datos Postgres con sus ramas y su cómputo. Lo crea la configuración. |
+| branch | **rama** | `production` es la rama principal de tu proyecto; `u-tunombre` es tu rama de trabajo. |
 | fork (a branch) | **bifurcar** (verbo), **el fork** (sustantivo) | "Bifurcas tu rama" crea un fork: una rama nueva a partir de ella. |
 | copy-on-write | **copy-on-write** (copia en escritura) | La rama nueva comparte los datos y solo escribe las páginas que cambias. |
 | endpoint, compute | **endpoint**, **cómputo** | El servidor de Postgres al que te conectas. |
@@ -31,6 +32,9 @@ como `ACTIVE` e `IDLE`) se quedan en inglés.
 | notebook | **notebook** | |
 | lakehouse | **lakehouse** | |
 | foreign catalog | **foreign catalog** (catálogo externo) | Un catálogo de Unity Catalog cuyas tablas viven en otra base de datos. |
+| service principal | **service principal** | Una identidad de Databricks para una app o un script, no para una persona. |
+| secret scope | **secret scope** | Donde Databricks guarda secretos cifrados; los notebooks los leen con `dbutils.secrets.get`. |
+| Data API | **Data API** | La interfaz REST de Lakebase a tus tablas. |
 
 ## PostgreSQL
 

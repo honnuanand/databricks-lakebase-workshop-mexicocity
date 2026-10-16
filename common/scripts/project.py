@@ -75,7 +75,8 @@ def grant_data_api(sp_app_id: str, branch: str = PRODUCTION) -> None:
     role = f'"{sp_app_id}"'
     with connect(branch=branch) as conn:
         with conn.cursor() as cur:
-            cur.execute("CREATE EXTENSION IF NOT EXISTS databricks_auth")
+            # in public, so connections without the bank search_path (the capstone's) find it too
+            cur.execute("CREATE EXTENSION IF NOT EXISTS databricks_auth SCHEMA public")
             cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [sp_app_id])
             if cur.fetchone() is None:
                 cur.execute("SELECT databricks_create_role(%s, 'SERVICE_PRINCIPAL')", [sp_app_id])

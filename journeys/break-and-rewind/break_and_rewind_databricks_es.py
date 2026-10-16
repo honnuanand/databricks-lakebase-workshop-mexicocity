@@ -56,7 +56,7 @@
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Antes de empezar</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu rama y cargar el banco.
+# MAGIC     Ejecuta una vez <code>00-setup/setup_databricks_es</code> para crear tu proyecto y tu rama y cargar el banco.
 # MAGIC     Conecta este notebook a cómputo <strong>serverless</strong>.
 # MAGIC   </div>
 # MAGIC </div>
@@ -94,7 +94,7 @@ notebook_env(dbutils, lang="es");
 # MAGIC
 # MAGIC ```
 # MAGIC sesión iniciada como alex.kim@example.com
-# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_PROJECT = bank-alex-kim
 # MAGIC   LB_BRANCH = u-alex-kim
 # MAGIC   LB_SCHEMA = bank
 # MAGIC ```
@@ -286,7 +286,7 @@ print(f"Este LSN marca el momento antes del borrado. Lo vamos a usar para recupe
 # MAGIC   <strong style="display:block; color:#C4200F; margin-bottom:6px;">Advertencia: esto borra datos de tu rama</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     La siguiente celda borra a propósito todas las operaciones y liquidaciones de <strong>tu</strong> rama.
-# MAGIC     Nunca toca <code>production</code> ni la rama de nadie más. Las filas siguen borradas en tu rama
+# MAGIC     Nunca toca <code>production</code>, que guarda la copia limpia del banco. Las filas siguen borradas en tu rama
 # MAGIC     hasta que ejecutes la celda de reinicio de la sección E.
 # MAGIC   </div>
 # MAGIC </div>
@@ -402,7 +402,7 @@ print(f"  el endpoint llegó a ACTIVE en ~{waited:.1f}s")
 # MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Solución de problemas</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     <ul style="margin:0; padding-left:20px;">
-# MAGIC       <li><strong>Error de permisos:</strong> crear una rama requiere <code>CAN_MANAGE</code> en el proyecto. Pídele a tu instructor que te lo otorgue.</li>
+# MAGIC       <li><strong>Error de permisos:</strong> crear una rama requiere <code>CAN_MANAGE</code> en el proyecto. Como el proyecto es tuyo, ya lo tienes: revisa que el widget <code>LB_PROJECT</code> tenga tu proyecto, <code>bank-tunombre</code>.</li>
 # MAGIC       <li><code>TimeoutError: la rama ... no llegó a ACTIVE en 30s</code>: la primera rama de una sesión puede tardar más. Vuelve a ejecutar la celda.</li>
 # MAGIC       <li><code>NameError: name 'lsn' is not defined</code>: el notebook se reinició después de B2, así que se perdió el LSN de antes del borrado. No vuelvas a ejecutar B2: capturaría un punto <em>posterior</em> al borrado. Mejor restaura por fecha y hora desde la pestaña <strong>Backup &amp; Restore</strong>, o ejecuta la celda de reinicio de la sección E y empieza otra vez desde B1.</li>
 # MAGIC     </ul>
@@ -481,7 +481,7 @@ print("\nLos datos borrados están intactos. Cada byte está como antes del erro
 # MAGIC mismos dos segundos que cualquier rama.
 # MAGIC
 # MAGIC Qué tan atrás puedes ir lo define la **ventana de historial** del proyecto (en **Settings** del
-# MAGIC proyecto, en la app Lakebase Postgres). El proyecto del taller usa el valor por defecto, 7 días.
+# MAGIC proyecto, en la app Lakebase Postgres). Tu proyecto del taller usa el valor por defecto, 7 días.
 # MAGIC
 # MAGIC </details>
 
@@ -521,8 +521,8 @@ print("\nRecuperación completa. La rama PITR ya no existe y no dejó almacenami
 # MAGIC
 # MAGIC **Tu rama sigue sin operaciones.** Leíste las filas recuperadas desde la rama de recuperación, pero no
 # MAGIC las copiaste de vuelta. La siguiente celda reconstruye tu rama para que los siguientes recorridos
-# MAGIC empiecen con el banco completo: borra tu rama, la vuelve a crear a partir de `production` y vuelve a
-# MAGIC cargar el banco. Solo toca tu rama.
+# MAGIC empiecen con el banco completo: borra tu rama y la vuelve a crear a partir de `production`, que ya
+# MAGIC tiene el banco completo. Solo toca tu rama.
 
 # COMMAND ----------
 
@@ -532,9 +532,9 @@ branch.reset()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Resultado esperado:** `rama u-tunombre eliminada`, la rama nueva llegando a `ACTIVE`, luego
-# MAGIC `Cargando el esquema ...`, `Cargando los datos de ejemplo ...` y las filas por tabla, entre ellas
-# MAGIC `trade 2 filas` y `settlement 3 filas`. Tarda unos 15 segundos.
+# MAGIC **Resultado esperado:** `rama u-tunombre eliminada`, la rama nueva llegando a `ACTIVE`, y luego
+# MAGIC `Tablas del banco en la rama u-tunombre:` con las filas por tabla, entre ellas `trade 2 filas` y
+# MAGIC `settlement 3 filas`: la rama nueva ya trae el banco completo de `production`. Tarda unos 10 segundos.
 
 # COMMAND ----------
 
