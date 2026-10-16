@@ -92,7 +92,7 @@ async function holdings() {
 
 async function notes() {
   view.innerHTML = `<div class="card"><label class="muted">Search case notes </label>
-    <input type="text" id="q" placeholder="e.g. card-not-present wire"> <button id="go">Search</button></div>
+    <input type="text" id="q" placeholder="e.g. SPEI takeover"> <button id="go">Search</button></div>
     <div id="nout"></div>`;
   const run = async () => {
     const q = document.getElementById("q").value.trim();

@@ -4,8 +4,8 @@
 >
 > **Key takeaways**
 >
-> - A Databricks App is a web app (a FastAPI backend serving a single-page UI) deployed as a managed service on Databricks. You write code locally, push to Databricks, and it runs with built-in auth and scaling.
-> - To connect to Lakebase from an app, the app's [Service Principal](../../docs/glossary.md) (SP) needs the full grant chain: a PostgreSQL role + databricks_auth security label + project CAN_MANAGE permission + a role on the production branch. This is the deepest grant story in the workshop.
+> - A Databricks App is a web app (a FastAPI backend serving a single-page UI) deployed as a managed service on Databricks. You deploy it from a workspace notebook (or a laptop), and it runs with built-in auth and scaling.
+> - To connect to Lakebase from an app, the app's [Service Principal](../../docs/glossary.md) (SP) needs two layers of access: `CAN_USE` on the Lakebase project (to find the branch and get credentials) and a Postgres role on the branch, created with `databricks_create_role()`, with read access to the `bank` schema. This is the deepest grant story in the workshop.
 > - You'll run a real bank dashboard: account status, holdings look-through, case-note search. It uses direct SQL on Lakebase, including a recursive CTE and full-text search, showing an app reading operational data with no extra services.
 >
 > **You'll be able to:** set up a Databricks App's [Service Principal](../../docs/glossary.md) to connect to Lakebase, deploy a working FastAPI dashboard on Databricks Apps, and understand the app authentication model.
@@ -48,13 +48,19 @@ server setup, no scaling configuration. That's the Databricks Apps magic.
 
 ## What you'll do
 
-1. Set up: understand the app structure (FastAPI backend + static index.html + app.yaml config).
-2. Grant access: run a script that gives the app's SP the full Lakebase grant chain.
-3. Run locally: start the app with `run_local.sh`, make sure it connects to Lakebase.
-4. Deploy: push the app to Databricks Apps with `deploy.sh`.
-5. Test live: open the deployed app in your workspace and verify it works.
+**In Databricks (the workshop path):** open
+[`capstone_app_databricks`](capstone_app_databricks.py) and run it top to bottom. It:
 
-Full copy-paste steps are in [`instructions.md`](instructions.md); expected output is in
+1. Names your app after your branch and finds its source, the `app/` folder.
+2. Creates the app, which also creates its service principal.
+3. Grants the service principal `CAN_USE` on the project and a Postgres role on your branch.
+4. Deploys the app, passing your project and branch as environment variables.
+5. Prints the links to open the dashboard and its API in your browser.
+
+No laptop, CLI or local Python is needed.
+
+**From a laptop (optional):** the same steps with `capstone_grant_sp.py`, `run_local.sh` and
+`app/deploy.sh`. Copy-paste steps are in [`instructions.md`](instructions.md); expected output is in
 [`expected.md`](expected.md).
 
 ## Prerequisites
@@ -66,10 +72,10 @@ comfortable with the domain and Lakebase concepts.
 
 For this journey you'll need:
 
-- `uv` or `pip` for Python dependency management (the backend's only dependencies)
-- Basic familiarity with FastAPI (you can read and modify an endpoint, but don't need to write a
-  service from scratch)
-- Workspace access to deploy Databricks Apps (ask your workspace admin if you're unsure)
+- Permission to create Databricks Apps in the workspace (ask your workspace admin if you're unsure)
+- `CAN_MANAGE` on the Lakebase project, so you can grant the app `CAN_USE`
+- For the laptop path only: `uv` or `pip` for the backend's Python dependencies
+- Optional: basic familiarity with FastAPI, if you want to change an endpoint
 
 There is no Node/React toolchain to install: the UI is a single static HTML file the backend
 serves.

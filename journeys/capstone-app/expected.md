@@ -5,21 +5,24 @@ journeys you have run, but the UI structure and capabilities should match.
 
 ## Step 1, grant setup
 
-Running the grant script should output something like:
+In Databricks, the notebook's Expected results show the real output of each step (from a test run).
+From a laptop, running the grant script should output something like:
 
 ```text
 Granting Lakebase access to app Service Principal...
   App: capstone-dashboard
-  SP Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
   Project: <your-project>
   Schema: bank
 
-  Created PostgreSQL role: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-  Set security label: databricks_auth
-  Granted project CAN_MANAGE permission
-  Created role on production branch
-  Granted USAGE on schema bank
-  Granted SELECT on all tables in bank
+  Found app Service Principal: client_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  id=...
+  Lakebase host: ep-....database.us-east-2.cloud.databricks.com
+
+  Creating PostgreSQL role and grants...
+    Created PostgreSQL role: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    Granted USAGE on schema bank
+    Granted SELECT on all tables in bank
+    Set default SELECT privilege for future tables
+    Granted CAN_USE on project <your-project>
 
 Done. App SP has access to Lakebase.
 ```

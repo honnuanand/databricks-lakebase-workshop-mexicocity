@@ -117,6 +117,11 @@ taking longer:
 - Check Lakebase instance health and load.
 - Optimize your SQL queries (add indexes; see the pg-index and pg-explain journeys).
 
+### Calling the app from a notebook returns `401`
+
+Databricks Apps only accept a signed-in user's browser session or an OAuth token. A notebook's own
+token isn't accepted, so open the app's links in a browser tab instead (the notebook prints them).
+
 ### Can't access the deployed app from the workspace
 
 Check:
@@ -136,10 +141,12 @@ No, only once after the app is deployed. The grants are persistent. If you redep
 
 If you create a new app or change the app name, run the script again.
 
-### What's the `databricks_auth` security label?
+### What does `databricks_create_role()` do?
 
-It tells PostgreSQL (Lakebase) that this SP should be authenticated via Databricks OAuth, not a
-traditional password. Without it, the SP can't connect even if other permissions are correct.
+It comes with the `databricks_auth` extension. It creates a Postgres role for a Databricks identity
+(here the app's service principal) and links it to that identity, so it logs in with a short-lived
+Databricks OAuth credential instead of a password. Without it, the SP can't connect even if its other
+permissions are correct.
 
 See [`../../00-setup/grants.md`](../../00-setup/grants.md) for full details.
 

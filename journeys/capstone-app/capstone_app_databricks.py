@@ -1,223 +1,371 @@
 # Databricks notebook source
-# MAGIC %md
-# MAGIC # Capstone: build a bank dashboard, guided checklist
-# MAGIC
-# MAGIC This journey walks you through running and deploying a FastAPI app on Databricks Apps that reads from Lakebase. It is a guided checklist notebook: most steps are configuration and setup; code cells show how to grant permissions and verify connectivity.
-# MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch. You should also be familiar with `branch-the-brain` or similar journey so you understand Lakebase branching.
+# MAGIC %md-sandbox
+# MAGIC <div style="display:flex; align-items:center; gap:10px; padding:8px 16px; background:#F9F7F4; border-bottom:2px solid #E0E0E0; font-family:sans-serif; line-height:1;">
+# MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
+# MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
+# MAGIC   <span style="color:#999;">|</span>
+# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 6 of 6 · Building a Databricks App on Lakebase</span>
+# MAGIC </div>
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## The app you are building
+# MAGIC # Building a Databricks App on Lakebase
+# MAGIC #### Duration: about 45 minutes
 # MAGIC
-# MAGIC A single-page dashboard deployed on Databricks Apps with a FastAPI backend that queries Lakebase. The UI is a static `index.html` the backend serves directly (no Node, no build step). It has three tabs:
+# MAGIC *Journey 6 of 6. The earlier journeys used Lakebase from a notebook. This one puts a real web app in front of your branch.*
 # MAGIC
-# MAGIC 1. **Accounts:** list all accounts, fetched via direct SQL.
-# MAGIC 2. **Holdings look-through:** explode a fund's holdings tree with a recursive CTE (through sleeves).
-# MAGIC 3. **Case notes:** search analyst case notes with full-text search.
+# MAGIC ## Overview
 # MAGIC
-# MAGIC The app lives in `./app/` and is ready to customize. Here we set up permissions, run it locally, and deploy.
+# MAGIC The fraud team wants a small dashboard: accounts and their status, an account's recent
+# MAGIC transactions, a fund's look-through holdings, and a search over case notes. It has to read live data
+# MAGIC from Lakebase and run inside Databricks, with no separate server to manage.
+# MAGIC
+# MAGIC The workshop already includes that app: a FastAPI backend and a single-page UI in this journey's
+# MAGIC `app/` folder. In this lab you deploy it to **Databricks Apps** from this notebook, give the app its
+# MAGIC own access to your branch, and call it to see it read the bank. You don't write any app code.
+# MAGIC
+# MAGIC ## Learning objectives
+# MAGIC
+# MAGIC By the end of this lab, you will be able to:
+# MAGIC
+# MAGIC 1. **Create a Databricks App** and find the service principal it runs as.
+# MAGIC 2. **Give the app access to Lakebase:** project permission plus a Postgres role on your branch.
+# MAGIC 3. **Deploy the app from a workspace folder**, passing it which project and branch to serve.
+# MAGIC 4. **Explain how an app authenticates to Lakebase** with short-lived credentials, without a password.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, Understand the object model
+# MAGIC ## Key concepts
 # MAGIC
-# MAGIC A Databricks App is a container that runs your code. It has an auto-created Service Principal (SP). That SP needs to connect to Lakebase to query the bank data.
+# MAGIC - **Databricks App:** a web app (here FastAPI) that Databricks hosts and runs for you, with its own URL. Only signed-in workspace users can open it.
+# MAGIC - **Service principal:** a non-human identity. Each app gets one when it's created, and the app runs as it, so it needs its own permissions, separate from yours.
+# MAGIC - **Two layers of access:** a workspace permission on the Lakebase project (`CAN_USE`, so the app can find your branch and get credentials) and a Postgres role on the branch (so the database lets it read the `bank` tables).
+# MAGIC - **Deployment:** a snapshot of the app's source folder, started on Databricks compute. Redeploying picks up changes.
 # MAGIC
-# MAGIC Permission chain:
-# MAGIC 1. App SP exists (created automatically on first deploy).
-# MAGIC 2. Create a PostgreSQL role on Lakebase with the SP's client ID.
-# MAGIC 3. Set the `databricks_auth` security label (tells Lakebase to auth as the SP).
-# MAGIC 4. Grant project CAN_MANAGE (so the app can list branches).
-# MAGIC 5. Create a role on your branch so the app can connect and query.
+# MAGIC More terms are defined in `docs/glossary.md` in the workshop folder.
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ## A. Setup
+# MAGIC
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Before you start</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     Run <code>00-setup/setup_databricks</code> once to create your branch and load the bank.
+# MAGIC     Attach this notebook to <strong>serverless</strong> compute. You need permission to create
+# MAGIC     Databricks Apps in this workspace, and <code>CAN_MANAGE</code> on the Lakebase project (the class
+# MAGIC     setup gives you both). Creating the app and its first deployment take a few minutes.
+# MAGIC   </div>
+# MAGIC </div>
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2, Grant the app's Service Principal permissions (before deploy)
+# MAGIC ### A1. Install the driver and pick your branch
+# MAGIC
+# MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
+# MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook. `LB_BRANCH` defaults to
+# MAGIC the branch `00-setup/setup_databricks` created for you. Change a widget only if you used a
+# MAGIC different project or branch name.
+
+# COMMAND ----------
+
+# MAGIC %pip install "databricks-sdk>=0.120.0" "psycopg[binary]==3.3.4"
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
 
 # COMMAND ----------
 
 import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
-
-print("Grant the app SP permissions before first deploy.")
-print()
-print("Run this command from the journeys/capstone-app/ directory:")
-print()
-print("  python capstone_grant_sp.py --app-name capstone-dashboard \\")
-print("    --lakebase-profile <LB_PROFILE> \\")
-print("    --lakebase-project <LB_PROJECT> \\")
-print("    --lakebase-schema bank")
-print()
-print("Replace <LB_PROFILE> and <LB_PROJECT> with your values from 00-setup.")
-print()
-print("The script:")
-print("  1. Looks up the app's Service Principal (by app name).")
-print("  2. Creates a PostgreSQL role for the SP.")
-print("  3. Sets the databricks_auth security label (auth via OAuth).")
-print("  4. Grants project CAN_MANAGE permission (list branches).")
-print("  5. Creates a role on your branch (for connections).")
-print()
-print("If the app does not exist yet (first time), the script notes that and")
-print("asks you to re-run it after deploying the app.")
+from lakebase import notebook_env
+notebook_env(dbutils);
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, Run the app locally
-
-# COMMAND ----------
-
-print("Run the dashboard on your own machine, against your Lakebase branch:")
-print()
-print("1. Make sure your workshop env vars are set (from 00-setup):")
-print("   export LB_PROFILE=<your-profile>")
-print("   export LB_PROJECT=<project-id>")
-print("   export LB_BRANCH=<branch-id>")
-print("   export LB_SCHEMA=bank")
-print()
-print("2. From journeys/capstone-app/app/, start it (installs deps on first run):")
-print("   bash run_local.sh")
-print()
-print("   run_local.sh maps LB_* -> LAKEBASE_* and starts uvicorn on port 8000.")
-print()
-print("3. Open http://localhost:8000 in your browser. The FastAPI backend serves")
-print("   the static index.html UI and the /api/* endpoints from one process.")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 4, Test the app locally
-
-# COMMAND ----------
-
-print("Test the app locally before deploying:")
-print()
-print("1. Go to the Accounts tab. You should see a list of all accounts.")
-print("   The backend is making a SQL query:")
-print("     SELECT account_id, branch_id, line, type, status, health_pct FROM account")
-print()
-print("2. Go to the Holdings look-through tab. Enter 'FUND-GROWTH-A' and hit Look through.")
-print("   You should see a tree of instruments, including the ones held through a sleeve")
-print("   at depth 2 (a recursive CTE walked the holdings tree).")
-print()
-print("3. Go to the Case notes tab. Search for 'wire'.")
-print("   Results should show case notes matching the full-text search.")
-print()
-print("If a query fails, check:")
-print("  - Are environment variables set? (echo $LB_PROFILE, etc.)")
-print("  - Is the backend running? (check http://localhost:8000/docs)")
-print("  - Did the grant script succeed? (re-run it if not)")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 5, Update app configuration
-
-# COMMAND ----------
-
-print("Before deploying, verify app/app.yaml has your values:")
-print()
-print("  env:")
-print("    LAKEBASE_PROJECT: <project-id>")
-print("    LAKEBASE_BRANCH:  <branch the app serves>")
-print("    LAKEBASE_SCHEMA:  bank")
-print()
-print("Note: app.yaml has NO LAKEBASE_PROFILE; on Databricks Apps the runtime injects")
-print("the app's Service Principal credentials, so the same code authenticates as the SP.")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 6, Deploy to Databricks Apps
-
-# COMMAND ----------
-
-print("Deploy the app from the journeys/capstone-app/app/ directory:")
-print()
-print("  bash deploy.sh")
-print()
-print("Deployment takes 1-2 minutes. Watch the output for errors.")
-print()
-print("The deploy script packages the FastAPI backend (with its static index.html)")
-print("and pushes it to Databricks Apps. There is no separate frontend build step.")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 7, Re-grant the app SP after first deploy
-
-# COMMAND ----------
-
-print("If this is your first deploy, the app was just created with a new Service Principal.")
-print()
-print("Re-run the grant script to give the SP full permissions:")
-print()
-print("  python capstone_grant_sp.py --app-name capstone-dashboard \\")
-print("    --lakebase-profile <LB_PROFILE> \\")
-print("    --lakebase-project <LB_PROJECT> \\")
-print("    --lakebase-schema bank")
-print()
-print("The script is idempotent; re-running is safe.")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 8, Test the deployed app
-
-# COMMAND ----------
-
-print("Log into your Databricks workspace and navigate to Apps.")
-print("You should see 'capstone-dashboard'. Click it to open.")
-print()
-print("Test each tab:")
-print("  1. Accounts tab: you should see a list of accounts.")
-print("  2. Holdings look-through tab: enter 'FUND-GROWTH-A'.")
-print("  3. Case notes tab: search for case notes.")
-print()
-print("The app is now running on Databricks Apps, querying Lakebase directly.")
-print()
-print("If the app fails to start or queries return errors:")
-print("  - Check that the grant script ran successfully.")
-print("  - Verify app.yaml has the correct environment variables.")
-print("  - Redeploy: bash deploy.sh")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 9, Make changes and redeploy
-
-# COMMAND ----------
-
-print("After local testing, make a small change in the backend or the static UI:")
-print()
-print("For example, add a new column to the Accounts table in app/backend/static/index.html,")
-print("or add a new /api/ endpoint in app/backend/main.py.")
-print()
-print("Then redeploy:")
-print("  bash deploy.sh")
-print()
-print("The app updates live. Refresh your browser and see the change.")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## What you learned
+# MAGIC ### A2. Name your app and find its source
 # MAGIC
-# MAGIC You ran and deployed a FastAPI app on Databricks Apps that queries Lakebase directly, serving a single-page dashboard UI from the same process. The app's Service Principal connects to your Lakebase instance using OAuth credentials. You set up permissions at the app, project, schema, and branch levels, which is the same permission model as the production lakebase-pitch app. You ran the app locally, then deployed it in minutes.
+# MAGIC Your app is named after your branch, so every attendee gets their own. Its source is the `app/`
+# MAGIC folder next to this notebook in the workspace: `app.yaml` (how to start it), `requirements.txt`, and
+# MAGIC `backend/` (the FastAPI code and the UI).
+
+# COMMAND ----------
+
+import os, sys, re, time
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import client, branch_name, branch_endpoint
+from databricks.sdk.service.apps import App, AppDeployment, EnvVar
+from databricks.sdk.service.iam import AccessControlRequest, PermissionLevel
+import psycopg
+
+PROJECT = os.environ["LB_PROJECT"]
+MINE    = os.environ["LB_BRANCH"]
+SCHEMA  = os.environ.get("LB_SCHEMA", "bank")
+w = client()
+
+# App names: lowercase letters, digits and hyphens, up to 30 characters.
+APP_NAME = re.sub(r"[^a-z0-9-]+", "-", ("bank-dash-" + MINE.removeprefix("u-")).lower())[:30].strip("-")
+SOURCE = os.path.join(os.getcwd(), "app")
+if not SOURCE.startswith("/Workspace"):
+    SOURCE = "/Workspace" + SOURCE
+
+print("app name:   ", APP_NAME)
+print("serves:     ", f"project {PROJECT}, branch {MINE}, schema {SCHEMA}")
+print("source path:", SOURCE)
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** your app name, the project and branch it will serve, and its source path:
 # MAGIC
+# MAGIC ```
+# MAGIC app name:    bank-dash-alex-kim
+# MAGIC serves:      project bank, branch u-alex-kim, schema bank
+# MAGIC source path: /Workspace/Users/alex.kim@example.com/<folder>/journeys/capstone-app/app
+# MAGIC ```
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><code>KeyError: 'LB_PROJECT'</code>: the A1 cells didn't run in this session. Run the three A1 cells, then this one.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## B. Create the app
+# MAGIC
+# MAGIC Creating an app reserves its name and URL, starts its compute, and creates the **service principal**
+# MAGIC the app will run as. If your app already exists from an earlier run, the cell reuses it.
+
+# COMMAND ----------
+
+try:
+    app = w.apps.get(APP_NAME)
+    print(f"app {APP_NAME} already exists, reusing it")
+except Exception:
+    t0 = time.time()
+    app = w.apps.create_and_wait(App(name=APP_NAME, description="Lakebase workshop: bank dashboard"))
+    print(f"created app {APP_NAME} in {time.time() - t0:.0f}s")
+
+SP = app.service_principal_client_id
+print("service principal:", SP)
+print("app URL:          ", app.url)
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** `created app bank-dash-alex-kim in 135s` on a test run (about two minutes),
+# MAGIC then the app's service principal id (a UUID) and its URL, like
+# MAGIC `https://bank-dash-alex-kim-<workspace id>.aws.databricksapps.com`.
+# MAGIC
+# MAGIC **What this proves:** the app exists and has its own identity. Nothing can read your data yet: the
+# MAGIC service principal has no permissions.
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><strong>Permission error:</strong> you can't create apps in this workspace. Ask your instructor.</li>
+# MAGIC       <li><strong>Name already taken:</strong> someone else has an app with this name. Set <code>APP_NAME</code> to something unique in A2 and rerun.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## C. Give the app access to your branch
+# MAGIC
+# MAGIC ### C1. Project permission
+# MAGIC
+# MAGIC The app looks up your branch and asks for a short-lived database credential, both through the
+# MAGIC Lakebase API. That needs `CAN_USE` on the project, the least privilege that allows it.
+
+# COMMAND ----------
+
+w.permissions.update("database-projects", PROJECT, access_control_list=[
+    AccessControlRequest(service_principal_name=SP, permission_level=PermissionLevel.CAN_USE)])
+print(f"granted CAN_USE on project {PROJECT} to the app's service principal")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Expected result:** `granted CAN_USE on project bank to the app's service principal`
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### C2. A Postgres role on your branch
+# MAGIC
+# MAGIC The database also has to know the app. `databricks_create_role()` creates a Postgres role linked to
+# MAGIC the service principal, so it can log in with Databricks credentials; then it gets read access to
+# MAGIC the `bank` tables. The SQL that runs on your branch:
+# MAGIC
+# MAGIC ```sql
+# MAGIC CREATE EXTENSION IF NOT EXISTS databricks_auth;
+# MAGIC SELECT databricks_create_role('<service principal id>', 'SERVICE_PRINCIPAL');
+# MAGIC GRANT USAGE ON SCHEMA bank TO "<service principal id>";
+# MAGIC GRANT SELECT ON ALL TABLES IN SCHEMA bank TO "<service principal id>";
+# MAGIC ```
+
+# COMMAND ----------
+
+host, eid, _ = branch_endpoint(w, PROJECT, MINE)
+cred = w.postgres.generate_database_credential(endpoint=f"{branch_name(PROJECT, MINE)}/endpoints/{eid}")
+with psycopg.connect(host=host, port=5432, dbname="databricks_postgres", user=w.current_user.me().user_name,
+                     password=cred.token, sslmode="require", autocommit=True) as conn, conn.cursor() as cur:
+    cur.execute("CREATE EXTENSION IF NOT EXISTS databricks_auth")
+    cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [SP])
+    if cur.fetchone():
+        print("Postgres role for the app already exists")
+    else:
+        cur.execute("SELECT databricks_create_role(%s, 'SERVICE_PRINCIPAL')", [SP])
+        print("created Postgres role for the app")
+    cur.execute(f'GRANT USAGE ON SCHEMA {SCHEMA} TO "{SP}"')
+    cur.execute(f'GRANT SELECT ON ALL TABLES IN SCHEMA {SCHEMA} TO "{SP}"')
+    print(f"granted read access to schema {SCHEMA}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Expected result:**
+# MAGIC
+# MAGIC ```
+# MAGIC created Postgres role for the app
+# MAGIC granted read access to schema bank
+# MAGIC ```
+# MAGIC
+# MAGIC **What this proves:** access is granted in two places, the workspace and the database, and both are
+# MAGIC scoped: the app can read your branch's `bank` tables, and nothing else.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## D. Deploy the app
+# MAGIC
+# MAGIC Deploying takes a snapshot of the `app/` folder and starts it. The cell passes the project, branch and
+# MAGIC schema as environment variables, so the app serves **your** branch.
+
+# COMMAND ----------
+
+t0 = time.time()
+dep = w.apps.deploy_and_wait(APP_NAME, AppDeployment(
+    source_code_path=SOURCE,
+    env_vars=[EnvVar(name="LAKEBASE_PROJECT", value=PROJECT),
+              EnvVar(name="LAKEBASE_BRANCH", value=MINE),
+              EnvVar(name="LAKEBASE_SCHEMA", value=SCHEMA)]))
+print(f"deployment {dep.deployment_id}: {dep.status.state.value} in {time.time() - t0:.0f}s")
+print(dep.status.message)
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** `deployment ...: SUCCEEDED in 16s` on a test run, then `App started successfully`.
+# MAGIC
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">See it in the UI (optional)</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     Open <strong>Compute</strong> → <strong>Apps</strong> and select your app. The <strong>Deployments</strong> tab shows
+# MAGIC     this deployment, and <strong>Logs</strong> shows the app starting up.
+# MAGIC   </div>
+# MAGIC </div>
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><code>FAILED</code>: open the app's <strong>Logs</strong> in the UI. A missing package or a typo in <code>app.yaml</code> shows up there.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## E. Open the app
+# MAGIC
+# MAGIC Databricks Apps only accept a signed-in user's browser session (or an OAuth token), so you open the
+# MAGIC app in a new browser tab rather than from this notebook. The cell prints the links. The app also has
+# MAGIC a small JSON API next to its UI, which is handy for seeing exactly what it reads.
+
+# COMMAND ----------
+
+app = w.apps.get(APP_NAME)
+print("app status:", app.app_status.state.value if app.app_status else "?",
+      "| compute:", app.compute_status.state.value if app.compute_status else "?")
+print()
+print("Open in a new browser tab:")
+for path, what in [("/", "the dashboard UI"),
+                   ("/api/health", "who the app is and which branch it serves"),
+                   ("/api/accounts", "every account, read from your branch"),
+                   ("/api/accounts/CTA-100240", "one account and its recent transactions"),
+                   ("/api/holdings/FUND-GROWTH-A", "a fund's look-through holdings (recursive SQL)"),
+                   ("/api/casenotes?q=SPEI", "full-text search over case notes")]:
+    print(f"  {app.url}{path}")
+    print(f"      {what}")
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** `app status: RUNNING | compute: ACTIVE`, then six links. Opened in the browser, a test
+# MAGIC run returned:
+# MAGIC
+# MAGIC - `/api/health`: `{"ok":true,"identity":"<the app's service principal id>","project":"bank","branch":"u-yourname","schema":"bank"}`
+# MAGIC - `/api/accounts`: the 8 accounts, starting `{"account_id":"CTA-100234","branch_id":"BR-CDMX","line":"Checking",...}`
+# MAGIC - `/api/accounts/CTA-100240`: the account with its CLABE (`999180000001002407`) and its recent transactions, including the MXN 38,500 SPEI transfer
+# MAGIC - `/api/holdings/FUND-GROWTH-A`: the fund's cash, equity sleeve and Zafiro Software at depth 1, and the sleeve's holdings at depth 2
+# MAGIC - `/api/casenotes?q=SPEI`: the two case notes that mention SPEI
+# MAGIC
+# MAGIC **What this proves:** the app reads your branch as its own identity: `/api/health` shows the service
+# MAGIC principal, not you, and the data is your bank.
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><strong>An error mentioning <code>permission denied</code> or <code>password authentication failed</code>:</strong> rerun C1 and C2, then reload the page.</li>
+# MAGIC       <li><strong><code>503</code> with "has no host yet":</strong> your branch isn't ready. Check it in setup, then reload.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## F. Clean up (optional)
+# MAGIC
+# MAGIC A running app keeps its compute on. When you're done, delete it: this removes the app, its URL and its
+# MAGIC service principal. Run the next cell only when you no longer need the dashboard.
+
+# COMMAND ----------
+
+# w.apps.delete(APP_NAME); print(f"deleted app {APP_NAME}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## G. Conclusion
+# MAGIC
+# MAGIC In this lab you created a Databricks App, gave it access to your branch, deployed it, and called it.
 # MAGIC Key takeaways:
 # MAGIC
-# MAGIC - Databricks Apps handle deployment, scaling, and networking. You just provide code.
-# MAGIC - Service Principal auth (SP-auth) is the right choice for app-to-Lakebase calls (vs OBO, which is for user-level queries).
-# MAGIC - Grant the app SP permissions before first deploy (or re-grant after deploy if it is the first time).
-# MAGIC - A recursive CTE (holdings look-through) and full-text search (case notes) run as plain SQL on Lakebase, no extra services.
-# MAGIC - Redeploy with `bash deploy.sh` after making changes.
+# MAGIC 1. **An app runs as its own service principal,** so it gets exactly the access you grant it.
+# MAGIC 2. **Access has two layers:** `CAN_USE` on the Lakebase project and a Postgres role on the branch.
+# MAGIC 3. **No passwords:** the app asks Lakebase for a short-lived credential each time it connects.
+# MAGIC 4. **Deploying is one call** from a workspace folder; the same app can serve any branch you point it at.
 # MAGIC
-# MAGIC For production apps, you would add error handling, monitoring, logging, and role-based feature flags. The capstone-app is your template.
+# MAGIC That's the end of the App developers track.
 
 # COMMAND ----------
 

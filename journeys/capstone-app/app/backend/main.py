@@ -59,8 +59,9 @@ def _endpoint(w: WorkspaceClient):
     ep = eps[0]
     host = ep.status.hosts.host if ep.status and ep.status.hosts else None
     state = ep.status.current_state.value if ep.status and ep.status.current_state else "?"
-    if not host or state != "ACTIVE":
-        raise HTTPException(503, f"branch {BRANCH} not serving (state={state})")
+    # An IDLE (scaled-to-zero) endpoint still has a host; connecting wakes it.
+    if not host:
+        raise HTTPException(503, f"branch {BRANCH} has no host yet (state={state})")
     return host, (ep.endpoint_id or "primary")
 
 

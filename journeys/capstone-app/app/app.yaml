@@ -1,5 +1,7 @@
 # Databricks Apps configuration for the capstone bank dashboard.
-# Edit the LAKEBASE_* values to match your setup, then deploy with deploy.sh.
+# The workshop notebook (capstone_app_databricks) deploys this folder and passes LAKEBASE_PROJECT,
+# LAKEBASE_BRANCH and LAKEBASE_SCHEMA as deployment env vars, overriding the defaults below.
+# From a laptop, edit the values here and deploy with deploy.sh.
 #
 # Note: on Databricks Apps the runtime injects the app's Service Principal
 # credentials, so there is NO LAKEBASE_PROFILE here (that is local-dev only).
@@ -17,6 +19,6 @@ env:
   - name: LAKEBASE_PROJECT
     value: "bank"           # your project id from 00-setup
   - name: LAKEBASE_BRANCH
-    value: "u-arao"     # the branch the app serves (a shared, read-friendly branch)
+    value: "production" # the branch the app serves (the notebook sets your own branch)
   - name: LAKEBASE_SCHEMA
     value: "bank"

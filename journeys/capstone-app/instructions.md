@@ -7,6 +7,9 @@ You do not write any application code here. The dashboard app is provided, compl
 so you see an application read the bank you built. The Lakebase wiring is the lesson, not the
 web framework.
 
+**In Databricks, run [`capstone_app_databricks`](capstone_app_databricks.py) instead:** it does all of
+the steps below from the workspace, with no laptop. The rest of this page is the laptop path.
+
 If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you need `LB_PROFILE`,
 `LB_PROJECT`, `LB_BRANCH`, and `LB_SCHEMA` set.
 
@@ -56,11 +59,11 @@ python capstone_grant_sp.py --app-name capstone-dashboard \
   --lakebase-schema bank
 ```
 
-This looks up the app's Service Principal, creates a PostgreSQL role for it, stamps the
-`databricks_auth` security label (the part that makes Lakebase authenticate it as that Service
-Principal), grants project access, and adds a role on the production branch. It is the same
-grant chain you would run for any app on Lakebase, parameterized. It is idempotent, so re-running
-is safe.
+This looks up the app's Service Principal, creates a Postgres role for it with
+`databricks_create_role()` (the part that makes Lakebase authenticate it as that Service Principal),
+grants it read access to the `bank` schema on the branch you pass (`--lakebase-branch`, default
+`production`), and grants it `CAN_USE` on the project. It is the same grant chain you would run for
+any app on Lakebase, parameterized. It is idempotent, so re-running is safe.
 
 > **Note**
 > On a brand-new app the Service Principal does not exist until the first deploy. If the script

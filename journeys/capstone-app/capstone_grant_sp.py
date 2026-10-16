@@ -5,11 +5,11 @@ This script is the "capstone" version of ../lakebase-pitch/backend/grant_app_sp.
 but parameterized for use in the workshop. It takes an app name and grants that
 app's Service Principal the full permission chain needed to connect to Lakebase:
 
-  1. Create a PostgreSQL role for the SP
-  2. Set databricks_auth security label (OAuth auth)
-  3. Grant project CAN_MANAGE (to list branches)
-  4. Grant schema/table permissions
-  5. Create a role on the production branch
+  1. Grant CAN_USE on the Lakebase project (so the app can find the branch and get credentials)
+  2. Create a Postgres role for the SP with databricks_create_role() (OAuth login)
+  3. Grant schema/table permissions on the branch
+
+The workshop notebook capstone_app_databricks does the same steps from a workspace.
 
 Usage:
     python capstone_grant_sp.py --app-name capstone-dashboard \\
@@ -79,6 +79,7 @@ def grant_app_sp(
     except Exception as e:
         print(f"Warning: Could not fetch app '{app_name}': {e}")
         print(f"         Create the app first (databricks apps create {app_name}), then re-run.")
+        return
     print(f"  Found app Service Principal: client_id={sp_client_id}  id={sp_id}")
 
     # Step 3: Get Lakebase connection details for the branch the app will serve
@@ -113,23 +114,14 @@ def grant_app_sp(
         )
 
         with conn.cursor() as cur:
-            # Create role
-            try:
-                cur.execute(f'CREATE ROLE "{sp_client_id}" WITH LOGIN NOINHERIT')
+            # Create a Postgres role linked to the service principal (OAuth login)
+            cur.execute("CREATE EXTENSION IF NOT EXISTS databricks_auth")
+            cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [sp_client_id])
+            if cur.fetchone():
+                print(f"    Role already exists (skipped): {sp_client_id}")
+            else:
+                cur.execute("SELECT databricks_create_role(%s, 'SERVICE_PRINCIPAL')", [sp_client_id])
                 print(f"    Created PostgreSQL role: {sp_client_id}")
-            except Exception as e:
-                if "already exists" in str(e):
-                    print(f"    Role already exists (skipped): {sp_client_id}")
-                else:
-                    raise
-
-            # Set security label for OAuth
-            label = f"id={sp_id},type=SERVICE_PRINCIPAL"
-            cur.execute(f'''
-                SECURITY LABEL FOR databricks_auth ON ROLE "{sp_client_id}"
-                IS '{label}'
-            ''')
-            print(f"    Set security label: databricks_auth")
 
             # Grant schema usage
             cur.execute(f'GRANT USAGE ON SCHEMA {lakebase_schema} TO "{sp_client_id}"')
@@ -155,19 +147,19 @@ def grant_app_sp(
         print(f"    Error granting PostgreSQL permissions: {e}")
         raise
 
-    # Step 6: Grant Lakebase project-level permissions
-    try:
-        # This is workspace-level; you'd use the Lakebase SDK to grant CAN_MANAGE on project
-        print(f"    Granted project CAN_MANAGE permission (via workspace API)")
-    except Exception as e:
-        print(f"    Warning: Could not grant project permission: {e}")
+    # Step 6: Grant CAN_USE on the Lakebase project (workspace permission), so the app can list
+    # the branch's endpoint and generate a database credential.
+    from databricks.sdk.service.iam import AccessControlRequest, PermissionLevel
+    ws.permissions.update("database-projects", lakebase_project, access_control_list=[
+        AccessControlRequest(service_principal_name=sp_client_id, permission_level=PermissionLevel.CAN_USE)])
+    print(f"    Granted CAN_USE on project {lakebase_project}")
 
     print()
     print(f"Done. App SP has access to Lakebase.")
     print(f"  Role name: {sp_client_id}")
     print(f"  Permissions: USAGE on schema, SELECT on tables")
     print()
-    print(f"Next: Deploy the app (python deploy_to_databricks.py --app-name {app_name})")
+    print(f"Next: deploy the app (bash app/deploy.sh {app_name})")
 
 
 def main() -> None:
