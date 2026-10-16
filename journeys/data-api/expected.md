@@ -9,17 +9,24 @@ Running `python data_api.py --step check` shows:
 
 ```text
 Data API check:
-  Host: https://lb-workshop-instance.cloud.databricks.com
-  Endpoint: /api/v1/bank.account
+  Data API URL: https://<endpoint-host>/api/2.0/workspace/<workspace-id>/rest/databricks_postgres
+  Endpoint: <url>/bank/account
   Status: Data API is ENABLED
 ```
 
 If the Data API is not enabled, you'll see:
 
 ```text
-Status: Data API is NOT ENABLED on this instance
-To enable: go to Databricks console → Lakebase → Instances → select your instance →
-Advanced settings → toggle "Data API" to ON, then wait 30 seconds and retry.
+  Data API URL: (not enabled on this branch)
+  Status: Data API not enabled on this branch
+
+To enable: Lakebase Postgres app -> your project -> your branch -> Data API -> Enable Data API, then add `bank` under Exposed schemas
+```
+
+As the project owner (as in the workshop's own test runs), the check stops with:
+
+```text
+  Status: 403: your Postgres role isn't granted to the Data API's `authenticator` role (instructor setup; the project owner can't be used)
 ```
 
 ## Step 2, get an OAuth token
@@ -72,7 +79,7 @@ Running `python data_api.py --step compare-sql` shows:
 Same query, two ways:
 
 REST:
-  GET /api/v1/bank.account?select=account_id,status&status=eq.good_standing
+  GET <url>/bank/account?select=account_id,status&status=eq.good_standing
   Latency: ~45 ms
 
 SQL:
@@ -92,7 +99,7 @@ Running `python data_api.py --step post-read-only` shows:
 
 ```text
 POST request (insert):
-  POST /api/v1/bank.account
+  POST <url>/bank/account
   Body: {"account_id": "CTA-999999", "branch_id": "BR-TEST", ...}
 
 Result:

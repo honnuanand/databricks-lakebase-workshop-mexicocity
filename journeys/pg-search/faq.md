@@ -51,7 +51,7 @@ Large FTS queries can be slow if the query term matches many documents. Check th
 ```sql
 EXPLAIN (ANALYZE, BUFFERS) 
 SELECT * FROM bank.case_note
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire | fraud')
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei | takeover')
  ORDER BY ts_rank(...) DESC;
 ```
 
@@ -63,7 +63,7 @@ Look for "Index Scan" in the plan. If you see "Seq Scan", either:
 ## What's the difference between `to_tsquery` and `plainto_tsquery`?
 
 - **`plainto_tsquery`**: simpler; treats input as plain text and adds AND operators. `plainto_tsquery('english', 'wire fraud')` becomes `'wire' & 'fraud'`.
-- **`to_tsquery`**: more powerful; lets you write operators directly. `to_tsquery('english', 'wire | fraud')` searches for either word (OR logic).
+- **`to_tsquery`**: more powerful; lets you write operators directly. `to_tsquery('english', 'spei | takeover')` searches for either word (OR logic).
 
 Use `plainto_tsquery` for simple queries (just words), `to_tsquery` when you need boolean logic.
 
@@ -73,12 +73,12 @@ Use AND in the WHERE clause:
 
 ```sql
 SELECT * FROM bank.case_note
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire')
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei')
    AND account_id = 'CTA-100240'
    AND ts > now() - INTERVAL '1 year';
 ```
 
-This finds case notes about wire transfers on account CTA-100240 from the past year, ranked by relevance.
+This finds case notes about SPEI transfers on account CTA-100240 from the past year, ranked by relevance.
 
 ## Can I search across multiple columns?
 

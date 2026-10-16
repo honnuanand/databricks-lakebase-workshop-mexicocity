@@ -27,7 +27,7 @@ You write a single query that ranks case notes by full-text relevance, tolerates
 ## What you'll do
 
 1. Load case notes (free-text analyst write-ups on fraud and AML alerts).
-2. Write a [full-text search](../../docs/glossary.md) query: find notes matching "wire OR fraud", ranked by relevance.
+2. Write a [full-text search](../../docs/glossary.md) query: find notes matching "SPEI OR takeover", ranked by relevance.
 3. Add fuzzy matching: find account IDs that are close (typo-tolerant) using [trigram](../../docs/glossary.md) similarity.
 4. Create a [GIN](../../docs/glossary.md) index on the FTS column and measure speedup.
 5. (Optional) create a [pgvector](../../docs/glossary.md) embedding column and write a hybrid query (keyword + semantic).

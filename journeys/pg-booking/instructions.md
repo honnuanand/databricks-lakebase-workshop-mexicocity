@@ -77,15 +77,17 @@ DETAIL: Key (account_id, tstzrange(starts_at, ends_at))=(CTA-100240, ["2024-01-1
 
 This is the guarantee: the constraint is enforced atomically by the database. No app code can allow it.
 
-### Step 4, verify the constraint with EXPLAIN
+### Step 4, EXPLAIN an insert
 
-Check that the constraint is being used:
+Look at the plan for an insert:
 
 ```bash
 python pg_booking.py --step explain
 ```
 
-The plan shows the GiST index being used to check for conflicts. This is invisible to the app, it just works.
+The plan shows how the new row is produced, but not the constraint check: Postgres checks an exclusion
+constraint when the row is actually written, using the constraint's GiST index. That's why Step 3 failed
+at insert time. It's invisible to the app; it just works.
 
 ## What you just did
 

@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. Needs: the `btree_gist` extension, which this notebook creates. Run it on a freshly loaded branch: it adds an exclusion constraint to `bank.settlement`.
 
 # COMMAND ----------
 
@@ -157,9 +157,10 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4, EXPLAIN shows constraint check
+# MAGIC ## Step 4, the constraint isn't in the query plan
 # MAGIC
-# MAGIC Run EXPLAIN to see the constraint check in the query plan.
+# MAGIC Run EXPLAIN on an insert. The plan shows how the row is produced, not the constraint check: an
+# MAGIC exclusion constraint is checked when the row is written, which is why Step 3 failed at insert time.
 
 # COMMAND ----------
 
@@ -172,7 +173,7 @@ with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(sql)
         rows = cur.fetchall()
-        print("Query plan (should mention constraint):")
+        print("Query plan (the exclusion check runs when the row is written, so it isn't listed here):")
         for row in rows:
             print(f"  {row[0]}")
 

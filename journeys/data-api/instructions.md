@@ -13,7 +13,7 @@ If you haven't done [`../../00-setup/`](../../00-setup/), do that first; you nee
 `LB_PROJECT` set to get OAuth tokens.
 
 Everything here is in a single script: [`./data_api.py`](./data_api.py).
-This script checks if the Data API is enabled on your instance and either runs full tests or
+This script checks if the Data API is enabled on your branch and either runs full tests or
 shows you how to enable it.
 
 ## Run it end to end
@@ -66,7 +66,7 @@ python data_api.py --step get-accounts
 The script makes an HTTP GET request:
 
 ```
-GET https://<lakebase-host>/api/v1/bank.account
+GET <url>/bank/account
 Authorization: Bearer <token>
 ```
 
@@ -91,7 +91,7 @@ python data_api.py --step get-filtered
 The script makes a GET request with filters:
 
 ```
-GET https://<lakebase-host>/api/v1/bank.account?select=account_id,status&status=eq.good_standing
+GET <url>/bank/account?select=account_id,status&status=eq.good_standing
 Authorization: Bearer <token>
 ```
 
@@ -128,11 +128,21 @@ JSON. Compare your output to [`expected.md`](expected.md); if anything went wron
 
 If the script says the Data API is not enabled:
 
-1. Log into your Databricks workspace.
-2. Go to **Data Engineering** → **Lakebase** → **Instances**.
-3. Click on your instance.
-4. In the **Advanced** settings, toggle **Data API** to **Enabled**.
-5. Wait a few seconds for the API to become available.
-6. Re-run the script.
+1. Open the **Lakebase Postgres** app, then your project and your branch.
+2. Open **Data API** and choose **Enable Data API**.
+3. Under **Exposed schemas**, add `bank` (only `public` is exposed by default).
+4. Re-run the notebook or script.
 
-Enabling takes about 30 seconds.
+Each caller also needs a Postgres role that the Data API can switch to. Your instructor sets this up
+once, on `production`, so attendee branches inherit it:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS databricks_auth;
+SELECT databricks_create_role('attendee@example.com', 'USER');
+GRANT "attendee@example.com" TO authenticator;
+GRANT USAGE ON SCHEMA bank TO "attendee@example.com";
+GRANT SELECT ON ALL TABLES IN SCHEMA bank TO "attendee@example.com";
+```
+
+The project owner's own account can't be used with the Data API: its role can't be granted to
+`authenticator`, and calls fail with `permission denied to set role`.

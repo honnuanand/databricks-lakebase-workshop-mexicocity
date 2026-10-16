@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Query Lakebase via REST: the Data API.
 
-Makes HTTP requests to the Lakebase Data API (if enabled on your instance),
-using Databricks OAuth tokens for auth. Demonstrates REST vs SQL queries.
+Makes HTTP requests to the Lakebase Data API (if enabled on your branch, with the
+`bank` schema exposed), using Databricks OAuth tokens for auth. Demonstrates REST vs
+SQL queries. The REST URL comes from the branch's Data API settings
+(`w.postgres.get_data_api(...).status.url`); requests go to `<url>/<schema>/<table>`.
 
 Usage:
     python data_api.py              # full test
@@ -63,9 +65,18 @@ def get_oauth_token(profile: str) -> str:
     return data["access_token"]
 
 
-def check_data_api(host: str, token: str) -> tuple[bool, str]:
-    """Check if the Data API is enabled on the instance."""
-    url = f"https://{host}/api/v1/bank.account"
+def data_api_url(w, project: str, branch: str) -> str:
+    """The branch's Data API base URL, or "" if the Data API isn't enabled on the branch."""
+    try:
+        return w.postgres.get_data_api(
+            name=f"projects/{project}/branches/{branch}/databases/databricks-postgres/data-api").status.url
+    except Exception:
+        return ""
+
+
+def check_data_api(base: str, token: str) -> tuple[bool, str]:
+    """Check that the Data API answers for bank.account."""
+    url = f"{base}/bank/account"
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
@@ -73,17 +84,20 @@ def check_data_api(host: str, token: str) -> tuple[bool, str]:
             response = http.get(url, headers=headers, params={"limit": 1})
             if response.status_code == 200:
                 return True, "Data API is ENABLED"
-            elif response.status_code == 404:
-                return False, "Data API endpoint not found (NOT ENABLED)"
+            elif response.status_code == 403:
+                return False, ("403: your Postgres role isn't granted to the Data API's `authenticator` role "
+                               "(instructor setup; the project owner can't be used)")
+            elif response.status_code == 406:
+                return False, "406: the `bank` schema isn't exposed (Data API settings -> Exposed schemas)"
             else:
                 return False, f"Data API returned {response.status_code}"
     except Exception as e:
         return False, f"Could not reach Data API: {e}"
 
 
-def get_accounts(host: str, token: str) -> list[dict]:
+def get_accounts(base: str, token: str) -> list[dict]:
     """Fetch all accounts via REST."""
-    url = f"https://{host}/api/v1/bank.account"
+    url = f"{base}/bank/account"
     headers = {"Authorization": f"Bearer {token}"}
 
     with httpx.Client(timeout=10) as http:
@@ -92,9 +106,9 @@ def get_accounts(host: str, token: str) -> list[dict]:
         return response.json()
 
 
-def get_filtered_accounts(host: str, token: str) -> list[dict]:
+def get_filtered_accounts(base: str, token: str) -> list[dict]:
     """Fetch only good-standing accounts via REST."""
-    url = f"https://{host}/api/v1/bank.account"
+    url = f"{base}/bank/account"
     headers = {"Authorization": f"Bearer {token}"}
     params = {"select": "account_id,status", "status": "eq.good_standing"}
 
@@ -122,19 +136,20 @@ def main() -> None:
     if not host:
         print("Error: branch endpoint not ready. Check your setup.")
         return
+    base = data_api_url(w, project, branch)
 
     if args.step == "check" or not args.step:
         print(f"Data API check:")
-        print(f"  Host: https://{host}")
-        print(f"  Endpoint: /api/v1/bank.account")
+        print(f"  Data API URL: {base or '(not enabled on this branch)'}")
+        print(f"  Endpoint: <url>/bank/account")
 
         try:
             token = get_oauth_token(profile)
-            enabled, msg = check_data_api(host, token)
+            enabled, msg = check_data_api(base, token) if base else (False, "Data API not enabled on this branch")
             print(f"  Status: {msg}")
             if not enabled:
-                print("\nTo enable: Databricks console → Lakebase → Instances → select your "
-                      "instance → Advanced settings → toggle Data API ON")
+                print("\nTo enable: Lakebase Postgres app -> your project -> your branch -> Data API -> "
+                      "Enable Data API, then add `bank` under Exposed schemas")
         except Exception as e:
             print(f"  Error: {e}")
         if args.step:
@@ -157,22 +172,21 @@ def main() -> None:
     # the honest explainer rather than making calls that return 400. The Data API is
     # turned on from the Lakebase UI (no programmatic switch), so this is expected.
     if not args.step:
-        enabled, msg = check_data_api(host, token)
+        enabled, msg = check_data_api(base, token) if base else (False, "not enabled on this branch")
         if not enabled:
-            print(f"\nThe Data API is not enabled on this instance ({msg}).")
-            print("This journey makes real HTTPS calls when it is enabled; it does not mock them.")
-            print("To enable it: Databricks console -> Lakebase -> your instance -> Settings ->")
-            print("turn on the Data API, then re-run. The calls below are what you would run:")
-            print("  GET  https://<host>/api/v1/bank.account")
-            print("  GET  https://<host>/api/v1/bank.account?select=account_id,status&status=eq.good_standing")
-            print("\nEverything up to here is real: the OAuth token above is live. The REST reads")
-            print("just need the Data API switched on, which is an instance setting, not a script step.")
+            print(f"\nThe Data API isn't ready on this branch ({msg}).")
+            print("This journey makes real HTTPS calls when it is ready; it does not mock them.")
+            print("To enable it: Lakebase Postgres app -> your project -> your branch -> Data API ->")
+            print("Enable Data API, and add `bank` under Exposed schemas. The calls below are what you would run:")
+            print("  GET  <url>/bank/account")
+            print("  GET  <url>/bank/account?select=account_id,status&status=eq.good_standing")
+            print("\nEverything up to here is real: the OAuth token above is live.")
             return
 
     if args.step == "get-accounts" or not args.step:
         print(f"\nFetching accounts via REST...")
         try:
-            accounts = get_accounts(host, token)
+            accounts = get_accounts(base, token)
             print(f"  Result: {len(accounts)} rows returned")
             if accounts:
                 print(f"  Sample: {accounts[0]}")
@@ -184,7 +198,7 @@ def main() -> None:
     if args.step == "get-filtered" or not args.step:
         print(f"\nFetching filtered (good_standing) accounts via REST...")
         try:
-            accounts = get_filtered_accounts(host, token)
+            accounts = get_filtered_accounts(base, token)
             print(f"  Result: {len(accounts)} rows returned")
             if accounts:
                 print(f"  Sample: {accounts[0]}")
@@ -196,7 +210,7 @@ def main() -> None:
     if args.step == "compare-sql":
         print(f"\nComparing REST vs SQL...")
         try:
-            accounts = get_filtered_accounts(host, token)
+            accounts = get_filtered_accounts(base, token)
             print(f"  REST result: {len(accounts)} accounts")
 
             with connect() as conn:
@@ -210,7 +224,7 @@ def main() -> None:
 
     if args.step == "post-read-only":
         print(f"\nTesting POST (insert) via REST (may be read-only)...")
-        url = f"https://{host}/api/v1/bank.account"
+        url = f"{base}/bank/account"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         data = {
             "account_id": "CTA-TEST-999",

@@ -141,14 +141,14 @@ You should see output like:
 Running similarity search:
   Reference instrument: INS-QTZL
   Top comparable instruments:
-    1. INS-MBONO-10Y: similarity=0.11 (Bono M 10Y (Mexico), bond)
-    2. INS-SLEEVE-EQ: similarity=0.03 (Equity Sleeve, etf)
-    3. INS-ZAFR: similarity=-0.09 (Zafiro Software, equity)
-    4. INS-CASH-MXN: similarity=-0.22 (Mexican Peso Cash, cash)
+    1. INS-ZAFR: similarity=0.33 (Zafiro Software, equity)
+    2. INS-CASH-MXN: similarity=-0.19 (Mexican Peso Cash, cash)
+    3. INS-MBONO-10Y: similarity=-0.30 (Bono M 10Y (Mexico), bond)
+    4. INS-SLEEVE-EQ: similarity=-0.47 (Equity Sleeve, etf)
 ```
 
 The ranking here is driven by the hash embedding, not real financial resemblance, so do not read
-meaning into "the Bono M is closest to Quetzal". With a real embedding model the same query returns
+meaning into "Zafiro Software is closest to Quetzal". With a real embedding model the same query returns
 semantically meaningful neighbours. See [`expected.md`](expected.md) for the honesty note in full.
 
 ### Step 6, optional: create an HNSW index

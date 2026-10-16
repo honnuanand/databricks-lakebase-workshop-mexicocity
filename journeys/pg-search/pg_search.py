@@ -17,14 +17,14 @@ def run_fts():
     sql = """
     SELECT note_id, account_id,
            ts_rank(to_tsvector('english', writeup),
-                   to_tsquery('english', 'wire | fraud')) as rank
+                   to_tsquery('english', 'spei | takeover')) as rank
       FROM bank.case_note
-     WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire | fraud')
+     WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei | takeover')
      ORDER BY rank DESC
      LIMIT 5;
     """
     rows = run_sql(sql)
-    print(f"Case notes matching 'wire OR fraud', ranked by relevance:")
+    print(f"Case notes matching 'SPEI OR takeover', ranked by relevance:")
     for row in rows:
         print(f"  note_id={row[0]}, account_id={row[1]}, rank={row[2]}")
 

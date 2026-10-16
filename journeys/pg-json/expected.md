@@ -5,7 +5,7 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 ## Step 1, JSONB specs
 
 ```text
-('INS-CASH-MXN', 'Mexican Peso Cash', '{"ccy":"USD"}')
+('INS-CASH-MXN', 'Mexican Peso Cash', '{"ccy":"MXN"}')
 ('INS-SLEEVE-EQ', 'Equity Sleeve', '{"theme":"large-cap"}')
 ('INS-QTZL', 'Quetzal Tecnologia', '{"ticker":"QTZL","sector":"tech","beta":1.2}')
 ```
@@ -26,10 +26,9 @@ All instruments that have `"sector": "tech"` in their spec (the containment chec
 ```text
 ('INS-QTZL', 'Quetzal Tecnologia', '...', 'tech')
 ('INS-ZAFR', 'Zafiro Software', '...', 'tech')
-('INS-MBONO-10Y', 'Bono M 10Y (Mexico)', '...', 'tech')
 ```
 
-The `spec #>> '{sector}'` extracts the sector value as text. The `?` operator filters to instruments that have a sector key. Result shows the sector field extracted and displayed as a column.
+The `spec #>> '{sector}'` extracts the sector value as text. The `?` operator filters to instruments that have a sector key. Result shows the sector field extracted and displayed as a column. Only the two equities have a sector key.
 
 ## Step 4, GIN index
 

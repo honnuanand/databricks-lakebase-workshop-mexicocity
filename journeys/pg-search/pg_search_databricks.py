@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. Needs: the `pg_trgm` extension, which this notebook creates.
 
 # COMMAND ----------
 
@@ -78,9 +78,9 @@ for row in rows:
 # MAGIC ```sql
 # MAGIC SELECT note_id, account_id,
 # MAGIC        ts_rank(to_tsvector('english', writeup),
-# MAGIC                to_tsquery('english', 'wire | fraud')) as rank
+# MAGIC                to_tsquery('english', 'spei | takeover')) as rank
 # MAGIC   FROM bank.case_note
-# MAGIC  WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire | fraud')
+# MAGIC  WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei | takeover')
 # MAGIC  ORDER BY rank DESC
 # MAGIC  LIMIT 5
 # MAGIC ```
@@ -90,14 +90,14 @@ for row in rows:
 sql = """
 SELECT note_id, account_id,
        ts_rank(to_tsvector('english', writeup),
-               to_tsquery('english', 'wire | fraud')) as rank
+               to_tsquery('english', 'spei | takeover')) as rank
   FROM bank.case_note
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire | fraud')
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei | takeover')
  ORDER BY rank DESC
  LIMIT 5
 """
 rows = run_sql(sql)
-print("Case notes matching 'wire OR fraud', ranked by relevance:")
+print("Case notes matching 'SPEI OR takeover', ranked by relevance:")
 for row in rows:
     print(f"  note_id={row[0]}, account_id={row[1]}, rank={row[2]}")
 

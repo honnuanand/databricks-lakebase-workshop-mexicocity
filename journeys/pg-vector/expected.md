@@ -8,8 +8,8 @@ ranked results in a single SQL statement.
 its text (`name kind spec`), not a real embedding model. A hash is reproducible and needs no model
 call, which is why the workshop uses it, but it carries no financial meaning: the resulting
 "similarity" ranking is an artifact of hashing, not a judgement that two securities actually
-resemble each other. So do not expect "QTZL and ZAFR come back as the closest pair" here, even
-though they are the two tech equities. What you *are* verifying is the mechanism, store a vector on
+resemble each other. In our run ZAFR does come back closest to QTZL, and they are the two tech
+equities, but that is a coincidence of the hash, not the model understanding anything. What you *are* verifying is the mechanism, store a vector on
 the row, rank the rest with `<=>` in one SQL statement. Swap the hash for a real embedding model
 (see "From the field" below) and the same query returns semantically meaningful neighbours.
 
@@ -63,15 +63,15 @@ Query: find the instruments most similar to `INS-QTZL` by cosine similarity (`<=
 Running similarity search:
   Reference instrument: INS-QTZL
   Top comparable instruments:
-    1. INS-MBONO-10Y: similarity=0.11 (Bono M 10Y (Mexico), bond)
-    2. INS-SLEEVE-EQ: similarity=0.03 (Equity Sleeve, etf)
-    3. INS-ZAFR: similarity=-0.09 (Zafiro Software, equity)
-    4. INS-CASH-MXN: similarity=-0.22 (Mexican Peso Cash, cash)
+    1. INS-ZAFR: similarity=0.33 (Zafiro Software, equity)
+    2. INS-CASH-MXN: similarity=-0.19 (Mexican Peso Cash, cash)
+    3. INS-MBONO-10Y: similarity=-0.30 (Bono M 10Y (Mexico), bond)
+    4. INS-SLEEVE-EQ: similarity=-0.47 (Equity Sleeve, etf)
 ```
 
 The ranking and the exact scores will differ from run to run only if you change the embedding
 method. With the hash embedding they are stable but, as noted above, financially arbitrary: here
-the Bono M happens to hash closest to Quetzal. The important shapes are:
+Zafiro Software happens to hash closest to Quetzal. The important shapes are:
 - Four rows come back (every instrument except the reference itself), ranked by similarity.
 - The whole ranking is one SQL statement against the same table that holds your positions.
 
@@ -115,10 +115,10 @@ Populating embeddings:
 Running similarity search:
   Reference instrument: INS-QTZL
   Top comparable instruments:
-    1. INS-MBONO-10Y: similarity=0.11 (Bono M 10Y (Mexico), bond)
-    2. INS-SLEEVE-EQ: similarity=0.03 (Equity Sleeve, etf)
-    3. INS-ZAFR: similarity=-0.09 (Zafiro Software, equity)
-    4. INS-CASH-MXN: similarity=-0.22 (Mexican Peso Cash, cash)
+    1. INS-ZAFR: similarity=0.33 (Zafiro Software, equity)
+    2. INS-CASH-MXN: similarity=-0.19 (Mexican Peso Cash, cash)
+    3. INS-MBONO-10Y: similarity=-0.30 (Bono M 10Y (Mexico), bond)
+    4. INS-SLEEVE-EQ: similarity=-0.47 (Equity Sleeve, etf)
 
 Creating HNSW index:
   HNSW index created on embedding column

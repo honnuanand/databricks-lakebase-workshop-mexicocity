@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will make HTTP requests to the Lakebase Data API using Databricks OAuth tokens. If the Data API is enabled on your instance, you will fetch and filter data as JSON. If it is not enabled, the notebook shows you how to enable it.
 # MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. Needs: the **Data API enabled on your branch** with the `bank` schema exposed, and your Postgres role set up for it by your instructor (Step 3 explains). Without it, the REST steps skip themselves.
 
 # COMMAND ----------
 
@@ -74,88 +74,105 @@ print("HTTP client ready (httpx or requests shim).")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, Get connection info and OAuth token
+# MAGIC ## Step 1, Find your branch's Data API URL
+# MAGIC
+# MAGIC The Data API is enabled per branch. Its base URL comes from the branch's Data API settings; requests
+# MAGIC go to `<url>/<schema>/<table>`, for example `<url>/bank/account`.
+# MAGIC
+# MAGIC **Not yet tested end to end.** The REST calls in Steps 3 to 5 follow the Databricks documentation, but
+# MAGIC they haven't been run successfully in the workshop's workspace: the account that built the workshop
+# MAGIC owns the project, and the Data API can't be called as the project owner. The setup checks in Steps 1
+# MAGIC and 3 were run.
 
 # COMMAND ----------
 
 import json
-import subprocess
 
-profile = _env("LB_PROFILE", required=True)
 project = _env("LB_PROJECT", required=True)
 branch = _env("LB_BRANCH", required=True)
 
-w = client(profile)
-host, _, _ = branch_endpoint(w, project, branch)
+w = client()   # in a notebook, signs in as you; no CLI profile needed
+host, endpoint_id, _ = branch_endpoint(w, project, branch)
+
+try:
+    rest_url = w.postgres.get_data_api(
+        name=f"projects/{project}/branches/{branch}/databases/databricks-postgres/data-api").status.url
+except Exception:
+    rest_url = ""
 
 print(f"Connection info:")
-print(f"  Profile: {profile}")
 print(f"  Project: {project}")
 print(f"  Branch: {branch}")
 print(f"  Host: {host}")
-print(f"  Data API URL: https://{host}/api/v1/")
+print(f"  Data API URL: {rest_url or '(the Data API is not enabled on this branch)'}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Step 2, Get an OAuth token from Databricks
+# MAGIC
+# MAGIC The Data API accepts a Databricks OAuth token (a JWT) in the `Authorization: Bearer` header. In a
+# MAGIC notebook, the simplest way to get one is the short-lived database credential, valid for about an hour.
 
 # COMMAND ----------
 
-def get_oauth_token(profile: str) -> str:
-    """Get a Databricks OAuth token."""
-    result = subprocess.run(
-        ["databricks", "auth", "token", "--profile", profile, "--output", "json"],
-        capture_output=True,
-        text=True,
-        check=True
-    )
-    data = json.loads(result.stdout)
-    return data["access_token"]
+def get_oauth_token() -> str:
+    """Get a Databricks OAuth token (a JWT) for the signed-in user.
 
-token = get_oauth_token(profile)
+    The Data API needs an OAuth JWT. Inside a notebook, the SDK's own login is a workspace token,
+    which the Data API rejects ("not a valid JWT encoding"), so this uses the same short-lived
+    database credential that the other journeys use as their Postgres password."""
+    return w.postgres.generate_database_credential(
+        endpoint=f"projects/{project}/branches/{branch}/endpoints/{endpoint_id}").token
+
+token = get_oauth_token()
 print(f"OAuth token acquired.")
 print(f"  Token: {token[:20]}... (truncated)")
-print(f"  Expires in: 3600 seconds (1 hour)")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, Check if the Data API is enabled on your instance
+# MAGIC ## Step 3, Check that the Data API answers for your branch
 
 # COMMAND ----------
 
-url = f"https://{host}/api/v1/bank.account"
 headers = {"Authorization": f"Bearer {token}"}
+data_api_enabled = False
 
-print(f"Checking Data API:")
-print(f"  URL: {url}")
-print(f"  Method: GET")
-print()
-
-try:
-    with httpx.Client(timeout=10) as client_http:
-        response = client_http.get(url, headers=headers, params={"limit": 1})
+if not rest_url:
+    print("The Data API is not enabled on your branch.")
+    print()
+    print("To enable it:")
+    print("  1. Open the Lakebase Postgres app, then your project and your branch")
+    print("  2. Open Data API and choose Enable Data API")
+    print("  3. Under Exposed schemas, add bank")
+    print("  4. Re-run this notebook from Step 1")
+else:
+    url = f"{rest_url}/bank/account"
+    print(f"Checking Data API:")
+    print(f"  URL: {url}")
+    print(f"  Method: GET")
+    print()
+    try:
+        with httpx.Client(timeout=10) as client_http:
+            response = client_http.get(url, headers=headers, params={"limit": 1})
         if response.status_code == 200:
-            print("SUCCESS: Data API is ENABLED")
+            print("SUCCESS: the Data API answers for bank.account")
             data_api_enabled = True
-        elif response.status_code == 404:
-            print("NOT FOUND: Data API endpoint not available (NOT ENABLED)")
-            print()
-            print("To enable the Data API:")
-            print("  1. Go to Databricks console: Data Engineering -> Lakebase -> Instances")
-            print("  2. Select your instance")
-            print("  3. In Advanced settings, toggle Data API to ON")
-            print("  4. Wait 30 seconds for it to become available")
-            print("  5. Re-run this notebook")
-            data_api_enabled = False
+        elif response.status_code == 403:
+            print("403: your Postgres role isn't set up for the Data API yet.")
+            print("  Your role must be created with databricks_create_role() and granted to the")
+            print("  Data API's 'authenticator' role. Ask your instructor. (The project owner's")
+            print("  account can't be used with the Data API.)")
+            print(f"  Response: {response.text[:200]}")
+        elif response.status_code == 406:
+            print("406: the bank schema isn't exposed. In your branch's Data API settings, add bank")
+            print("  under Exposed schemas, then re-run this cell.")
         else:
             print(f"Unexpected response: {response.status_code}")
-            print(f"Response: {response.text}")
-            data_api_enabled = False
-except Exception as e:
-    print(f"Error: {e}")
-    data_api_enabled = False
+            print(f"Response: {response.text[:200]}")
+    except Exception as e:
+        print(f"Error: {e}")
 
 # COMMAND ----------
 
@@ -165,10 +182,9 @@ except Exception as e:
 # COMMAND ----------
 
 if not data_api_enabled:
-    print("Skipping: Data API is not enabled. Enable it first (see Step 3).")
+    print("Skipping: the Data API isn't ready on your branch (see Step 3).")
 else:
-    url = f"https://{host}/api/v1/bank.account"
-    headers = {"Authorization": f"Bearer {token}"}
+    url = f"{rest_url}/bank/account"
 
     print(f"Fetching all accounts:")
     print(f"  URL: {url}")
@@ -194,10 +210,9 @@ else:
 # COMMAND ----------
 
 if not data_api_enabled:
-    print("Skipping: Data API is not enabled.")
+    print("Skipping: the Data API isn't ready on your branch.")
 else:
-    url = f"https://{host}/api/v1/bank.account"
-    headers = {"Authorization": f"Bearer {token}"}
+    url = f"{rest_url}/bank/account"
     params = {"select": "account_id,status", "status": "eq.good_standing"}
 
     print(f"Fetching only good_standing accounts:")

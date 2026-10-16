@@ -37,7 +37,7 @@ These are unstructured analyst notes, the kind of data that's hard to search wit
 
 ### Step 2, full-text search
 
-Full-text search ranks results by relevance. Here's a query to find notes mentioning "wire" or "fraud":
+Full-text search ranks results by relevance. Here's a query to find notes mentioning "SPEI" or "takeover":
 
 ```bash
 python pg_search.py --step fts
@@ -48,9 +48,9 @@ The script runs:
 ```sql
 SELECT note_id, account_id, writeup,
        ts_rank(to_tsvector('english', writeup), 
-               to_tsquery('english', 'wire | fraud')) as rank
+               to_tsquery('english', 'spei | takeover')) as rank
   FROM bank.case_note
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire | fraud')
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei | takeover')
  ORDER BY rank DESC
  LIMIT 5;
 ```

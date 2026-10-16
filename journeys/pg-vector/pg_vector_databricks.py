@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will create the pgvector extension, add embeddings to instruments, populate them with deterministic vectors, run a similarity search to find comparable instruments, and create an HNSW index for faster lookups at scale.
 # MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. Needs: the `vector` (pgvector) extension, which this notebook creates. No model endpoint: embeddings are a deterministic hash.
 
 # COMMAND ----------
 
@@ -159,7 +159,7 @@ print(f"  Updated {len(instruments)} instruments with embeddings")
 # MAGIC ```sql
 # MAGIC SELECT instrument_id, name, embedding <-> embedding_query AS distance
 # MAGIC FROM bank.instrument
-# MAGIC WHERE instrument_id != 'P-001'
+# MAGIC WHERE instrument_id != 'INS-QTZL'
 # MAGIC ORDER BY embedding <-> embedding_query
 # MAGIC LIMIT 5;
 # MAGIC ```
@@ -168,12 +168,14 @@ print(f"  Updated {len(instruments)} instruments with embeddings")
 
 with connect() as conn:
     with conn.cursor() as cur:
-        cur.execute("SELECT instrument_id, name FROM bank.instrument LIMIT 1")
+        # the reference instrument and its stored embedding (same as pg_vector.py)
+        cur.execute("SELECT instrument_id, name, embedding::text FROM bank.instrument WHERE instrument_id = %s",
+                    ["INS-QTZL"])
         query_part = cur.fetchone()
         query_part_id = query_part[0]
         query_part_name = query_part[1]
 
-query_embedding = hash_to_embedding(query_part_name, 768)
+query_embedding = query_part[2]
 
 with connect() as conn:
     with conn.cursor() as cur:

@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC Each step shows the real interface: SQL where the step is a query, and Python for control operations.
 # MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. Needs: nothing beyond setup (JSONB and GIN are built into Postgres).
 
 # COMMAND ----------
 
