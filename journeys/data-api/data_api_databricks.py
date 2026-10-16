@@ -1,20 +1,76 @@
 # Databricks notebook source
-# MAGIC %md
-# MAGIC # Query via REST: the Data API, step by step
-# MAGIC
-# MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will make HTTP requests to the Lakebase Data API using Databricks OAuth tokens. If the Data API is enabled on your instance, you will fetch and filter data as JSON. If it is not enabled, the notebook shows you how to enable it.
-# MAGIC
-# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below. Needs: the **Data API enabled on your branch** with the `bank` schema exposed, and your Postgres role set up for it by your instructor (Step 3 explains). Without it, the REST steps skip themselves.
+# MAGIC %md-sandbox
+# MAGIC <div style="display:flex; align-items:center; gap:10px; padding:8px 16px; background:#F9F7F4; border-bottom:2px solid #E0E0E0; font-family:sans-serif; line-height:1;">
+# MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
+# MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
+# MAGIC   <span style="color:#999;">|</span>
+# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 5 of 6 · Lakebase Data API</span>
+# MAGIC </div>
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Run first: install the driver and pick your branch
+# MAGIC # Lakebase Data API
+# MAGIC #### Duration: 20 minutes
+# MAGIC
+# MAGIC *Journey 5 of 6 in the App developers track. So far every query went through a Postgres connection; this journey reads the same tables over HTTPS.*
+# MAGIC
+# MAGIC ## Overview
+# MAGIC
+# MAGIC A mobile banking team wants account data in its app, but a phone shouldn't hold a database connection
+# MAGIC or a Postgres driver. It speaks HTTPS and JSON.
+# MAGIC
+# MAGIC The **Lakebase Data API** exposes your tables as a REST API: `GET <url>/bank/account` returns rows as
+# MAGIC JSON, with filters and column selection as URL parameters, authenticated with a Databricks OAuth
+# MAGIC token. In this lab you find your branch's Data API, get a token, and call it. **Not yet tested end to
+# MAGIC end:** the REST calls follow the Databricks documentation, but the account that built the workshop owns
+# MAGIC the project, and the project owner can't call the Data API; the setup checks were run.
+# MAGIC
+# MAGIC ## Learning objectives
+# MAGIC
+# MAGIC By the end of this lab, you will be able to:
+# MAGIC
+# MAGIC 1. **Find your branch's Data API URL** and what has to be set up for it.
+# MAGIC 2. **Authenticate with an OAuth token** in the `Authorization` header.
+# MAGIC 3. **Read and filter rows over HTTPS** with REST query parameters.
+# MAGIC 4. **Compare the REST call with the SQL** it replaces, and know when each fits.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Key concepts
+# MAGIC
+# MAGIC - **REST API:** an HTTPS interface: you `GET` a URL and receive JSON. Any language or device that speaks HTTPS can use it, with no database driver.
+# MAGIC - **Data API:** Lakebase's REST interface to your tables (PostgREST-compatible). It's enabled per branch, and only exposes the schemas you choose.
+# MAGIC - **OAuth token (JWT):** a short-lived signed token that proves who you are. The Data API needs one in the `Authorization: Bearer` header.
+# MAGIC - **`authenticator` role:** the Postgres role the Data API connects as. It switches to your role for each request, so your role must be set up for it (an instructor step).
+# MAGIC
+# MAGIC More terms are defined in `docs/glossary.md` in the workshop folder.
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ## A. Setup
+# MAGIC
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Before you start</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     Run <code>00-setup/setup_databricks</code> once to create your branch and load the bank.
+# MAGIC     Attach this notebook to <strong>serverless</strong> compute.
+# MAGIC     Needs: the <strong>Data API enabled on your branch</strong> with the <code>bank</code> schema exposed, and your Postgres role set up for it by your instructor (C1 explains). Without it, the REST steps skip themselves.
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### A1. Install the driver and pick your branch
+# MAGIC
 # MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
 # MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
-# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook.
-# MAGIC `LB_BRANCH` defaults to the branch `00-setup/setup_databricks` created for you. Change a widget
-# MAGIC only if you used a different project or branch name.
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook. `LB_BRANCH` defaults to
+# MAGIC the branch `00-setup/setup_databricks` created for you. Change a widget only if you used a
+# MAGIC different project or branch name.
 
 # COMMAND ----------
 
@@ -33,8 +89,34 @@ notebook_env(dbutils);
 
 # COMMAND ----------
 
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** `signed in as` your email, followed by your project, branch, and schema:
+# MAGIC
+# MAGIC ```
+# MAGIC signed in as alex.kim@example.com
+# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_BRANCH = u-alex-kim
+# MAGIC   LB_SCHEMA = bank
+# MAGIC ```
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><code>databricks-sdk ... predates the Lakebase API</code>: rerun the install cell and the restart cell, then this one.</li>
+# MAGIC       <li><code>Fill in LB_BRANCH in the widgets at the top of the notebook</code>: type your branch name in the <code>LB_BRANCH</code> box, then rerun this cell.</li>
+# MAGIC       <li>The widgets show an old branch name: run <code>dbutils.widgets.removeAll()</code> in a new cell, then rerun this one.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
 # MAGIC %md
-# MAGIC ## Setup, install httpx and get your connection info
+# MAGIC ### A2. Load the HTTP client
+# MAGIC
+# MAGIC This cell loads `httpx` if it's installed, or a small stand-in built on `requests`, plus the workshop
+# MAGIC helpers.
 
 # COMMAND ----------
 
@@ -74,15 +156,20 @@ print("HTTP client ready (httpx or requests shim).")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1, Find your branch's Data API URL
+# MAGIC **Expected result:** `HTTP client ready (httpx or requests shim).`
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## B. Connect
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### B1. Find your branch's Data API URL
 # MAGIC
-# MAGIC The Data API is enabled per branch. Its base URL comes from the branch's Data API settings; requests
-# MAGIC go to `<url>/<schema>/<table>`, for example `<url>/bank/account`.
-# MAGIC
-# MAGIC **Not yet tested end to end.** The REST calls in Steps 3 to 5 follow the Databricks documentation, but
-# MAGIC they haven't been run successfully in the workshop's workspace: the account that built the workshop
-# MAGIC owns the project, and the Data API can't be called as the project owner. The setup checks in Steps 1
-# MAGIC and 3 were run.
+# MAGIC The Data API is enabled per branch. Its base URL comes from the branch's Data API settings, and
+# MAGIC requests go to `<url>/<schema>/<table>`, for example `<url>/bank/account`.
 
 # COMMAND ----------
 
@@ -108,8 +195,33 @@ print(f"  Data API URL: {rest_url or '(the Data API is not enabled on this branc
 
 # COMMAND ----------
 
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** your project and branch, the endpoint host, and the Data API URL, or `(the Data API is not
+# MAGIC enabled on this branch)`:
+# MAGIC
+# MAGIC ```
+# MAGIC Connection info:
+# MAGIC   Project: bank
+# MAGIC   Branch: u-alex-kim
+# MAGIC   Host: ep-....database.us-east-2.cloud.databricks.com
+# MAGIC   Data API URL: https://ep-....database.us-east-2.cloud.databricks.com/api/2.0/workspace/<workspace id>/rest/databricks_postgres
+# MAGIC ```
+# MAGIC
+# MAGIC **What this proves:** the REST endpoint belongs to your branch: it sits on the same host you've been connecting to with SQL.
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><code>Missing required env var LB_PROJECT</code> or <code>KeyError: 'LB_PROJECT'</code>: the A1 cells didn't run in this session. Run the three A1 cells, then this one.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
 # MAGIC %md
-# MAGIC ## Step 2, Get an OAuth token from Databricks
+# MAGIC ### B2. Get an OAuth token
 # MAGIC
 # MAGIC The Data API accepts a Databricks OAuth token (a JWT) in the `Authorization: Bearer` header. In a
 # MAGIC notebook, the simplest way to get one is the short-lived database credential, valid for about an hour.
@@ -132,7 +244,25 @@ print(f"  Token: {token[:20]}... (truncated)")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3, Check that the Data API answers for your branch
+# MAGIC **Expected result:** `OAuth token acquired.` and the first characters of the token.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## C. Call the API
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### C1. Check that the Data API answers
+# MAGIC
+# MAGIC A `GET` for one account. The answer tells you what, if anything, is missing:
+# MAGIC
+# MAGIC - **200:** ready.
+# MAGIC - **Not enabled:** enable it on your branch (the cell prints how) and add `bank` under **Exposed schemas**.
+# MAGIC - **406:** the `bank` schema isn't exposed.
+# MAGIC - **403 `permission denied to set role`:** your Postgres role isn't set up for the Data API; your
+# MAGIC   instructor creates it with `databricks_create_role()` and grants it to `authenticator`.
 
 # COMMAND ----------
 
@@ -146,7 +276,7 @@ if not rest_url:
     print("  1. Open the Lakebase Postgres app, then your project and your branch")
     print("  2. Open Data API and choose Enable Data API")
     print("  3. Under Exposed schemas, add bank")
-    print("  4. Re-run this notebook from Step 1")
+    print("  4. Re-run this notebook from B1")
 else:
     url = f"{rest_url}/bank/account"
     print(f"Checking Data API:")
@@ -176,13 +306,37 @@ else:
 
 # COMMAND ----------
 
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** `SUCCESS: the Data API answers for bank.account` once everything is set up. In the workshop's
+# MAGIC own test run, as the project owner, it stopped here, as expected:
+# MAGIC
+# MAGIC ```
+# MAGIC 403: your Postgres role isn't set up for the Data API yet.
+# MAGIC   Your role must be created with databricks_create_role() and granted to the
+# MAGIC   Data API's 'authenticator' role. Ask your instructor. (The project owner's
+# MAGIC   account can't be used with the Data API.)
+# MAGIC ```
+# MAGIC
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">See it in the UI (optional)</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     Open the <strong>Lakebase Postgres</strong> app, then your project and your branch, and choose <strong>Data API</strong>: it shows whether the API is enabled, its URL, and the exposed schemas.
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
 # MAGIC %md
-# MAGIC ## Step 4, Fetch all accounts via REST (if enabled)
+# MAGIC ### C2. Read all accounts over HTTPS
+# MAGIC
+# MAGIC ```
+# MAGIC GET <url>/bank/account
+# MAGIC ```
 
 # COMMAND ----------
 
 if not data_api_enabled:
-    print("Skipping: the Data API isn't ready on your branch (see Step 3).")
+    print("Skipping: the Data API isn't ready on your branch (see C1).")
 else:
     url = f"{rest_url}/bank/account"
 
@@ -205,7 +359,20 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5, Filter with query parameters
+# MAGIC **Expected result:** `Result: 8 accounts`, then the first one as JSON. (Not yet run successfully in the workshop's
+# MAGIC workspace; see the note at the top.) If C1 didn't succeed, the cell prints `Skipping`.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### C3. Filter and pick columns
+# MAGIC
+# MAGIC REST query parameters do the work of `WHERE` and `SELECT`: `status=eq.good_standing` filters, and
+# MAGIC `select=account_id,status` picks the columns.
+# MAGIC
+# MAGIC ```
+# MAGIC GET <url>/bank/account?select=account_id,status&status=eq.good_standing
+# MAGIC ```
 
 # COMMAND ----------
 
@@ -235,12 +402,21 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6, Compare REST to SQL
-# MAGIC
-# MAGIC The same query in SQL:
+# MAGIC **Expected result:** `Result: 5 good_standing accounts` and three of them, such as `{'account_id': 'CTA-100234', 'status': 'good_standing'}`
+# MAGIC (not yet run successfully; see the note at the top). If C1 didn't succeed, the cell prints `Skipping`.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## D. REST and SQL
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### D1. The same question in SQL
 # MAGIC
 # MAGIC ```sql
-# MAGIC SELECT account_id, status FROM bank.account WHERE status = 'good_standing'
+# MAGIC SELECT account_id, status FROM bank.account WHERE status = 'good_standing';
 # MAGIC ```
 
 # COMMAND ----------
@@ -268,15 +444,65 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## What you learned
+# MAGIC **Expected result:** when the Data API is ready, `SQL result: 5 rows` and the same accounts as C3. Otherwise
+# MAGIC `Skipping: Data API is not enabled.`
 # MAGIC
-# MAGIC The Data API lets you query Lakebase via HTTP using Databricks OAuth tokens, perfect for web applications, mobile apps, or any client that speaks JSON and REST. The API supports filtering (like SQL WHERE), column selection (like SQL SELECT), and aggregates. Once enabled, the Data API bridges PostgreSQL and HTTP-based clients without needing a direct database connection.
+# MAGIC **What this proves:** the REST call and the SQL read the same rows; the Data API is another door into the same tables.
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ##### EXPAND FOR ADDITIONAL NOTES
 # MAGIC
-# MAGIC Key takeaways:
+# MAGIC <details>
+# MAGIC <summary><strong>REST or SQL?</strong></summary>
 # MAGIC
-# MAGIC - OAuth tokens expire in 1 hour; refresh before making long-running scripts.
-# MAGIC - The Data API respects row-level security (RLS) and role-based access control (RBAC) from your Lakebase config.
-# MAGIC - For bulk operations or complex joins, direct SQL is faster than multiple REST calls.
+# MAGIC Use the Data API for clients that can't, or shouldn't, hold a database connection: browsers, mobile apps,
+# MAGIC partner integrations. It respects the same Postgres roles and row-level security as SQL. Use SQL for
+# MAGIC joins, bulk work, and anything performance-critical, where one query beats many HTTP calls.
+# MAGIC
+# MAGIC </details>
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ##### Check your understanding
+# MAGIC
+# MAGIC <details>
+# MAGIC <summary><strong>1. What URL returns the `bank.account` table?</strong></summary>
+# MAGIC
+# MAGIC `<your branch's Data API URL>/bank/account`.
+# MAGIC
+# MAGIC </details>
+# MAGIC
+# MAGIC <details>
+# MAGIC <summary><strong>2. Why can't the project owner's account call the Data API?</strong></summary>
+# MAGIC
+# MAGIC The Data API connects as `authenticator` and switches to the caller's role; the owner's role can't be granted to `authenticator`.
+# MAGIC
+# MAGIC </details>
+# MAGIC
+# MAGIC <details>
+# MAGIC <summary><strong>3. What do `status=eq.good_standing` and `select=account_id,status` correspond to in SQL?</strong></summary>
+# MAGIC
+# MAGIC `WHERE status = 'good_standing'` and `SELECT account_id, status`.
+# MAGIC
+# MAGIC </details>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## E. Conclusion
+# MAGIC
+# MAGIC In this lab you found your branch's Data API, got a token, and called it. Key takeaways:
+# MAGIC
+# MAGIC 1. **The Data API turns tables into REST endpoints,** `<url>/<schema>/<table>`, returning JSON.
+# MAGIC 2. **It's enabled per branch** and exposes only the schemas you choose.
+# MAGIC 3. **Every call carries an OAuth token,** and the API acts as the caller's Postgres role, so the usual
+# MAGIC    permissions and row-level security apply.
+# MAGIC 4. **REST suits clients without a database driver;** SQL stays best for heavy queries.
+# MAGIC
+# MAGIC The last journey in this track puts a full web app on the same bank.
 
 # COMMAND ----------
 

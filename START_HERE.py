@@ -64,10 +64,10 @@
 # MAGIC | - | ------- | ---- | -------------- |
 # MAGIC | 1 | <a href="$./journeys/pg-json/pg_json_databricks">JSON Data with JSONB</a> | 20 min | Store varying instrument and fund spec sheets as JSONB, query them in SQL, and index them with GIN. |
 # MAGIC | 2 | <a href="$./journeys/pg-vector/pg_vector_databricks">Vector Similarity Search</a> | 20 min | Find the instruments most similar to a holding by embedding similarity, next to your transactional data. |
-# MAGIC | 3 | <a href="$./journeys/pg-search/pg_search_databricks">Full-Text and Fuzzy Search</a> | 30 min | Keyword, typo-tolerant, and hybrid search over fraud and AML case notes. |
+# MAGIC | 3 | <a href="$./journeys/pg-search/pg_search_databricks">Full-Text and Fuzzy Search</a> | 30 min | Keyword and typo-tolerant search over fraud and AML case notes, and how hybrid search with vectors would work. |
 # MAGIC | 4 | <a href="$./journeys/pg-booking/pg_booking_databricks">Preventing Overlapping Schedules</a> | 20 min | The database refuses two overlapping settlement windows on the same account. |
-# MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks">Lakebase Data API</a> | 20 min | Query your tables over HTTPS with an OAuth token and get JSON back. |
-# MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks">Building a Databricks App on Lakebase</a> | 45 min | Deploy a FastAPI dashboard on Databricks Apps, with Lakebase as its backend. |
+# MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks">Lakebase Data API</a> | 20 min | Query your tables over HTTPS with an OAuth token and get JSON back. Needs the Data API enabled on your branch. |
+# MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks">Building a Databricks App on Lakebase</a> | 45 min | Deploy a FastAPI dashboard on Databricks Apps from a notebook, with Lakebase as its backend. Needs permission to create apps. |
 # MAGIC
 # MAGIC ### Agent developers (about 1.5 hours)
 # MAGIC

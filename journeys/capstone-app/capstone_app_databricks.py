@@ -11,9 +11,9 @@
 
 # MAGIC %md
 # MAGIC # Building a Databricks App on Lakebase
-# MAGIC #### Duration: about 45 minutes
+# MAGIC #### Duration: 45 minutes
 # MAGIC
-# MAGIC *Journey 6 of 6. The earlier journeys used Lakebase from a notebook. This one puts a real web app in front of your branch.*
+# MAGIC *Journey 6 of 6 in the App developers track. The earlier journeys used Lakebase from a notebook. This one puts a real web app in front of your branch.*
 # MAGIC
 # MAGIC ## Overview
 # MAGIC
@@ -23,7 +23,7 @@
 # MAGIC
 # MAGIC The workshop already includes that app: a FastAPI backend and a single-page UI in this journey's
 # MAGIC `app/` folder. In this lab you deploy it to **Databricks Apps** from this notebook, give the app its
-# MAGIC own access to your branch, and call it to see it read the bank. You don't write any app code.
+# MAGIC own access to your branch, and open it to see it read the bank. You don't write any app code.
 # MAGIC
 # MAGIC ## Learning objectives
 # MAGIC
@@ -55,9 +55,9 @@
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Before you start</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     Run <code>00-setup/setup_databricks</code> once to create your branch and load the bank.
-# MAGIC     Attach this notebook to <strong>serverless</strong> compute. You need permission to create
-# MAGIC     Databricks Apps in this workspace, and <code>CAN_MANAGE</code> on the Lakebase project (the class
-# MAGIC     setup gives you both). Creating the app and its first deployment take a few minutes.
+# MAGIC     Attach this notebook to <strong>serverless</strong> compute.
+# MAGIC     You need permission to create Databricks Apps in this workspace, and <code>CAN_MANAGE</code> on the
+# MAGIC     Lakebase project (the class setup gives you both). Creating the app and its first deployment take a few minutes.
 # MAGIC   </div>
 # MAGIC </div>
 
@@ -86,6 +86,29 @@ import os, sys
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import notebook_env
 notebook_env(dbutils);
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC **Expected result:** `signed in as` your email, followed by your project, branch, and schema:
+# MAGIC
+# MAGIC ```
+# MAGIC signed in as alex.kim@example.com
+# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_BRANCH = u-alex-kim
+# MAGIC   LB_SCHEMA = bank
+# MAGIC ```
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><code>databricks-sdk ... predates the Lakebase API</code>: rerun the install cell and the restart cell, then this one.</li>
+# MAGIC       <li><code>Fill in LB_BRANCH in the widgets at the top of the notebook</code>: type your branch name in the <code>LB_BRANCH</code> box, then rerun this cell.</li>
+# MAGIC       <li>The widgets show an old branch name: run <code>dbutils.widgets.removeAll()</code> in a new cell, then rerun this one.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
 
 # COMMAND ----------
 
@@ -135,7 +158,7 @@ print("source path:", SOURCE)
 # MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     <ul style="margin:0; padding-left:20px;">
-# MAGIC       <li><code>KeyError: 'LB_PROJECT'</code>: the A1 cells didn't run in this session. Run the three A1 cells, then this one.</li>
+# MAGIC       <li><code>Missing required env var LB_PROJECT</code> or <code>KeyError: 'LB_PROJECT'</code>: the A1 cells didn't run in this session. Run the three A1 cells, then this one.</li>
 # MAGIC     </ul>
 # MAGIC   </div>
 # MAGIC </div>
@@ -144,6 +167,11 @@ print("source path:", SOURCE)
 
 # MAGIC %md
 # MAGIC ## B. Create the app
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### B1. Create the app
 # MAGIC
 # MAGIC Creating an app reserves its name and URL, starts its compute, and creates the **service principal**
 # MAGIC the app will run as. If your app already exists from an earlier run, the cell reuses it.
@@ -165,12 +193,10 @@ print("app URL:          ", app.url)
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `created app bank-dash-alex-kim in 135s` on a test run (about two minutes),
-# MAGIC then the app's service principal id (a UUID) and its URL, like
-# MAGIC `https://bank-dash-alex-kim-<workspace id>.aws.databricksapps.com`.
+# MAGIC **Expected result:** `created app bank-dash-alex-kim in 135s` on a test run (about two minutes), then the app's service
+# MAGIC principal id (a UUID) and its URL, like `https://bank-dash-alex-kim-<workspace id>.aws.databricksapps.com`.
 # MAGIC
-# MAGIC **What this proves:** the app exists and has its own identity. Nothing can read your data yet: the
-# MAGIC service principal has no permissions.
+# MAGIC **What this proves:** the app exists and has its own identity. Nothing can read your data yet: the service principal has no permissions.
 # MAGIC
 # MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
@@ -186,7 +212,10 @@ print("app URL:          ", app.url)
 
 # MAGIC %md
 # MAGIC ## C. Give the app access to your branch
-# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ### C1. Project permission
 # MAGIC
 # MAGIC The app looks up your branch and asks for a short-lived database credential, both through the
@@ -239,20 +268,22 @@ with psycopg.connect(host=host, port=5432, dbname="databricks_postgres", user=w.
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Expected result:**
-# MAGIC
-# MAGIC ```
+# MAGIC **Expected result:** ```
 # MAGIC created Postgres role for the app
 # MAGIC granted read access to schema bank
 # MAGIC ```
 # MAGIC
-# MAGIC **What this proves:** access is granted in two places, the workspace and the database, and both are
-# MAGIC scoped: the app can read your branch's `bank` tables, and nothing else.
+# MAGIC **What this proves:** access is granted in two places, the workspace and the database, and both are scoped: the app can read your branch's `bank` tables, and nothing else.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## D. Deploy the app
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### D1. Deploy
 # MAGIC
 # MAGIC Deploying takes a snapshot of the `app/` folder and starts it. The cell passes the project, branch and
 # MAGIC schema as environment variables, so the app serves **your** branch.
@@ -276,8 +307,7 @@ print(dep.status.message)
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">See it in the UI (optional)</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Open <strong>Compute</strong> → <strong>Apps</strong> and select your app. The <strong>Deployments</strong> tab shows
-# MAGIC     this deployment, and <strong>Logs</strong> shows the app starting up.
+# MAGIC     Open <strong>Compute</strong> → <strong>Apps</strong> and select your app. The <strong>Deployments</strong> tab shows this deployment, and <strong>Logs</strong> shows the app starting up.
 # MAGIC   </div>
 # MAGIC </div>
 # MAGIC
@@ -294,6 +324,11 @@ print(dep.status.message)
 
 # MAGIC %md
 # MAGIC ## E. Open the app
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### E1. Open the app
 # MAGIC
 # MAGIC Databricks Apps only accept a signed-in user's browser session (or an OAuth token), so you open the
 # MAGIC app in a new browser tab rather than from this notebook. The cell prints the links. The app also has
@@ -318,8 +353,7 @@ for path, what in [("/", "the dashboard UI"),
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `app status: RUNNING | compute: ACTIVE`, then six links. Opened in the browser, a test
-# MAGIC run returned:
+# MAGIC **Expected result:** `app status: RUNNING | compute: ACTIVE`, then six links. Opened in the browser, a test run returned:
 # MAGIC
 # MAGIC - `/api/health`: `{"ok":true,"identity":"<the app's service principal id>","project":"bank","branch":"u-yourname","schema":"bank"}`
 # MAGIC - `/api/accounts`: the 8 accounts, starting `{"account_id":"CTA-100234","branch_id":"BR-CDMX","line":"Checking",...}`
@@ -327,8 +361,7 @@ for path, what in [("/", "the dashboard UI"),
 # MAGIC - `/api/holdings/FUND-GROWTH-A`: the fund's cash, equity sleeve and Zafiro Software at depth 1, and the sleeve's holdings at depth 2
 # MAGIC - `/api/casenotes?q=SPEI`: the two case notes that mention SPEI
 # MAGIC
-# MAGIC **What this proves:** the app reads your branch as its own identity: `/api/health` shows the service
-# MAGIC principal, not you, and the data is your bank.
+# MAGIC **What this proves:** the app reads your branch as its own identity: `/api/health` shows the service principal, not you, and the data is your bank.
 # MAGIC
 # MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
@@ -344,9 +377,14 @@ for path, what in [("/", "the dashboard UI"),
 
 # MAGIC %md
 # MAGIC ## F. Clean up (optional)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### F1. Delete the app when you're done
 # MAGIC
 # MAGIC A running app keeps its compute on. When you're done, delete it: this removes the app, its URL and its
-# MAGIC service principal. Run the next cell only when you no longer need the dashboard.
+# MAGIC service principal. Remove the `#` in the next cell and run it only when you no longer need the dashboard.
 
 # COMMAND ----------
 
@@ -355,9 +393,40 @@ for path, what in [("/", "the dashboard UI"),
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC **Expected result:** nothing while the line is commented out; with the `#` removed, `deleted app bank-dash-...`.
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ##### Check your understanding
+# MAGIC
+# MAGIC <details>
+# MAGIC <summary><strong>1. Which identity does the app use to read your branch?</strong></summary>
+# MAGIC
+# MAGIC Its own service principal, created with the app; not yours.
+# MAGIC
+# MAGIC </details>
+# MAGIC
+# MAGIC <details>
+# MAGIC <summary><strong>2. Which two permissions does the app need?</strong></summary>
+# MAGIC
+# MAGIC `CAN_USE` on the Lakebase project, and a Postgres role on the branch with read access to `bank`.
+# MAGIC
+# MAGIC </details>
+# MAGIC
+# MAGIC <details>
+# MAGIC <summary><strong>3. Why is there no password anywhere?</strong></summary>
+# MAGIC
+# MAGIC The app asks Lakebase for a short-lived credential each time it connects, using its Databricks identity.
+# MAGIC
+# MAGIC </details>
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## G. Conclusion
 # MAGIC
-# MAGIC In this lab you created a Databricks App, gave it access to your branch, deployed it, and called it.
+# MAGIC In this lab you created a Databricks App, gave it access to your branch, deployed it, and opened it.
 # MAGIC Key takeaways:
 # MAGIC
 # MAGIC 1. **An app runs as its own service principal,** so it gets exactly the access you grant it.
