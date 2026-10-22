@@ -12,7 +12,8 @@
 # MAGIC %md
 # MAGIC # Start Here
 # MAGIC
-# MAGIC Run the setup notebook once, then work through Part 1. For Part 2, pick one of the two tracks.
+# MAGIC Run the setup notebook once, then work through Part 1. In the workshop we do Part 1 and the
+# MAGIC App developers track. The Agent developers track is for after the workshop.
 # MAGIC Every notebook ends with a link to the next one in its path and a link back to this page.
 # MAGIC
 # MAGIC *Versión en español:* <a href="$./START_HERE_es">Comienza aquí</a>
@@ -56,9 +57,9 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Part 2. Choose one track
+# MAGIC ## Part 2. App developers (in the workshop)
 # MAGIC
-# MAGIC ### App developers (about 2.5 hours)
+# MAGIC **This is the track we do together during the workshop.** About 2.5 hours.
 # MAGIC
 # MAGIC | # | Journey | Time | What you'll do |
 # MAGIC | - | ------- | ---- | -------------- |
@@ -68,9 +69,25 @@
 # MAGIC | 4 | <a href="$./journeys/pg-booking/pg_booking_databricks">Preventing Overlapping Schedules</a> | 20 min | The database refuses two overlapping settlement windows on the same account. |
 # MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks">Lakebase Data API</a> | 20 min | Query your tables over HTTPS with an OAuth token and get JSON back. Needs the Data API enabled on your branch. |
 # MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks">Building a Databricks App on Lakebase</a> | 45 min | Deploy a FastAPI dashboard on Databricks Apps from a notebook, with Lakebase as its backend. Needs permission to create apps. |
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ## After the workshop: Agent developers (on your own)
 # MAGIC
-# MAGIC ### Agent developers (about 1.5 hours)
-# MAGIC
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Not part of the workshop session</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     We don't do this track during the workshop. Work through it on your own afterward, in this same
+# MAGIC     workspace, while the lab is still available. It uses the project and branch from setup; if they're
+# MAGIC     gone, run <code>00-setup/setup_databricks</code> again first. It needs a Foundation Model endpoint.
+# MAGIC     About 1.5 hours.
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC | # | Journey | Time | What you'll do |
 # MAGIC | - | ------- | ---- | -------------- |
 # MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks">Shared Agent Memory</a> | 20 min | Two agents share one memory table: one writes a fraud note, the other reads it and acts on it. Needs a Foundation Model endpoint. |

@@ -12,9 +12,10 @@
 # MAGIC %md
 # MAGIC # Comienza aquí
 # MAGIC
-# MAGIC Ejecuta una vez el notebook de configuración y después avanza por la Parte 1. Para la Parte 2,
-# MAGIC elige una de las dos rutas. Cada notebook termina con un enlace al siguiente de su ruta y otro
-# MAGIC para volver a esta página.
+# MAGIC Ejecuta una vez el notebook de configuración y después avanza por la Parte 1. En el taller hacemos
+# MAGIC la Parte 1 y la ruta de Desarrolladores de aplicaciones. La ruta de Desarrolladores de agentes es para
+# MAGIC después del taller. Cada notebook termina con un enlace al siguiente de su ruta y otro para volver a
+# MAGIC esta página.
 # MAGIC
 # MAGIC *English version:* <a href="$./START_HERE">Start Here</a>
 
@@ -58,9 +59,9 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Parte 2. Elige una ruta
+# MAGIC ## Parte 2. Desarrolladores de aplicaciones (en el taller)
 # MAGIC
-# MAGIC ### Desarrolladores de aplicaciones (unas 2.5 horas)
+# MAGIC **Esta es la ruta que hacemos juntos durante el taller.** Unas 2.5 horas.
 # MAGIC
 # MAGIC | # | Recorrido | Tiempo | Qué vas a hacer |
 # MAGIC | - | --------- | ------ | --------------- |
@@ -70,9 +71,25 @@
 # MAGIC | 4 | <a href="$./journeys/pg-booking/pg_booking_databricks_es">Evitar horarios que se traslapan</a> | 20 min | La base de datos rechaza dos ventanas de liquidación que se traslapan en la misma cuenta. |
 # MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks_es">API de datos de Lakebase</a> | 20 min | Consulta tus tablas por HTTPS con un token OAuth y recibe JSON. Necesita el secret scope `lakebase-workshop` que prepara tu instructor. |
 # MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks_es">Crear una app de Databricks sobre Lakebase</a> | 45 min | Despliega desde un notebook un tablero en FastAPI en Databricks Apps, con Lakebase como backend. Necesita permiso para crear apps. |
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC ## Después del taller: Desarrolladores de agentes (por tu cuenta)
 # MAGIC
-# MAGIC ### Desarrolladores de agentes (unas 1.5 horas)
-# MAGIC
+# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">No es parte de la sesión del taller</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     Esta ruta no se hace durante el taller. Hazla por tu cuenta después, en este mismo workspace,
+# MAGIC     mientras el laboratorio siga disponible. Usa el proyecto y la rama de la configuración; si ya no
+# MAGIC     existen, vuelve a ejecutar primero <code>00-setup/setup_databricks_es</code>. Necesita un endpoint de
+# MAGIC     Foundation Model. Unas 1.5 horas.
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC | # | Recorrido | Tiempo | Qué vas a hacer |
 # MAGIC | - | --------- | ------ | --------------- |
 # MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks_es">Memoria compartida entre agentes</a> | 20 min | Dos agentes comparten una tabla de memoria: uno escribe una nota de fraude y el otro la lee y actúa. Necesita un endpoint de Foundation Model. |
