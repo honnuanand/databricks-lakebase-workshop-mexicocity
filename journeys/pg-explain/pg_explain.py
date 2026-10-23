@@ -25,14 +25,14 @@ def run_seed():
               id BIGSERIAL PRIMARY KEY,
               account_id TEXT,
               ts TIMESTAMPTZ DEFAULT now(),
-              amount_usd NUMERIC
+              amount NUMERIC
             )
             """)
 
             # Seed 50k rows
             cur.execute("""
-            INSERT INTO bank.txn_history (account_id, amount_usd)
-            SELECT 'ACCT-' || (100000 + (g % 100))::TEXT,
+            INSERT INTO bank.txn_history (account_id, amount)
+            SELECT 'CTA-' || (100000 + (g % 100))::TEXT,
                    (g % 1000)::NUMERIC
               FROM generate_series(1, 50000) g
             """)
@@ -48,7 +48,7 @@ def run_explain_before():
 
     sql = """
     EXPLAIN (ANALYZE, BUFFERS)
-    SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010'
+    SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'CTA-100010'
     """
 
     with connect() as conn:
@@ -79,7 +79,7 @@ def run_explain_after():
 
     sql = """
     EXPLAIN (ANALYZE, BUFFERS)
-    SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'ACCT-100010'
+    SELECT COUNT(*) FROM bank.txn_history WHERE account_id = 'CTA-100010'
     """
 
     with connect() as conn:

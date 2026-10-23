@@ -38,7 +38,7 @@ CREATE TABLE txn_partitioned (
     txn_id BIGSERIAL,
     account_id TEXT NOT NULL,
     ts TIMESTAMPTZ NOT NULL,
-    amount_usd NUMERIC(12,2),
+    amount NUMERIC(12,2),
     anomaly_score NUMERIC(6,2),
     PRIMARY KEY (txn_id, ts)
 ) PARTITION BY RANGE (ts)

@@ -14,8 +14,8 @@
 
 ## The scenario
 
-A card transaction lands on account ACCT-100240: a $2,200 charge, overnight, from an unfamiliar
-merchant category, on an account whose utilization is already running hot. The authorization
+A transfer leaves account CTA-100240: MXN 38,500 by SPEI, late at night, to a beneficiary the account
+has never paid before, on an account whose utilization is already running hot. The authorization
 system has milliseconds to decide. Meanwhile the fraud team's analytics run on the lakehouse,
 scoring patterns across millions of transactions. The usual architecture copies operational
 transactions out to an analytics store on a schedule, so the score the authorization path sees is
@@ -59,7 +59,7 @@ the lakehouse the moment it is written, no pipeline to lag.
 
 ## What you'll do
 
-1. Write a new transaction through Lakebase (the $2,200 charge on ACCT-100240).
+1. Write a new transaction through Lakebase (the MXN 38,500 SPEI transfer on CTA-100240).
 2. Compute a fraud-risk score from the transaction's anomaly score and account utilization.
 3. Write that score back onto the transaction row (a `fraud_risk` column).
 4. Read the scored row back from Lakebase at operational latency.

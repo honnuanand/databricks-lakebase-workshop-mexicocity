@@ -54,11 +54,11 @@ python learning_loop.py --step seed
 ```
 
 The script inserts 5 case notes:
-1. ACCT-100240: "Three card-not-present charges overnight... froze the card", clear fraud.
-2. ACCT-300421: "Large outbound wire... just under the reporting threshold", clear AML pattern.
-3. ACCT-200311: "Customer disputes a charge they say posted twice", somewhat unclear.
-4. ACCT-100235: "A few small foreign-currency charges then a larger one", card testing or travel.
-5. ACCT-100240: "Something looked off... maybe the login location? not sure", very vague.
+1. CTA-100240: "Three card-not-present charges overnight... froze the card", clear fraud.
+2. CTA-300421: "Four outbound SPEI transfers... each just under the reporting threshold", clear AML (PLD) pattern.
+3. CTA-200311: "Customer disputes a CoDi payment they say was charged twice", somewhat unclear.
+4. CTA-100235: "A few small USD charges followed by a larger one", card testing or travel.
+5. CTA-100240: "Something looked off... maybe a login from another city? not sure", very vague.
 
 Read them back:
 

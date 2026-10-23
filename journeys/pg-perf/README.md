@@ -14,9 +14,9 @@
 
 ## The scenario
 
-You're running a bank with branches across several regions. The operational database tracks accounts across branches, and each branch sits in exactly one region (a New York branch is US-Northeast; a San Francisco branch is US-West; a London branch is EU-UK). Branch and region are **correlated**: knowing the branch tells you the region.
+You're running a bank with branches across several regions. The operational database tracks accounts across branches, and each branch sits in exactly one region (a CDMX branch is MX-Centro; a Monterrey branch is MX-Noreste; a Guadalajara branch is MX-Occidente). Branch and region are **correlated**: knowing the branch tells you the region.
 
-A query filters accounts by both: "Give me all accounts at BR-NYC in region US-Northeast." By default, the Postgres planner assumes the two columns are independent, it has no idea that a branch fully determines its region. So it estimates the intersection as if they were random, under-estimating by 2 to 3 times the actual rows. That estimate cascades into the rest of the query: the planner chooses the wrong join method, allocates the wrong amount of work memory, picks the wrong scan strategy.
+A query filters accounts by both: "Give me all accounts at BR-CDMX in region MX-Centro." By default, the Postgres planner assumes the two columns are independent, it has no idea that a branch fully determines its region. So it estimates the intersection as if they were random, under-estimating by 2 to 3 times the actual rows. That estimate cascades into the rest of the query: the planner chooses the wrong join method, allocates the wrong amount of work memory, picks the wrong scan strategy.
 
 The DBA's subtle move is to teach the planner the correlation without changing the data: `CREATE STATISTICS ... ON branch_id, region`.
 

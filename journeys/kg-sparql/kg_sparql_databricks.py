@@ -4,7 +4,32 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time, read what happened, then move on. You will load the bank graph and write SPARQL queries: simple queries, multi-hop traversals, and aggregates. Each query is compared to its SQL equivalent.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/` so `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` are set and the bank is loaded on your branch.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Run first: install the driver and pick your branch
+# MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
+# MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook.
+# MAGIC `LB_BRANCH` defaults to the branch `00-setup/setup_databricks` created for you. Change a widget
+# MAGIC only if you used a different project or branch name.
+
+# COMMAND ----------
+
+# MAGIC %pip install "databricks-sdk>=0.120.0" "psycopg[binary]==3.3.4"
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import os, sys
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import notebook_env
+notebook_env(dbutils);
 
 # COMMAND ----------
 
@@ -104,7 +129,7 @@ for row in results:
 # MAGIC %md
 # MAGIC ## Step 3, Multi-hop SPARQL query
 # MAGIC
-# MAGIC Now a harder question: "which funds hold an instrument traded by CP-GOLDMAN?"
+# MAGIC Now a harder question: "which funds hold an instrument traded by CP-ALTAMAR?"
 # MAGIC
 # MAGIC This walks the holdings tree with the `holds+` property path (one or more hops, so it reaches instruments nested under sub-sleeves), then matches the counterparty edge.
 # MAGIC
@@ -113,7 +138,7 @@ for row in results:
 # MAGIC ```sparql
 # MAGIC SELECT DISTINCT ?fund WHERE {
 # MAGIC   ?fund <http://bank.local/holds>+ ?instrument .
-# MAGIC   ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
+# MAGIC   ?instrument <http://bank.local/traded_by> <http://bank.local/CP-ALTAMAR> .
 # MAGIC }
 # MAGIC ```
 
@@ -122,14 +147,14 @@ for row in results:
 query_multihop = """
 SELECT DISTINCT ?fund WHERE {
   ?fund <http://bank.local/holds>+ ?instrument .
-  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-GOLDMAN> .
+  ?instrument <http://bank.local/traded_by> <http://bank.local/CP-ALTAMAR> .
 }
 """
 
 results = g.query(query_multihop)
 funds = [str(row["fund"]).split("/")[-1] for row in results]
 
-print("Multi-hop query result (funds holding an instrument traded by CP-GOLDMAN):")
+print("Multi-hop query result (funds holding an instrument traded by CP-ALTAMAR):")
 if funds:
     for fund in sorted(funds):
         print(f"  {fund}")
@@ -153,7 +178,7 @@ else:
 # MAGIC SELECT DISTINCT t.root_fund
 # MAGIC   FROM tree t
 # MAGIC   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
-# MAGIC  WHERE tc.counterparty_id = 'CP-GOLDMAN'
+# MAGIC  WHERE tc.counterparty_id = 'CP-ALTAMAR'
 # MAGIC    AND t.root_fund LIKE 'FUND-%'
 # MAGIC ```
 # MAGIC
@@ -171,7 +196,7 @@ WITH RECURSIVE tree(root_fund, node) AS (
 SELECT DISTINCT t.root_fund
   FROM tree t
   JOIN bank.trade_counterparty tc ON tc.instrument_id = t.node
- WHERE tc.counterparty_id = 'CP-GOLDMAN'
+ WHERE tc.counterparty_id = 'CP-ALTAMAR'
    AND t.root_fund LIKE 'FUND-%'
 """
 

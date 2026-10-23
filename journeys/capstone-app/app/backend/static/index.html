@@ -1,121 +1,224 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bank dashboard, on Lakebase</title>
+<title>Consola del analista de fraude, sobre Lakebase</title>
 <style>
-  :root { --red:#FF3621; --navy:#0B1B2B; --bg:#F7F9FB; --card:#FFFFFF; --line:#D3DCE5; --dim:#4A5B6B; }
+  :root { --red:#FF3621; --navy:#0B1B2B; --teal:#1B5162; --bg:#F7F9FB; --card:#FFFFFF; --line:#D3DCE5; --dim:#4A5B6B; }
   * { box-sizing: border-box; }
   body { margin:0; font-family: "DM Sans", "Public Sans", system-ui, sans-serif; background:var(--bg); color:var(--navy); }
-  header { background:var(--navy); color:#fff; padding:16px 24px; }
+  header { background:var(--navy); color:#fff; padding:16px 24px 10px; }
   header h1 { margin:0; font-size:18px; font-weight:600; }
-  header .sub { color:#9DB0C2; font-size:13px; margin-top:2px; }
+  header .sub { color:#9DB0C2; font-size:13px; margin-top:4px; }
   .tabs { display:flex; gap:4px; padding:0 24px; background:var(--navy); }
   .tabs button { background:transparent; color:#9DB0C2; border:0; border-bottom:2px solid transparent;
                  padding:10px 14px; font-size:14px; cursor:pointer; }
   .tabs button.active { color:#fff; border-bottom-color:var(--red); }
-  main { padding:24px; max-width:1000px; margin:0 auto; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .lesson { border-left:4px solid var(--teal); background:#EEF4F6; padding:12px 16px; border-radius:4px; margin-bottom:16px; font-size:14px; line-height:1.45; }
+  .lesson strong.title { display:block; color:var(--teal); margin-bottom:4px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
-  table { width:100%; border-collapse:collapse; font-size:14px; }
-  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; } .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
+  h2 { margin:0 0 6px; font-size:15px; } h3 { margin:0 0 6px; font-size:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
   th { color:var(--dim); font-weight:600; }
-  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; }
-  .good_standing { background:#e6f7f4; color:#0A8F86; } .watch { background:#fff4e0; color:#B77A00; }
+  td.label { width:170px; font-weight:600; } td.explain { color:var(--dim); font-size:12px; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; white-space:nowrap; }
+  .good_standing, .ACTIVE { background:#e6f7f4; color:#0A8F86; } .watch, .IDLE { background:#fff4e0; color:#B77A00; }
   .frozen, .closed { background:#fde8e5; color:#E5321F; }
-  input[type=text] { padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; width:280px; }
-  .muted { color:var(--dim); font-size:13px; }
-  .err { color:var(--red); }
-  code { background:#eef2f6; padding:1px 5px; border-radius:4px; font-family:"DM Mono",monospace; font-size:13px; }
+  input[type=text], select, textarea { padding:7px 9px; border:1px solid var(--line); border-radius:6px; font-size:14px; font-family:inherit; }
+  textarea { width:100%; height:56px; margin-top:6px; }
+  button.go { padding:7px 12px; border:0; border-radius:6px; background:var(--navy); color:#fff; cursor:pointer; }
+  button.chip { padding:4px 10px; border:1px solid var(--line); border-radius:14px; background:#fff; cursor:pointer; font-size:12px; margin:4px 4px 0 0; }
+  .modes { margin:10px 0 4px; } .modes label { margin-right:14px; font-size:14px; cursor:pointer; }
+  .mode-help { color:var(--dim); font-size:13px; margin:4px 0 10px; }
+  .muted { color:var(--dim); font-size:12px; margin-top:6px; }
+  .err { color:var(--red); font-size:13px; }
+  code { background:#eef2f6; padding:1px 5px; border-radius:4px; font-family:"DM Mono",monospace; font-size:12px; }
+  details { margin-top:8px; } summary { cursor:pointer; color:var(--teal); font-size:13px; }
+  pre { background:#0B1B2B; color:#E6EDF3; padding:10px; border-radius:6px; font-size:12px; overflow:auto; margin:6px 0 0; white-space:pre-wrap; }
 </style>
 </head>
 <body>
   <header>
-    <h1>Bank dashboard</h1>
-    <div class="sub" id="ident">connecting to Lakebase...</div>
+    <h1>Consola del analista de fraude</h1>
+    <div class="sub">Una app de Databricks sobre tu rama de Lakebase. Cada pestaña resume un recorrido del taller.</div>
   </header>
   <div class="tabs">
-    <button data-tab="accounts" class="active">Accounts</button>
-    <button data-tab="holdings">Holdings look-through</button>
-    <button data-tab="notes">Case notes</button>
+    <button data-tab="db" class="active">1. Tu base de datos</button>
+    <button data-tab="search">2. Búsqueda</button>
+    <button data-tab="account">3. Cuenta</button>
+    <button data-tab="instruments">4. Instrumentos</button>
   </div>
-  <main id="view"><p class="muted">Loading...</p></main>
+  <main id="view"><p class="muted">Cargando...</p></main>
 
 <script>
 const view = document.getElementById("view");
-const api = (p) => fetch(p).then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)));
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const api = (p, opts) => fetch(p, opts).then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)));
+const fail = (e) => `<p class="err">${esc(e.detail || e)}</p>`;
+const STATUS = {good_standing: "al corriente", watch: "en observación", frozen: "congelada", closed: "cerrada"};
+const CATEGORY = {fraud: "fraude", aml: "PLD", phishing: "phishing", mule: "mula de dinero", dispute: "aclaración", cleared: "cerrado sin hallazgos"};
+const pill = (s, label) => `<span class="pill ${esc(s)}" title="${esc(s)}">${esc(label ?? STATUS[s] ?? s)}</span>`;
+const sqlBox = (title, text) => `<details open><summary>${esc(title)}</summary><pre>${esc(text)}</pre></details>`;
 
-async function showIdent() {
-  try { const h = await api("/api/health");
-    document.getElementById("ident").textContent =
-      `serving ${h.schema} on branch ${h.branch} · as ${h.identity}`;
-  } catch { document.getElementById("ident").textContent = "not connected"; }
-}
-
-const pill = (s) => `<span class="pill ${s}">${s}</span>`;
-
-async function accounts() {
-  view.innerHTML = `<p class="muted">Loading accounts...</p>`;
+// ---- Tab 1: your database (Part 1) ----
+async function tabDb() {
+  view.innerHTML = `<div class="lesson"><strong class="title">Resume la Parte 1: tu proyecto, tu rama y escalar a cero</strong>
+    La app lee en vivo la misma base de datos que usaste en todos los recorridos. Esta pestaña muestra de dónde lee y
+    con qué identidad, con lo que aprendiste en <em>Ramas de base de datos</em> y <em>Escalar a cero</em>.</div>
+    <div class="card" id="dbout"><p class="muted">Leyendo tu proyecto...</p></div>`;
   try {
-    const rows = await api("/api/accounts");
-    view.innerHTML = `<div class="card"><table>
-      <tr><th>Account</th><th>Branch</th><th>Line</th><th>Type</th><th>Status</th><th>Health</th></tr>
-      ${rows.map(m => `<tr><td><code>${m.account_id}</code></td><td>${m.branch_id}</td>
-        <td>${m.line}</td><td>${m.type}</td><td>${pill(m.status)}</td>
-        <td>${m.health_pct}%</td></tr>`).join("")}
-    </table></div>
-    <p class="muted">Fetched with a direct SQL query on Lakebase (<code>SELECT ... FROM account</code>).</p>`;
-  } catch (e) { view.innerHTML = `<p class="err">${e.detail || e}</p>`; }
+    const h = await api("/api/health");
+    const row = (label, value, explain) => `<tr><td class="label">${label}</td><td>${value}</td><td class="explain">${explain}</td></tr>`;
+    $("dbout").innerHTML = `<table>
+      ${row("Proyecto", `<code>${esc(h.project.id)}</code>`, `Tu propio proyecto de Lakebase, creado en la configuración: una base de datos Postgres ${esc(h.project.pg_version)} con sus ramas y su cómputo.`)}
+      ${row("Rama", `<code>${esc(h.branch.id)}</code>`, `Tu rama de trabajo. Se bifurcó de <code>${esc(h.branch.source)}</code> con copy-on-write: no se copiaron datos. Tamaño lógico: ${esc(h.branch.size_mb)} MB.`)}
+      ${row("Esquema", `<code>${esc(h.schema)}</code>`, "La carpeta de tablas del banco: cuentas, transacciones, instrumentos y las notas de búsqueda.")}
+      ${row("Endpoint (cómputo)", `<code>${esc(h.endpoint.id)}</code> ${pill(h.endpoint.state, h.endpoint.state)}`, `El servidor de Postgres de tu rama, de ${esc(h.endpoint.cu)}. Se suspende solo después de ${esc(h.endpoint.suspend_after_min)} minutos sin consultas (<code>IDLE</code>, sin costo de cómputo) y la siguiente consulta lo despierta (<code>ACTIVE</code>).`)}
+      ${row("Host", `<code>${esc(h.endpoint.host)}</code>`, "La dirección a la que se conecta la app con el driver de Postgres, en el puerto 5432.")}
+      ${row("La app es", `${esc(h.identity.name)}<br><code>${esc(h.identity.id)}</code>`, "La app no usa tu usuario: corre como su propio <strong>service principal</strong>, con solo los permisos que le dio el notebook: leer el banco.")}
+    </table>
+    <p class="muted">Lo lee la API de Lakebase (<code>get_project</code>, <code>get_branch</code>, <code>list_endpoints</code>) con la identidad de la app.</p>`;
+  } catch (e) { $("dbout").innerHTML = fail(e); }
 }
 
-async function holdings() {
-  view.innerHTML = `<div class="card"><label class="muted">Fund id </label>
-    <input type="text" id="pid" value="FUND-GROWTH-A"> <button id="go">Look through</button></div>
-    <div id="hout"></div>`;
-  const run = async () => {
-    const pid = document.getElementById("pid").value.trim();
-    const out = document.getElementById("hout");
-    out.innerHTML = `<p class="muted">Looking through ${pid}...</p>`;
+// ---- Tab 2: search (Lakebase Search) ----
+const MODE_HELP = {
+  keyword: "<strong>Palabras (BM25, <code>lakebase_text</code>):</strong> encuentra las notas que contienen las palabras de la búsqueda, y premia las palabras raras. Ideal para términos exactos como CLABE o CURP. El puntaje es negativo: menor es más relevante.",
+  semantic: "<strong>Significado (vectores, <code>lakebase_vector</code>):</strong> convierte la pregunta en un embedding con el modelo y ordena las notas por distancia coseno (<code>&lt;=&gt;</code>). Encuentra notas que dicen lo mismo con otras palabras. Menor distancia es más parecido.",
+  hybrid: "<strong>Híbrida (RRF):</strong> toma las 20 primeras de cada búsqueda y le da a cada nota 1 / (60 + posición) por cada lista en la que aparece. Las notas que quedan bien en las dos salen primero.",
+  compare: "<strong>Comparar:</strong> la misma pregunta con las tres búsquedas, lado a lado. Prueba \"CLABE\" (gana Palabras) y \"customer lost control of their account\" (gana Significado).",
+};
+const EXAMPLES = ["customer lost control of their account", "CLABE", "money sent to strangers", "SIM swap"];
+
+async function tabSearch() {
+  view.innerHTML = `<div class="lesson"><strong class="title">Resume el recorrido Lakebase Search</strong>
+    Las mismas 40 notas de fraude y PLD de <code>search_note</code>, con los mismos índices que creaste: <code>lakebase_bm25</code> para
+    palabras y <code>lakebase_ann</code> para significado. Elige un tipo de búsqueda y mira cómo cambia el orden. Todas excluyen los
+    casos cerrados con un <code>WHERE</code> normal y hacen un join con <code>account</code> para mostrar su estado actual. Las notas y
+    las búsquedas están en inglés, como el modelo de embeddings.</div>
+    <div class="card">
+      <input type="text" id="q" style="width:440px" value="${esc(EXAMPLES[0])}"> <button class="go" id="go">Buscar</button>
+      <div>${EXAMPLES.map(x => `<button class="chip" data-q="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+      <div class="modes">
+        <label><input type="radio" name="mode" value="keyword"> Palabras (BM25)</label>
+        <label><input type="radio" name="mode" value="semantic"> Significado (vectores)</label>
+        <label><input type="radio" name="mode" value="hybrid" checked> Híbrida (RRF)</label>
+        <label><input type="radio" name="mode" value="compare"> Comparar las tres</label>
+      </div>
+      <div class="mode-help" id="mhelp"></div>
+      <div id="sout"></div>
+    </div>
+`;
+  const mode = () => document.querySelector("input[name=mode]:checked").value;
+  const help = () => $("mhelp").innerHTML = MODE_HELP[mode()];
+  document.querySelectorAll("input[name=mode]").forEach(r => r.onchange = () => { help(); runSearch(); });
+  document.querySelectorAll("button.chip").forEach(b => b.onclick = () => { $("q").value = b.dataset.q; runSearch(); });
+  $("go").onclick = runSearch; $("q").onkeydown = (e) => { if (e.key === "Enter") runSearch(); };
+  help(); runSearch();
+
+  async function runSearch() {
+    const q = $("q").value.trim(); if (!q) return;
+    const m = mode();
+    $("sout").innerHTML = `<p class="muted">Buscando...</p>`;
     try {
-      const rows = await api("/api/holdings/" + encodeURIComponent(pid));
-      out.innerHTML = rows.length ? `<div class="card"><table>
-        <tr><th>Depth</th><th>Instrument</th><th>Name</th><th>Qty</th></tr>
-        ${rows.map(r => `<tr><td>${r.depth}</td>
-          <td style="padding-left:${8 + r.depth*16}px"><code>${r.instrument_id}</code></td>
-          <td>${r.name || ""}</td><td>${r.qty}</td></tr>`).join("")}
-      </table></div><p class="muted">A recursive CTE walked the holdings tree, through any sleeves.</p>`
-      : `<p class="muted">No holdings for <code>${pid}</code>.</p>`;
-    } catch (e) { out.innerHTML = `<p class="err">${e.detail || e}</p>`; }
-  };
-  document.getElementById("go").onclick = run; run();
+      const r = await api(`/api/search?mode=${m}&q=` + encodeURIComponent(q));
+      $("sout").innerHTML = m === "compare" ? compareView(r) : resultTable(r) + sqlBox("El SQL que se ejecutó", r.sql);
+    } catch (e) { $("sout").innerHTML = fail(e); }
+  }
 }
 
-async function notes() {
-  view.innerHTML = `<div class="card"><label class="muted">Search case notes </label>
-    <input type="text" id="q" placeholder="e.g. card-not-present wire"> <button id="go">Search</button></div>
-    <div id="nout"></div>`;
+function scoreCols(mode) {
+  if (mode === "keyword") return {head: "<th>Puntaje BM25</th>", cell: n => `<td>${Number(n.score).toFixed(3)}</td>`};
+  if (mode === "semantic") return {head: "<th>Distancia</th>", cell: n => `<td>${Number(n.distance).toFixed(3)}</td>`};
+  return {head: "<th>Pos. vectores</th><th>Pos. palabras</th><th>RRF</th>",
+          cell: n => `<td>${n.vector_rank ?? "-"}</td><td>${n.keyword_rank ?? "-"}</td><td>${Number(n.rrf).toFixed(4)}</td>`};
+}
+
+function resultTable(r) {
+  if (r.error) return `<p class="err">${esc(r.error)}</p>`;
+  const s = scoreCols(r.mode);
+  return `<table><tr><th>Nota</th><th>Cuenta</th><th>Categoría</th>${s.head}<th>Texto de la nota</th></tr>
+    ${r.results.map(n => `<tr><td>${n.note_id}</td><td><code>${esc(n.account_id)}</code> ${pill(n.account_status)}</td>
+      <td>${esc(CATEGORY[n.category] ?? n.category)}</td>${s.cell(n)}<td>${esc(n.writeup)}</td></tr>`).join("")}</table>`;
+}
+
+function compareView(r) {
+  const title = {keyword: "Palabras (BM25)", semantic: "Significado (vectores)", hybrid: "Híbrida (RRF)"};
+  return `<div class="grid3">${["keyword", "semantic", "hybrid"].map(m => `<div><h3>${title[m]}</h3>
+    ${r[m].error ? `<p class="err">${esc(r[m].error)}</p>` : `<table>${r[m].results.slice(0, 5).map((n, i) =>
+      `<tr><td>${i + 1}.</td><td><strong>${n.note_id}</strong> ${esc(n.writeup.slice(0, 70))}…</td></tr>`).join("")}</table>`}
+    ${sqlBox("SQL", r[m].sql).replace("<details open>", "<details>")}</div>`).join("")}</div>
+    <p class="muted">Las 5 primeras de cada búsqueda. Fíjate qué notas aparecen solo en una lista y cuáles en las dos.</p>`;
+}
+
+// ---- Tab 3: account (Data API and SQL) ----
+async function tabAccount() {
+  view.innerHTML = `<div class="lesson"><strong class="title">Resume el recorrido API de datos de Lakebase</strong>
+    Dos formas de leer la misma rama. La ficha de la cuenta llega por la <strong>Data API</strong>: una llamada HTTPS que devuelve
+    JSON, sin driver de base de datos, como la usaría una app móvil. Las transacciones llegan por <strong>SQL</strong> con el driver de
+    Postgres. La app llama a la Data API como su service principal, porque la Data API no acepta al dueño del proyecto.</div>
+    <div class="card"><input type="text" id="acct" value="CTA-100240" style="width:140px"> <button class="go" id="ago">Ver cuenta</button>
+      <div class="muted">Prueba también <code>CTA-300421</code> (en observación) o <code>CTA-200311</code> (congelada).</div></div>
+    <div id="aout"></div>`;
   const run = async () => {
-    const q = document.getElementById("q").value.trim();
-    const out = document.getElementById("nout");
-    out.innerHTML = `<p class="muted">Searching...</p>`;
+    const id = $("acct").value.trim();
+    $("aout").innerHTML = `<p class="muted">Leyendo ${esc(id)}...</p>`;
     try {
-      const rows = await api("/api/casenotes?q=" + encodeURIComponent(q));
-      out.innerHTML = `<div class="card"><table>
-        <tr><th>Note</th><th>Account</th><th>Write-up</th></tr>
-        ${rows.map(r => `<tr><td>${r.note_id}</td><td><code>${r.account_id}</code></td>
-          <td>${r.writeup}</td></tr>`).join("")}
-      </table></div><p class="muted">${q ? "Full-text search" : "Most recent"} over <code>case_note</code>.</p>`;
-    } catch (e) { out.innerHTML = `<p class="err">${e.detail || e}</p>`; }
+      const r = await api("/api/accounts/" + encodeURIComponent(id));
+      const a = r.account;
+      $("aout").innerHTML = `<div class="grid2">
+        <div class="card"><h2>Por la Data API (REST)</h2><table>
+          <tr><td class="label">Cuenta</td><td><code>${esc(a.account_id)}</code> ${pill(a.status)}</td></tr>
+          <tr><td class="label">Tipo</td><td>${esc(a.line)}, ${esc(a.type)}</td></tr>
+          <tr><td class="label">Sucursal</td><td>${esc(a.branch_id)}</td></tr>
+          <tr><td class="label">Salud</td><td>${esc(a.health_pct)}%</td></tr>
+          <tr><td class="label">CLABE</td><td><code>${esc(a.clabe)}</code></td></tr></table>
+          ${sqlBox("La llamada REST", r.rest)}</div>
+        <div class="card"><h2>Por SQL (Postgres)</h2><table><tr><th>Fecha</th><th>Monto</th><th>Canal</th><th>Anomalía</th></tr>
+          ${r.transactions.map(t => `<tr><td>${esc(t.ts).slice(0, 16).replace("T", " ")}</td><td>${Number(t.amount).toLocaleString("es-MX")} ${esc(t.currency)}</td>
+            <td>${esc(t.channel)}</td><td>${esc(t.anomaly_score)}</td></tr>`).join("") || `<tr><td colspan="4">sin transacciones</td></tr>`}</table>
+          ${sqlBox("El SQL que se ejecutó", r.sql)}</div></div>`;
+    } catch (e) { $("aout").innerHTML = fail(e); }
   };
-  document.getElementById("go").onclick = run; run();
+  $("ago").onclick = run; $("acct").onkeydown = (e) => { if (e.key === "Enter") run(); };
+  run();
 }
 
-const tabs = { accounts, holdings, notes };
+// ---- Tab 4: instruments (JSONB) ----
+const FILTERS = ['{"sector": "tech"}', '{"rating": "AAA"}', '{"ccy": "MXN"}', '{"sector": "tech", "ticker": "ZAFR"}'];
+async function tabInstruments() {
+  view.innerHTML = `<div class="lesson"><strong class="title">Resume el recorrido Datos JSON con JSONB</strong>
+    Cada instrumento guarda su ficha técnica en una columna <code>spec</code> de tipo JSONB, y cada tipo de instrumento tiene campos
+    distintos: una acción tiene <code>sector</code> y <code>beta</code>, un bono tiene <code>rating</code> y <code>coupon</code>. El
+    operador <code>@&gt;</code> busca las fichas que contienen el JSON que escribas, y el índice GIN del recorrido lo mantiene rápido.</div>
+    <div class="card"><input type="text" id="jf" style="width:320px" value='${esc(FILTERS[0])}'> <button class="go" id="jgo">Filtrar</button>
+      <div>${FILTERS.map(f => `<button class="chip" data-f='${esc(f)}'>${esc(f)}</button>`).join("")}</div>
+      <div id="jout"></div></div>`;
+  const run = async () => {
+    $("jout").innerHTML = `<p class="muted">Filtrando...</p>`;
+    try {
+      const r = await api("/api/instruments?filter=" + encodeURIComponent($("jf").value));
+      $("jout").innerHTML = `<table><tr><th>Instrumento</th><th>Nombre</th><th>Tipo</th><th>Ficha técnica (spec, JSONB)</th></tr>
+        ${r.results.map(i => `<tr><td><code>${esc(i.instrument_id)}</code></td><td>${esc(i.name)}</td><td>${esc(i.kind)}</td>
+          <td><code>${esc(JSON.stringify(i.spec))}</code></td></tr>`).join("") || `<tr><td colspan="4">ningún instrumento coincide</td></tr>`}</table>
+        ${sqlBox("El SQL que se ejecutó", r.sql)}`;
+    } catch (e) { $("jout").innerHTML = fail(e); }
+  };
+  document.querySelectorAll("button.chip").forEach(b => b.onclick = () => { $("jf").value = b.dataset.f; run(); });
+  $("jgo").onclick = run; run();
+}
+
+const tabs = { db: tabDb, search: tabSearch, account: tabAccount, instruments: tabInstruments };
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
   b.classList.add("active"); tabs[b.dataset.tab]();
 });
-showIdent(); accounts();
+tabDb();
 </script>
 </body>
 </html>

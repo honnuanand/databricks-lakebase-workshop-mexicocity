@@ -29,13 +29,13 @@ Running `python kg_build.py --step query` (or the full script) shows:
 
 ```text
 Query: which instruments does FUND-GROWTH-A hold directly?
-  INS-CASH-USD
-  INS-MSFT
+  INS-CASH-MXN
+  INS-ZAFR
   INS-SLEEVE-EQ
 ```
 
 These are the direct children of FUND-GROWTH-A in the holdings tree. Note that `INS-SLEEVE-EQ` is
-itself a sub-sleeve that holds `INS-AAPL` and `INS-UST-10Y`; the direct query stops at the first
+itself a sub-sleeve that holds `INS-QTZL` and `INS-MBONO-10Y`; the direct query stops at the first
 level, while the SPARQL journey walks the whole tree.
 
 The traversal is over the graph's `holds` relationship, equivalent to this [SPARQL](../../docs/glossary.md):
@@ -57,7 +57,7 @@ SELECT instrument_id FROM bank.holding WHERE parent_id = 'FUND-GROWTH-A'
 ```
 
 Both return the same instrument IDs. In this simple case they're equally readable. But when you
-ask a multi-hop question like "which funds hold an instrument traded by CP-GOLDMAN?", the SQL joins
+ask a multi-hop question like "which funds hold an instrument traded by CP-ALTAMAR?", the SQL joins
 grow and have to walk the sleeve nesting, while the graph query stays shallow.
 
 ## Full run output
@@ -76,13 +76,13 @@ Loading graph...
   Loaded 2 booked_at edges
 
 Querying: which instruments does FUND-GROWTH-A hold directly?
-  INS-CASH-USD
-  INS-MSFT
+  INS-CASH-MXN
+  INS-ZAFR
   INS-SLEEVE-EQ
 
 Equivalent SQL:
 SELECT instrument_id FROM bank.holding WHERE parent_id = 'FUND-GROWTH-A'
-  Result: [('INS-CASH-USD',), ('INS-SLEEVE-EQ',), ('INS-MSFT',)]
+  Result: [('INS-CASH-MXN',), ('INS-SLEEVE-EQ',), ('INS-ZAFR',)]
 
 Done. Graph ready for SPARQL queries.
 ```

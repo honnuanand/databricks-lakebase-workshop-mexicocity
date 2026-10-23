@@ -1,9 +1,11 @@
-# Databricks Apps configuration for the capstone bank dashboard.
-# Edit the LAKEBASE_* values to match your setup, then deploy with deploy.sh.
+# Databricks Apps configuration for the capstone: the fraud analyst console.
+# The workshop notebook (capstone_app_databricks) deploys this folder and passes LAKEBASE_PROJECT,
+# LAKEBASE_BRANCH, LAKEBASE_SCHEMA and EMBED_ENDPOINT as deployment env vars, overriding the
+# defaults below. It also adds the embedding endpoint as an app resource (CAN_QUERY).
 #
 # Note: on Databricks Apps the runtime injects the app's Service Principal
 # credentials, so there is NO LAKEBASE_PROFILE here (that is local-dev only).
-# The app authenticates as its SP, which is why you run the grant step first.
+# The app authenticates as its SP, which is why the notebook grants it access first.
 
 command:
   - uvicorn
@@ -15,8 +17,10 @@ command:
 
 env:
   - name: LAKEBASE_PROJECT
-    value: "bank"           # your project id from 00-setup
+    value: "bank-alex-kim"      # your project from 00-setup (the notebook sets yours)
   - name: LAKEBASE_BRANCH
-    value: "u-arao"     # the branch the app serves (a shared, read-friendly branch)
+    value: "u-alex-kim"         # your branch (the notebook sets yours)
   - name: LAKEBASE_SCHEMA
     value: "bank"
+  - name: EMBED_ENDPOINT
+    value: "databricks-gte-large-en"

@@ -92,7 +92,7 @@ deep on AI, Postgres power, knowledge graphs, and security, ending with an app o
 One bank, reused across every journey so you build familiarity instead of relearning a
 schema each time:
 
-- **Branches** in different regions (NYC, SFO, London), each run by a business unit, holding
+- **Branches** in different regions (CDMX, Monterrey, Guadalajara), each run by a business unit, holding
   **accounts** (checking, savings, credit).
 - **Transactions** streaming against every account (amount, merchant category, anomaly score,
   utilization).

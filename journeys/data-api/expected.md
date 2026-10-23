@@ -9,17 +9,24 @@ Running `python data_api.py --step check` shows:
 
 ```text
 Data API check:
-  Host: https://lb-workshop-instance.cloud.databricks.com
-  Endpoint: /api/v1/bank.account
+  Data API URL: https://<endpoint-host>/api/2.0/workspace/<workspace-id>/rest/databricks_postgres
+  Endpoint: <url>/bank/account
   Status: Data API is ENABLED
 ```
 
 If the Data API is not enabled, you'll see:
 
 ```text
-Status: Data API is NOT ENABLED on this instance
-To enable: go to Databricks console → Lakebase → Instances → select your instance →
-Advanced settings → toggle "Data API" to ON, then wait 30 seconds and retry.
+  Data API URL: (not enabled on this branch)
+  Status: Data API not enabled on this branch
+
+To enable: Lakebase Postgres app -> your project -> your branch -> Data API -> Enable Data API, then add `bank` under Exposed schemas
+```
+
+As the project owner (as in the workshop's own test runs), the check stops with:
+
+```text
+  Status: 403: your Postgres role isn't granted to the Data API's `authenticator` role (instructor setup; the project owner can't be used)
 ```
 
 ## Step 2, get an OAuth token
@@ -40,9 +47,9 @@ Running `python data_api.py --step get-accounts` shows:
 
 ```json
 [
-  {"account_id": "ACCT-100240", "branch_id": "BR-NYC", "line": "Checking", "type": "retail", "status": "good_standing", "health_pct": 91.0},
-  {"account_id": "ACCT-100241", "branch_id": "BR-NYC", "line": "Credit", "type": "retail", "status": "watch", "health_pct": 70.0},
-  {"account_id": "ACCT-200311", "branch_id": "BR-SFO", "line": "Credit", "type": "retail", "status": "frozen", "health_pct": 45.0},
+  {"account_id": "CTA-100240", "branch_id": "BR-CDMX", "line": "Checking", "type": "retail", "status": "good_standing", "health_pct": 91.0},
+  {"account_id": "CTA-100241", "branch_id": "BR-CDMX", "line": "Credit", "type": "retail", "status": "watch", "health_pct": 70.0},
+  {"account_id": "CTA-200311", "branch_id": "BR-MTY", "line": "Credit", "type": "retail", "status": "frozen", "health_pct": 45.0},
   ...
 ]
 ```
@@ -55,9 +62,9 @@ Running `python data_api.py --step get-filtered` shows:
 
 ```json
 [
-  {"account_id": "ACCT-100234", "status": "good_standing"},
-  {"account_id": "ACCT-100234", "status": "good_standing"},
-  {"account_id": "ACCT-100235", "status": "good_standing"}
+  {"account_id": "CTA-100234", "status": "good_standing"},
+  {"account_id": "CTA-100234", "status": "good_standing"},
+  {"account_id": "CTA-100235", "status": "good_standing"}
 ]
 ```
 
@@ -72,7 +79,7 @@ Running `python data_api.py --step compare-sql` shows:
 Same query, two ways:
 
 REST:
-  GET /api/v1/bank.account?select=account_id,status&status=eq.good_standing
+  GET <url>/bank/account?select=account_id,status&status=eq.good_standing
   Latency: ~45 ms
 
 SQL:
@@ -80,7 +87,7 @@ SQL:
   Latency: ~15 ms
 
 Same result:
-  [("ACCT-100234", "good_standing"), ("ACCT-100235", "good_standing"), ...]
+  [("CTA-100234", "good_standing"), ("CTA-100235", "good_standing"), ...]
 ```
 
 REST is slower due to HTTP overhead, but the difference is usually negligible for user-facing
@@ -92,12 +99,12 @@ Running `python data_api.py --step post-read-only` shows:
 
 ```text
 POST request (insert):
-  POST /api/v1/bank.account
-  Body: {"account_id": "ACCT-999999", "branch_id": "BR-TEST", ...}
+  POST <url>/bank/account
+  Body: {"account_id": "CTA-999999", "branch_id": "BR-TEST", ...}
 
 Result:
   201 Created
-  {"account_id": "ACCT-999999", "branch_id": "BR-TEST", ...}
+  {"account_id": "CTA-999999", "branch_id": "BR-TEST", ...}
 ```
 
 If your RLS or permissions prevent writes, you'll see:

@@ -6,9 +6,9 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 
 ```text
 note_id account_id  writeup
-1       ACCT-100240 "Cardholder reports three card-not-present charges to an overseas merchant they do not recognize; velocity spike overnight. Suspect card compromise, recommend freeze and reissue."
-2       ACCT-300421 "Large outbound wire to a new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Structuring pattern? Needs AML review."
-3       ACCT-200311 "Customer disputed a recurring subscription charge. Confirmed merchant error, refunded, closed."
+1       CTA-100240 "Cardholder reports three card-not-present charges to a foreign merchant they do not recognize, then a late-night SPEI transfer to a new beneficiary. Suspect account takeover, recommend freeze and card reissue."
+2       CTA-300421 "Large outbound SPEI transfer to a new beneficiary, just under the internal reporting threshold. Structuring pattern? Needs AML review."
+3       CTA-200311 "Customer disputed a recurring subscription charge. Confirmed merchant error, refunded, closed."
 ```
 
 Free-text notes from analysts. These are the search corpus.
@@ -17,25 +17,29 @@ Free-text notes from analysts. These are the search corpus.
 
 ```text
 note_id account_id  rank
-2       ACCT-300421 0.121
+1       CTA-100240 0.0608
+2       CTA-300421 0.0304
 ```
 
-The query `to_tsquery('english', 'wire | fraud')` searches for either word. Note #2 matches on "wire"
-(wire to new beneficiary). Note #1 mentions "card compromise" but not the exact terms, so it doesn't
-match. The rank score is a number proportional to relevance. Try `'card | compromise | freeze'`
-to see more results ranked.
+The query `to_tsquery('english', 'spei | takeover')` searches for either word. Note #1 matches on both
+("SPEI transfer" and "account takeover"), so it ranks higher; note #2 matches on "SPEI" only. Notes #3
+and #4 mention neither word, so they don't match. The rank score is a number proportional to relevance.
+Try `'card | freeze | dispute'` to see other notes ranked.
 
 ## Step 3, fuzzy matching
 
 ```text
 account_id       similarity
-ACCT-100240      1.000
-ACCT-100241      0.923
-ACCT-100234      0.846
+CTA-100234      1.000
+CTA-100235      0.692
+CTA-100240      0.571
+CTA-100241      0.571
 ```
 
-Accounts similar to "ACCT-100240". Even with a typo like "ACCT-100204", [trigram](../../docs/glossary.md)
-overlap keeps the match close (similarity 0.85+). Results are sorted by similarity descending.
+Accounts similar to "CTA-100234". The exact id scores 1.000; ids that share most of their characters
+score lower but still match, which is what keeps a typo like "CTA-100243" close. [Trigram](../../docs/glossary.md)
+similarity is the share of three-character chunks two strings have in common. Results are sorted by
+similarity, highest first.
 
 ## Step 4, GIN index
 
@@ -47,19 +51,17 @@ Index is created. Subsequent full-text search queries will use it. On small data
 the index overhead might outweigh the benefit, so the planner may still choose a sequential scan.
 On large datasets (millions of notes), the index is essential.
 
-## Step 5, hybrid search
+## Step 5, hybrid search (explained, not run)
 
 ```text
-note_id keyword_rank  semantic_sim  blended_rank
-2       0.121         0.82          0.413
-1       0.074         0.76          0.292
-3       0.068         0.58          0.230
+Hybrid search (keyword + semantic) requires pgvector for embeddings.
+You have now mastered FTS (full-text search) and fuzzy matching (pg_trgm).
+Those two approaches cover most production search use cases.
 ```
 
-Results ranked by a blend of keyword relevance (60%) and semantic similarity (40%). Note #2 wins
-because it has a strong keyword match (wire) and good semantic similarity. Notes #1 and #3 have
-lower keyword scores but still appear ranked by semantic closeness. The blend depends on your weights
-(60/40 here; tune as needed).
+This journey doesn't run a hybrid query; the cell only explains it. Hybrid search blends the
+full-text rank from Step 2 with a vector similarity score (see *Vector Similarity Search*), weighted
+to taste, and needs an embedding on each case note.
 
 ## The numbers that matter
 
@@ -68,7 +70,6 @@ lower keyword scores but still appear ranked by semantic closeness. The blend de
 | [Full-text search](../../docs/glossary.md) query (100 notes) | < 10 ms | fast ranking by relevance |
 | Fuzzy match (8 accounts) | < 5 ms | fast typo-tolerant search |
 | [GIN](../../docs/glossary.md) index creation | instant (small dataset) | cheap to build; huge speedup at scale |
-| Hybrid query (keyword + semantic) | < 20 ms | blends two signals for better results |
 
 > **From the field**
 > [Full-text search](../../docs/glossary.md) is the unsung hero of many apps. You write a full-text search query once, index it, and it scales to millions of documents. Fuzzy matching ([pg_trgm](../../docs/glossary.md)) is simpler than it sounds and catches real typos in user input. Hybrid search (blending keyword and semantic) is a recent addition (with [pgvector](../../docs/glossary.md)) and can produce surprisingly good results with modest tuning.

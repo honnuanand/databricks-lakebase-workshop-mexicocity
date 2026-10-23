@@ -5,9 +5,9 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 ## Step 1, JSONB specs
 
 ```text
-('INS-CASH-USD', 'US Dollar Cash', '{"ccy":"USD"}')
+('INS-CASH-MXN', 'Mexican Peso Cash', '{"ccy":"MXN"}')
 ('INS-SLEEVE-EQ', 'Equity Sleeve', '{"theme":"large-cap"}')
-('INS-AAPL', 'Apple Inc', '{"ticker":"AAPL","sector":"tech","beta":1.2}')
+('INS-QTZL', 'Quetzal Tecnologia', '{"ticker":"QTZL","sector":"tech","beta":1.2}')
 ```
 
 Each instrument has a spec JSONB column with varying fields. No nulls, just the fields that apply to each instrument.
@@ -15,21 +15,20 @@ Each instrument has a spec JSONB column with varying fields. No nulls, just the 
 ## Step 2, containment operator (@>)
 
 ```text
-('INS-AAPL', 'Apple Inc', '{"ticker":"AAPL","sector":"tech","beta":1.2}')
-('INS-MSFT', 'Microsoft Corp', '{"ticker":"MSFT","sector":"tech","beta":0.9}')
+('INS-QTZL', 'Quetzal Tecnologia', '{"ticker":"QTZL","sector":"tech","beta":1.2}')
+('INS-ZAFR', 'Zafiro Software', '{"ticker":"ZAFR","sector":"tech","beta":0.9}')
 ```
 
-All instruments that have `"sector": "tech"` in their spec (the containment check). The query returns 2 rows: AAPL and MSFT are the seeded equities in the tech sector.
+All instruments that have `"sector": "tech"` in their spec (the containment check). The query returns 2 rows: QTZL and ZAFR are the seeded equities in the tech sector.
 
 ## Step 3, path extraction (#>>)
 
 ```text
-('INS-AAPL', 'Apple Inc', '...', 'tech')
-('INS-MSFT', 'Microsoft Corp', '...', 'tech')
-('INS-UST-10Y', 'US Treasury 10Y', '...', 'tech')
+('INS-QTZL', 'Quetzal Tecnologia', '...', 'tech')
+('INS-ZAFR', 'Zafiro Software', '...', 'tech')
 ```
 
-The `spec #>> '{sector}'` extracts the sector value as text. The `?` operator filters to instruments that have a sector key. Result shows the sector field extracted and displayed as a column.
+The `spec #>> '{sector}'` extracts the sector value as text. The `?` operator filters to instruments that have a sector key. Result shows the sector field extracted and displayed as a column. Only the two equities have a sector key.
 
 ## Step 4, GIN index
 
@@ -42,11 +41,11 @@ The index is created. Queries over the JSONB column will now use the index if th
 ## Step 5, screening query
 
 ```text
-('INS-AAPL', 'Apple Inc', '{"ticker":"AAPL","sector":"tech","beta":1.2}')
-('INS-MSFT', 'Microsoft Corp', '{"ticker":"MSFT","sector":"tech","beta":0.9}')
+('INS-QTZL', 'Quetzal Tecnologia', '{"ticker":"QTZL","sector":"tech","beta":1.2}')
+('INS-ZAFR', 'Zafiro Software', '{"ticker":"ZAFR","sector":"tech","beta":0.9}')
 ```
 
-Instruments that are equities in the tech sector. The query runs in under 50 ms. The result set includes AAPL and MSFT, which are the seeded equities with sector 'tech'.
+Instruments that are equities in the tech sector. The query runs in under 50 ms. The result set includes QTZL and ZAFR, which are the seeded equities with sector 'tech'.
 
 ## The numbers that matter
 

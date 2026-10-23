@@ -10,7 +10,7 @@
 >
 > **You'll be able to:** query your Lakebase data via HTTPS GET/POST using [OAuth](../../docs/glossary.md) tokens, parse the JSON results, and understand when [REST](../../docs/glossary.md) is the right approach.
 >
-> **Time:** about 20 minutes  ·  **Status:** live (conditional: requires Data API enabled on the instance)
+> **Time:** about 20 minutes  ·  **Status:** conditional (needs the Data API enabled on your branch; REST calls not yet tested end to end)
 
 ## The scenario
 
@@ -18,7 +18,7 @@ Your bank runs a mobile app for supervisors to check account status and case not
 
 The Lakebase Data API provides exactly that: HTTP GET/POST endpoints that execute SQL and return
 JSON, authenticated with Databricks [OAuth](../../docs/glossary.md). Your app sends a bearer token, requests
-`GET /api/v1/bank.account?select=account_id,status`, and gets back JSON.
+`GET <url>/bank/account?select=account_id,status`, and gets back JSON.
 
 ## What the Data API is
 
@@ -29,19 +29,22 @@ applies.
 
 ### API shape
 
-The base URL is the Lakebase instance host with `/api/v1/` prefix. Endpoints follow this pattern:
+The base URL is shown in your branch's Data API settings (and returned by
+`w.postgres.get_data_api(...).status.url`). It looks like
+`https://<endpoint-host>/api/2.0/workspace/<workspace-id>/rest/databricks_postgres`. Endpoints add the
+schema and table:
 
 ```
-GET /api/v1/{schema}.{table}
-POST /api/v1/{schema}.{table}
-PATCH /api/v1/{schema}.{table}
-DELETE /api/v1/{schema}.{table}
+GET    <url>/{schema}/{table}
+POST   <url>/{schema}/{table}
+PATCH  <url>/{schema}/{table}
+DELETE <url>/{schema}/{table}
 ```
 
 Query parameters control filtering, ordering, and pagination:
 
 ```
-GET /api/v1/bank.account?select=account_id,status&status=eq.good_standing
+GET <url>/bank/account?select=account_id,status&status=eq.good_standing
 ```
 
 ### Authentication
@@ -61,8 +64,8 @@ Responses are JSON arrays or objects. A GET query returns an array of rows:
 
 ```json
 [
-  {"account_id": "ACCT-100234", "status": "good_standing", "health_pct": 98.5},
-  {"account_id": "ACCT-100241", "status": "derated", "health_pct": 70.0}
+  {"account_id": "CTA-100234", "status": "good_standing", "health_pct": 98.5},
+  {"account_id": "CTA-100241", "status": "derated", "health_pct": 70.0}
 ]
 ```
 
@@ -80,7 +83,7 @@ HTTPS and JSON. The data is current and respects row-level security.
 
 ## What you'll do
 
-1. Enable the Data API on your Lakebase instance (if not already enabled).
+1. Check that the Data API is enabled on your branch, with the `bank` schema exposed.
 2. Get a Databricks OAuth token.
 3. Make a simple GET request to fetch accounts and parse the JSON.
 4. Try a filtered query with parameters.
@@ -91,18 +94,37 @@ Full copy-paste steps are in [`instructions.md`](instructions.md); expected outp
 
 ## Prerequisites
 
-Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect. You'll need
-`LB_PROFILE` and `LB_PROJECT` set to get OAuth tokens.
+Finish [`../../00-setup/`](../../00-setup/) so you have a branch and can connect. In a Databricks
+notebook nothing else is needed; the script on a laptop also needs `LB_PROFILE`.
 
-The Data API must be enabled on your Lakebase instance. If it's not, you'll see a clear error
-and instructions to enable it. Enabling is a one-click checkbox in the Lakebase console (requires
-instance owner/admin access).
+The Data API must be enabled on your branch, with `bank` exposed, and your Postgres role set up for
+it. If it isn't, the notebook says which part is missing:
+
+1. Open the **Lakebase Postgres** app, then your project and your branch.
+2. Open **Data API** and choose **Enable Data API**.
+3. Under **Exposed schemas**, add `bank` (only `public` is exposed by default).
+4. Re-run the notebook or script.
+
+Each caller also needs a Postgres role that the Data API can switch to. Your instructor sets this up
+once, on `production`, so attendee branches inherit it:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS databricks_auth;
+SELECT databricks_create_role('attendee@example.com', 'USER');
+GRANT "attendee@example.com" TO authenticator;
+GRANT USAGE ON SCHEMA bank TO "attendee@example.com";
+GRANT SELECT ON ALL TABLES IN SCHEMA bank TO "attendee@example.com";
+```
+
+The project owner's own account can't be used with the Data API: its role can't be granted to
+`authenticator`, and calls fail with `permission denied to set role`.
 
 ## Status: conditional
 
-The Data API is **live** (GA) when enabled on an instance. However, not all instances have it
-enabled by default. If your instance doesn't have it, you can enable it in the console; the
-journey will gracefully skip if it's not available. The journey script checks for availability
+The Data API is enabled per branch and isn't on by default. If it isn't ready on your branch, the
+journey skips the REST calls and says why. The REST calls follow the Databricks documentation but
+haven't been run successfully in the workshop's workspace yet: the account that built the workshop
+owns the project, and the project owner can't call the Data API. The journey script checks for availability
 and either runs full tests or shows a "not enabled" explainer.
 
 ## Wrapping up

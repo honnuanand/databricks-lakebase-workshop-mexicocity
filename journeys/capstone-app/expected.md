@@ -5,21 +5,24 @@ journeys you have run, but the UI structure and capabilities should match.
 
 ## Step 1, grant setup
 
-Running the grant script should output something like:
+In Databricks, the notebook's Expected results show the real output of each step (from a test run).
+From a laptop, running the grant script should output something like:
 
 ```text
 Granting Lakebase access to app Service Principal...
   App: capstone-dashboard
-  SP Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
   Project: <your-project>
   Schema: bank
 
-  Created PostgreSQL role: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-  Set security label: databricks_auth
-  Granted project CAN_MANAGE permission
-  Created role on production branch
-  Granted USAGE on schema bank
-  Granted SELECT on all tables in bank
+  Found app Service Principal: client_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  id=...
+  Lakebase host: ep-....database.us-east-2.cloud.databricks.com
+
+  Creating PostgreSQL role and grants...
+    Created PostgreSQL role: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    Granted USAGE on schema bank
+    Granted SELECT on all tables in bank
+    Set default SELECT privilege for future tables
+    Granted CAN_USE on project <your-project>
 
 Done. App SP has access to Lakebase.
 ```
@@ -36,9 +39,9 @@ A direct `SELECT` on `account`:
 ```text
 Account       | Branch  | Line     | Type   | Status         | Health
 --------------|---------|----------|--------|----------------|-------
-ACCT-100234   | BR-NYC  | Checking | retail | good_standing  | 98.5%
-ACCT-100235   | BR-NYC  | Savings  | retail | good_standing  | 96.2%
-ACCT-100240   | BR-NYC  | Credit   | retail | watch          | 91.0%
+CTA-100234   | BR-CDMX  | Checking | retail | good_standing  | 98.5%
+CTA-100235   | BR-CDMX  | Savings  | retail | good_standing  | 96.2%
+CTA-100240   | BR-CDMX  | Credit   | retail | watch          | 91.0%
 ...
 ```
 
@@ -51,14 +54,14 @@ Enter `FUND-GROWTH-A` and press Look through. A recursive CTE walks the holdings
 ```text
 Depth | Instrument    | Name            | Qty
 ------|---------------|-----------------|----
-1     | INS-CASH-USD  | US Dollar Cash  | 1
-1     | INS-MSFT      | Microsoft Corp  | 8
+1     | INS-CASH-MXN  | Mexican Peso Cash  | 1
+1     | INS-ZAFR      | Zafiro Software  | 8
 1     | INS-SLEEVE-EQ | Equity Sleeve   | 2
-2     | INS-AAPL      | Apple Inc       | 1
-2     | INS-UST-10Y   | US Treasury 10Y | 2
+2     | INS-QTZL      | Quetzal Tecnologia       | 1
+2     | INS-MBONO-10Y   | Bono M 10Y (Mexico) | 2
 ```
 
-The depth-2 rows (INS-AAPL, INS-UST-10Y) are held *through* the equity sleeve, not directly by the
+The depth-2 rows (INS-QTZL, INS-MBONO-10Y) are held *through* the equity sleeve, not directly by the
 fund. One query flattened the whole tree. (`curl http://localhost:8000/api/holdings/FUND-GROWTH-A`.)
 
 ### Case notes tab
@@ -68,7 +71,7 @@ Search `wire`:
 ```text
 Note | Account      | Write-up
 -----|--------------|-------------------------------------------------------------
-31   | ACCT-300421  | Large outbound wire to a brand-new beneficiary in a high-risk
+31   | CTA-300421  | Large outbound wire to a brand-new beneficiary in a high-risk
      |              | jurisdiction, just under the reporting threshold...
 ```
 

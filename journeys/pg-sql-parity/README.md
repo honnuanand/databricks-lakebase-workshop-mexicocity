@@ -14,7 +14,7 @@
 
 ## The scenario
 
-A portfolio controller at the bank needs the true look-through of a fund: every underlying instrument that a fund actually holds, counting multiplicity, when the fund holds other funds that hold other funds. FUND-GROWTH-A holds cash plus two units of an equity sleeve plus Microsoft; the equity sleeve itself holds Apple plus two units of a 10-year Treasury. The look-through is the tree, as many levels deep as the structure nests.
+A portfolio controller at the bank needs the true look-through of a fund: every underlying instrument that a fund actually holds, counting multiplicity, when the fund holds other funds that hold other funds. FUND-GROWTH-A holds cash plus two units of an equity sleeve plus Zafiro Software; the equity sleeve itself holds Quetzal Tecnologia plus two units of a 10-year Bono M. The look-through is the tree, as many levels deep as the structure nests.
 
 On Oracle, you'd use CONNECT BY. On Postgres, you use recursive CTEs. The mechanism is different, the semantics are identical, and if you know one you can learn the other in an hour.
 

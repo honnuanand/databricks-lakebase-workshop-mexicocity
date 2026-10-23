@@ -70,7 +70,7 @@ Yes. The same UPDATE syntax works:
 ```sql
 UPDATE account_unified_demo
 SET spec = spec || '{"new_field": "value"}'::jsonb
-WHERE account_id = 'ACCT-123'
+WHERE account_id = 'CTA-123'
 ```
 
 Vectors can be updated the same way. Geospatial columns (geometry) can also be updated.

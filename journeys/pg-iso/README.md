@@ -14,11 +14,11 @@
 
 ## The scenario
 
-Two tellers at different branches are processing concurrent transactions on the same account's available credit at the exact same time. The account has 10,000 units of available credit. Teller A (at BR-NYC) processes a debit reducing available credit; Teller B (at BR-SFO) processes another debit on the same account.
+Two tellers at different branches are processing concurrent transactions on the same account's available credit at the exact same time. The account has 10,000 units of available credit. Teller A (at BR-CDMX) processes a debit reducing available credit; Teller B (at BR-MTY) processes another debit on the same account.
 
 If Postgres is handling this, what happens?
-- Session A (Teller at BR-NYC): BEGIN, UPDATE (reduce available credit by 500), holds transaction open.
-- Session B (Teller at BR-SFO): UPDATE (reduce available credit by 2,500), tries to apply... and **waits**, blocked on Session A's row lock.
+- Session A (Teller at BR-CDMX): BEGIN, UPDATE (reduce available credit by 500), holds transaction open.
+- Session B (Teller at BR-MTY): UPDATE (reduce available credit by 2,500), tries to apply... and **waits**, blocked on Session A's row lock.
 - Session A: COMMIT. A's lock releases.
 - Session B: instantly proceeds, applies its update.
 

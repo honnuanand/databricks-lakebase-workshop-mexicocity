@@ -77,19 +77,19 @@ def run_overlap():
                     print(f"  Unexpected error: {error_msg[:120]}")
 
 def run_explain():
-    """Step 4: EXPLAIN shows constraint check."""
-    print("\n=== Step 4: EXPLAIN Shows Constraint Check ===")
+    """Step 4: EXPLAIN an insert (the exclusion check runs at write time, not in the plan)."""
+    print("\n=== Step 4: EXPLAIN an Insert ===")
 
     sql = ("EXPLAIN INSERT INTO bank.settlement "
            "(settlement_id, trade_id, account_id, seq, status, starts_at, ends_at) "
-           "SELECT 'stl-explain', trade_id, 'ACCT-100240', 98, 'pending', now(), now() + interval '1 hour' "
+           "SELECT 'stl-explain', trade_id, 'CTA-100240', 98, 'pending', now(), now() + interval '1 hour' "
            "FROM bank.settlement LIMIT 1")
 
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(sql)
             rows = cur.fetchall()
-            print(f"  Query plan (should mention constraint):")
+            print(f"  Query plan (the exclusion check runs when the row is written, so it isn't listed here):")
             for row in rows:
                 print(f"    {row[0]}")
 

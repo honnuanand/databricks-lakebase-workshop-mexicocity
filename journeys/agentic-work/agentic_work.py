@@ -31,7 +31,7 @@ from lakebase import connect, _env, client
 
 NAMESPACE = "default"
 SESSION_ID = "sess-01"
-ACCOUNT_ID = "ACCT-100240"
+ACCOUNT_ID = "CTA-100240"
 FM_ENDPOINT = os.getenv("FM_ENDPOINT", "databricks-claude-opus-4-8")
 TABLE_MEMORY = "bank.agent_memory"
 TABLE_ACCOUNT = "bank.account"
@@ -42,7 +42,7 @@ TABLE_CASE = "bank.case_note"
 def _setup():
     """Reset the flagged account to its pre-action state so the agent starts fresh.
 
-    Idempotent: puts ACCT-100240 back on 'watch' and clears any hold flag / memory
+    Idempotent: puts CTA-100240 back on 'watch' and clears any hold flag / memory
     from a prior run, so the first review places the hold and the second refuses."""
     with connect() as conn:
         with conn.cursor() as cur:
@@ -104,8 +104,8 @@ def _place_hold(account_id: str, top_score) -> str:
                 f"""INSERT INTO {TABLE_CASE} (account_id, writeup, category, finding, action, confidence)
                    VALUES (%s, %s, 'fraud', %s, 'hold_placed', 0.95)""",
                 [account_id,
-                 f"Automated hold: anomaly_score {top_score} on a card-not-present charge.",
-                 f"card_not_present_anomaly_{top_score}"],
+                 f"Automated hold: anomaly_score {top_score} on a late-night SPEI transfer to a new beneficiary.",
+                 f"spei_new_beneficiary_anomaly_{top_score}"],
             )
     return "froze account, wrote case_note flag"
 
@@ -204,8 +204,8 @@ def _call_agent(question: str, call_num: int = 1) -> str:
             f"You placed a hold. Summarize.")},
     ])
     response = narrated or (
-        f"Hold placed on {ACCOUNT_ID} due to anomaly score {top_score} on a card-not-present "
-        f"charge. Account frozen pending cardholder verification."
+        f"Hold placed on {ACCOUNT_ID} due to anomaly score {top_score} on a late-night SPEI "
+        f"transfer to a new beneficiary. Account frozen pending customer verification."
     )
     print(f"Agent response:\n{response}\n")
 

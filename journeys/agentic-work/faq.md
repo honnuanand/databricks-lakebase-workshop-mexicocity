@@ -23,14 +23,14 @@ Or re-export `LB_PROFILE`, `LB_PROJECT`, `LB_BRANCH`, `LB_SCHEMA` by hand.
 ## The account was already frozen (from a prior run)
 
 The script is idempotent: `--step review` (and a full run) first calls `_setup()`, which puts
-ACCT-100240 back on `watch` and clears any prior hold flag and memory. If you ran only
+CTA-100240 back on `watch` and clears any prior hold flag and memory. If you ran only
 `--step review-again` and see unexpected state, run a full `python agentic_work.py` to reset
 and replay the whole story. To reset by hand:
 
 ```bash
-python lakebase.py --sql "UPDATE bank.account SET status='watch' WHERE account_id='ACCT-100240'"
-python lakebase.py --sql "DELETE FROM bank.case_note WHERE account_id='ACCT-100240' AND action='hold_placed'"
-python lakebase.py --sql "DELETE FROM bank.agent_memory WHERE namespace='default' AND content LIKE '%ACCT-100240%'"
+python lakebase.py --sql "UPDATE bank.account SET status='watch' WHERE account_id='CTA-100240'"
+python lakebase.py --sql "DELETE FROM bank.case_note WHERE account_id='CTA-100240' AND action='hold_placed'"
+python lakebase.py --sql "DELETE FROM bank.agent_memory WHERE namespace='default' AND content LIKE '%CTA-100240%'"
 ```
 
 ## The agent didn't call any tools
@@ -52,14 +52,14 @@ If you see "place_hold ... froze account" but the account still shows `watch`, c
 
 1. **Are you querying the right table/branch?** Run:
    ```bash
-   python lakebase.py --sql "SELECT account_id, status FROM bank.account WHERE account_id='ACCT-100240'"
+   python lakebase.py --sql "SELECT account_id, status FROM bank.account WHERE account_id='CTA-100240'"
    ```
    If the status is still `watch`, the UPDATE did not commit on this branch.
 
 2. **Check the case_note flag**: the hold writes both an account UPDATE and a case_note INSERT:
    ```sql
    INSERT INTO bank.case_note (account_id, writeup, category, finding, action, confidence)
-   VALUES ('ACCT-100240', '...', 'fraud', '...', 'hold_placed', 0.95)
+   VALUES ('CTA-100240', '...', 'fraud', '...', 'hold_placed', 0.95)
    ```
    If that failed (for example a foreign-key violation on account_id), the case_note table
    would be unchanged. Look for an error in the script output.
@@ -74,21 +74,21 @@ keeping the agent's log. Check:
 
 ```bash
 python lakebase.py --sql \
-  "SELECT agent_id, content FROM bank.agent_memory WHERE namespace='default' AND content LIKE '%ACCT-100240%'"
+  "SELECT agent_id, content FROM bank.agent_memory WHERE namespace='default' AND content LIKE '%CTA-100240%'"
 ```
 
-You should see the "placed hold on ACCT-100240" row from the first call. If not, the agent's
+You should see the "placed hold on CTA-100240" row from the first call. If not, the agent's
 memory is on a different schema or branch. Confirm `$LB_SCHEMA` (default: `bank`).
 
 ## I want to use a different account
 
-The script hardcodes `ACCT-100240` (the seeded fraud signal). To use a different account, edit
+The script hardcodes `CTA-100240` (the seeded fraud signal). To use a different account, edit
 the script:
 
 1. Open `agentic_work.py`.
 2. Change this line:
    ```python
-   ACCOUNT_ID = "ACCT-100240"
+   ACCOUNT_ID = "CTA-100240"
    ```
 3. Re-run. Pick an account that has transactions with a meaningful anomaly score, otherwise
    the hold decision has nothing to act on.
@@ -100,7 +100,7 @@ python lakebase.py --sql \
   "SELECT account_id, status FROM bank.account WHERE status='watch' LIMIT 5"
 
 python lakebase.py --sql \
-  "UPDATE bank.account SET status='frozen' WHERE account_id='ACCT-XXXXXX'"
+  "UPDATE bank.account SET status='frozen' WHERE account_id='CTA-XXXXXX'"
 ```
 
 ## Can I test this with my own agent?

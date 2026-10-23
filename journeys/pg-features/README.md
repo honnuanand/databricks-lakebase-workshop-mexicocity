@@ -27,7 +27,7 @@ You aggregate raw account transaction events into a feature table. Then you run 
 ## What you'll do
 
 1. Create a raw events table (account transaction events with anomaly scores).
-2. Aggregate events into a feature table (txns_this_month, disputes_this_month, avg_anomaly_score, total_amount_usd, computed_at).
+2. Aggregate events into a feature table (txns_this_month, disputes_this_month, avg_anomaly_score, total_amount, computed_at).
 3. Run 100 primary-key lookups and measure latency.
 4. Show a sample feature vector (the data the fraud model receives at inference).
 

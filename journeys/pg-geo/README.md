@@ -14,7 +14,7 @@
 
 ## The scenario
 
-A critical settlement window at the New York branch. The urgent question: which custodians can hold the asset, and which one is closest? On a traditional database, you'd calculate distances manually (Haversine formula in the app), fetch candidates, sort by distance, and pick the closest. PostGIS does all of that in SQL. You store branches, custodians, and counterparties as geographic points, index them, and let the database answer location questions at line speed.
+A critical settlement window at the CDMX branch. The urgent question: which custodians can hold the asset, and which one is closest? On a traditional database, you'd calculate distances manually (Haversine formula in the app), fetch candidates, sort by distance, and pick the closest. PostGIS does all of that in SQL. You store branches, custodians, and counterparties as geographic points, index them, and let the database answer location questions at line speed.
 
 ## Why PostGIS matters
 

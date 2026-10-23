@@ -90,8 +90,8 @@ The script hardcodes 5 case notes. To use your own, edit `learning_loop.py`:
 2. Replace it with your own (each entry is `(note_id, account_id, writeup)`):
    ```python
    WRITEUPS = [
-       ("WU-001", "ACCT-100240", "Your first analyst case note..."),
-       ("WU-002", "ACCT-200311", "Your second analyst case note..."),
+       ("WU-001", "CTA-100240", "Your first analyst case note..."),
+       ("WU-002", "CTA-200311", "Your second analyst case note..."),
    ]
    ```
 3. Re-run the script.

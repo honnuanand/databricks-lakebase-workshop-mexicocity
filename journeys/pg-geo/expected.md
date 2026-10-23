@@ -14,23 +14,23 @@ Returns quietly. PostGIS is now available. Geography columns are added to branch
 
 ```text
 custodian_id  distance_km
-CUST-BNY      5.67
-CUST-BOFA     78.23
-CUST-JPM      102.45  (just outside 100 km, filtered)
+CUST-ALTA      5.67
+CUST-NORTE     78.23
+CUST-PONIENTE      102.45  (just outside 100 km, filtered)
 ```
 
-Custodians within 100 km of New York branch. Distances calculated using spherical geometry (WGS84). The exact distances depend on your seed data; the shape is a list of locations sorted by distance, with the nearest first.
+Custodians within 100 km of the CDMX branch. Distances calculated using spherical geometry (WGS84). The exact distances depend on your seed data; the shape is a list of locations sorted by distance, with the nearest first.
 
 ## Step 3, nearest N
 
 ```text
 counterparty_id  distance_meters
-CP-GOLDMAN       8900
-CP-BARCLAYS      85000
-CP-CITADEL       350000
+CP-ALTAMAR       8900
+CP-CUMBRE      85000
+CP-MIRADOR       350000
 ```
 
-The 3 nearest counterparties to New York (lat/lon chosen as example; yours will vary based on seed data). The `<->` operator finds the nearest neighbors efficiently, returning them sorted by distance. Distances are in meters (PostGIS standard).
+The 3 nearest counterparties to CDMX (lat/lon chosen as example; yours will vary based on seed data). The `<->` operator finds the nearest neighbors efficiently, returning them sorted by distance. Distances are in meters (PostGIS standard).
 
 ## Step 4, GiST index
 

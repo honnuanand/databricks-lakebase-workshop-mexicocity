@@ -44,6 +44,12 @@ Lakebase is real PostgreSQL, so the standard Postgres machinery is all here.
 | **PostGIS** | A Postgres extension for geographic data: points, distances, and "within N km" queries. |
 | **pg_trgm** | A Postgres extension for fuzzy, typo-tolerant text matching using trigrams (three-character slices). |
 | **FTS** (full-text search) | Ranking documents by how well they match search words, built into Postgres. |
+| **Lakebase Search** | A Lakebase project setting (enabled in the UI, cannot be turned off) that adds the `lakebase_text`, `lakebase_vector`, and `lakebase_tokenizer` extensions. See [Lakebase Search](../journeys/lakebase-search/). |
+| **BM25** | The standard relevance score for keyword search: it rewards rare and repeated words and short, focused text. `lakebase_text` computes it with a `lakebase_bm25` index. |
+| **ANN** (approximate nearest neighbor) | Finding the closest embeddings without comparing against every row, trading a little accuracy for speed. `lakebase_vector`'s `lakebase_ann` index does it with IVF and RaBitQ. |
+| **IVF** (inverted file index) | An ANN technique that groups vectors into partitions and only scans the partitions closest to the query. |
+| **Hybrid search** | Combining keyword (BM25) and vector results into one ranking, so a row found by words or by meaning can appear. |
+| **RRF** (Reciprocal Rank Fusion) | A simple way to merge ranked lists: each row gets `1 / (60 + rank)` from every list it appears in. |
 | **CTE** (common table expression) | A named subquery in a `WITH` clause. A recursive one walks a tree, such as a bill of materials. |
 | **Embedding** | A list of numbers representing the meaning of text or an item, so similar things sit close together. Used for similarity search. |
 | **CDC** (change data capture) | Reading a stream of every insert, update, and delete as they happen, off the write-ahead log. |
@@ -56,6 +62,10 @@ full cast.
 
 | Term | What it means |
 | ---- | ------------- |
+| **MXN** | The Mexican peso. All amounts in the workshop's bank are in MXN. |
+| **SPEI** | Mexico's real-time interbank transfer system, run by Banco de México. A `txn` with `channel = 'SPEI'` is a bank transfer, so it has no merchant category code. |
+| **CLABE** | The 18-digit standardized bank account number used for SPEI transfers: bank code, plaza code, account number, and a check digit. The workshop's CLABEs are synthetic. |
+| **CoDi** | Cobro Digital, a QR-code payment scheme built on SPEI. |
 | **Core banking** | The operational system that runs accounts, transactions, and balances. In this workshop, Lakebase plays that role. |
 | **Holdings tree** | The tree of instruments that make up a fund: a fund holds instruments, some of which are sleeves that themselves hold instruments, all the way down. |
 | **Sleeve** | An instrument that is itself a basket of other instruments (a fund-of-funds building block); it makes the holdings tree more than one level deep. |

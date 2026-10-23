@@ -51,7 +51,7 @@ Large FTS queries can be slow if the query term matches many documents. Check th
 ```sql
 EXPLAIN (ANALYZE, BUFFERS) 
 SELECT * FROM bank.case_note
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire | fraud')
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei | takeover')
  ORDER BY ts_rank(...) DESC;
 ```
 
@@ -63,7 +63,7 @@ Look for "Index Scan" in the plan. If you see "Seq Scan", either:
 ## What's the difference between `to_tsquery` and `plainto_tsquery`?
 
 - **`plainto_tsquery`**: simpler; treats input as plain text and adds AND operators. `plainto_tsquery('english', 'wire fraud')` becomes `'wire' & 'fraud'`.
-- **`to_tsquery`**: more powerful; lets you write operators directly. `to_tsquery('english', 'wire | fraud')` searches for either word (OR logic).
+- **`to_tsquery`**: more powerful; lets you write operators directly. `to_tsquery('english', 'spei | takeover')` searches for either word (OR logic).
 
 Use `plainto_tsquery` for simple queries (just words), `to_tsquery` when you need boolean logic.
 
@@ -73,12 +73,12 @@ Use AND in the WHERE clause:
 
 ```sql
 SELECT * FROM bank.case_note
- WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'wire')
-   AND account_id = 'ACCT-100240'
+ WHERE to_tsvector('english', writeup) @@ to_tsquery('english', 'spei')
+   AND account_id = 'CTA-100240'
    AND ts > now() - INTERVAL '1 year';
 ```
 
-This finds case notes about wire transfers on account ACCT-100240 from the past year, ranked by relevance.
+This finds case notes about SPEI transfers on account CTA-100240 from the past year, ranked by relevance.
 
 ## Can I search across multiple columns?
 
@@ -109,7 +109,7 @@ Start with 60/40 (keyword/semantic) and adjust based on your results. If you're 
 
 ## What's the trigram approach, really?
 
-A trigram is a 3-character substring. "ACCT-100240" has trigrams: "ACC", "CCT", "CT-", "T-1", "-10", "100", "002", "024", "240". "ACCT-100240" and "ACCT-100204" (with digits transposed) share most trigrams. The `similarity()` function counts overlapping trigrams and returns a score (0 to 1). It's simple but surprisingly effective for typo tolerance.
+A trigram is a 3-character substring. "CTA-100240" has trigrams: "ACC", "CCT", "CT-", "T-1", "-10", "100", "002", "024", "240". "CTA-100240" and "CTA-100204" (with digits transposed) share most trigrams. The `similarity()` function counts overlapping trigrams and returns a score (0 to 1). It's simple but surprisingly effective for typo tolerance.
 
 ## Can I search on exact phrases?
 

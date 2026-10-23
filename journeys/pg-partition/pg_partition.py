@@ -42,7 +42,7 @@ def setup(conn):
                 txn_id BIGSERIAL,
                 account_id TEXT NOT NULL,
                 ts TIMESTAMPTZ NOT NULL,
-                amount_usd NUMERIC(12,2),
+                amount NUMERIC(12,2),
                 anomaly_score NUMERIC(6,2),
                 PRIMARY KEY (txn_id, ts)
             ) PARTITION BY RANGE (ts)
@@ -68,9 +68,9 @@ def setup(conn):
         # Insert data: 30k rows per month (transactions across 1000 accounts)
         # Total: 180k rows across 6 months
         cur.execute(f"""
-            INSERT INTO {schema}.{DEMO_TABLE}(account_id, ts, amount_usd, anomaly_score)
+            INSERT INTO {schema}.{DEMO_TABLE}(account_id, ts, amount, anomaly_score)
             SELECT
-                'ACCT-' || (g % 1000),
+                'CTA-' || (g % 1000),
                 '2024-01-01'::timestamptz + (g / 1000 || ' days')::interval + (g % 1440 || ' minutes')::interval,
                 45 + (g % 50),
                 (g % 100) / 10.0

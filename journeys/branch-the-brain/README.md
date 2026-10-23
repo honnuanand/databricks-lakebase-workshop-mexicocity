@@ -19,7 +19,7 @@
 ## The scenario
 
 You run the operational core of a retail and commercial bank. Right now production says account
-`ACCT-100240` is on `watch` and still open for spending. A fraud analyst wants to try something
+`CTA-100240` is on `watch` and still open for spending. A fraud analyst wants to try something
 risky: freeze the account and watch how the downstream flows react, because an overnight
 transaction scored high for fraud. But this is the live operational database. Freezing a live
 customer account in production to run an experiment is exactly the kind of thing that pages
@@ -59,7 +59,7 @@ Project (bank)
 
 The beat worth watching: you click create, and a full copy of the database is ready to query on
 its own endpoint in about two seconds. Not a progress bar for a clone job. Seconds. Then you set
-`ACCT-100240` to `frozen` on the fork, read it back changed, switch to production, and read the
+`CTA-100240` to `frozen` on the fork, read it back changed, switch to production, and read the
 same row still on `watch`. Two live databases, one of them forked from the other moments ago,
 holding different facts about the same account.
 
@@ -73,10 +73,10 @@ holding different facts about the same account.
 
 ## What you'll do
 
-1. Look at `ACCT-100240` on your branch: it's on `watch`.
+1. Look at `CTA-100240` on your branch: it's on `watch`.
 2. Fork your branch into an experiment branch, and time how long until it's `ACTIVE`.
-3. On the fork, set `ACCT-100240` to `frozen`. Read it back changed.
-4. Switch to production and read `ACCT-100240`, still on `watch`. The divergence lives only on
+3. On the fork, set `CTA-100240` to `frozen`. Read it back changed.
+4. Switch to production and read `CTA-100240`, still on `watch`. The divergence lives only on
    the fork.
 5. Discard the fork. Confirm it's gone and production is untouched.
 

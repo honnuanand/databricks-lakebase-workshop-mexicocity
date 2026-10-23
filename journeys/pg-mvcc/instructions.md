@@ -30,7 +30,7 @@ Query an account row and see its internal system columns:
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT account_id, health_pct, xmin, xmax, ctid FROM bank.account WHERE account_id='ACCT-100240'"
+  "SELECT account_id, health_pct, xmin, xmax, ctid FROM bank.account WHERE account_id='CTA-100240'"
 ```
 
 Output shows:
@@ -51,7 +51,7 @@ python pg_mvcc.py --step update
 
 The script:
 1. Queries the row before (see xmin, xmax, ctid)
-2. Runs: `UPDATE bank.account SET health_pct = 50.0 WHERE account_id='ACCT-100240'`
+2. Runs: `UPDATE bank.account SET health_pct = 50.0 WHERE account_id='CTA-100240'`
 3. Queries the row after (see new xmin, new xmax, new ctid)
 
 Results show:
@@ -67,7 +67,7 @@ Run several UPDATEs on the same row:
 python pg_mvcc.py --step deadtuples
 ```
 
-The script runs 10 UPDATEs on ACCT-100240, then checks pg_stat_user_tables to see dead tuples accumulating:
+The script runs 10 UPDATEs on CTA-100240, then checks pg_stat_user_tables to see dead tuples accumulating:
 
 ```sql
 SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname='account';

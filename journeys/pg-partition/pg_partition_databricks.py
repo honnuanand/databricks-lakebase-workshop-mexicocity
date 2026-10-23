@@ -5,7 +5,33 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time. You will build a RANGE-partitioned table on time, load 180k rows, and prove the planner prunes unneeded partitions.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/`.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Run first: install the driver and pick your branch
+# MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
+# MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook.
+# MAGIC `LB_BRANCH` defaults to the branch `00-setup/setup_databricks` created for you. Change a widget
+# MAGIC only if you used a different project or branch name.
+
+# COMMAND ----------
+
+# MAGIC %pip install "databricks-sdk>=0.120.0" "psycopg[binary]==3.3.4"
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import os, sys
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import notebook_env
+notebook_env(dbutils);
+
 # COMMAND ----------
 
 # MAGIC ## Setup, connect
@@ -36,7 +62,7 @@ print('Ready.')
 # MAGIC     txn_id BIGSERIAL,
 # MAGIC     account_id TEXT NOT NULL,
 # MAGIC     ts TIMESTAMPTZ NOT NULL,
-# MAGIC     amount_usd NUMERIC(12,2),
+# MAGIC     amount NUMERIC(12,2),
 # MAGIC     anomaly_score NUMERIC(6,2),
 # MAGIC     PRIMARY KEY (txn_id, ts)
 # MAGIC ) PARTITION BY RANGE (ts);
@@ -51,7 +77,7 @@ with connect() as conn:
                 txn_id BIGSERIAL,
                 account_id TEXT NOT NULL,
                 ts TIMESTAMPTZ NOT NULL,
-                amount_usd NUMERIC(12,2),
+                amount NUMERIC(12,2),
                 anomaly_score NUMERIC(6,2),
                 PRIMARY KEY (txn_id, ts)
             ) PARTITION BY RANGE (ts)
@@ -86,9 +112,9 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         cur.execute(f"""
-            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, ts, amount_usd, anomaly_score)
+            INSERT INTO {SCHEMA}.{DEMO_TABLE}(account_id, ts, amount, anomaly_score)
             SELECT
-                'ACCT-' || (g % 100),
+                'CTA-' || (g % 100),
                 '2024-01-01'::date + (g / 100 || ' days')::interval + (g % 3600 || ' seconds')::interval,
                 50.0 + (g % 30),
                 2.0 + (g % 5)::numeric / 10

@@ -7,7 +7,33 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time. You will create a logical replication slot, make writes, and decode the changes as an ordered stream.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/`.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Run first: install the driver and pick your branch
+# MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
+# MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook.
+# MAGIC `LB_BRANCH` defaults to the branch `00-setup/setup_databricks` created for you. Change a widget
+# MAGIC only if you used a different project or branch name.
+
+# COMMAND ----------
+
+# MAGIC %pip install "databricks-sdk>=0.120.0" "psycopg[binary]==3.3.4"
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import os, sys
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import notebook_env
+notebook_env(dbutils);
+
 # COMMAND ----------
 
 # MAGIC ## What is logical decoding?
@@ -39,9 +65,9 @@ print('Note: This is a preview. Logical decoding is on the Lakebase roadmap.')
 # MAGIC     status TEXT NOT NULL,
 # MAGIC     health_pct NUMERIC(5,2)
 # MAGIC );
-# MAGIC INSERT INTO account_cdc_demo VALUES ('ACCT-001', 'good_standing', 95.5),
-# MAGIC     ('ACCT-002', 'good_standing', 92.0), ('ACCT-003', 'frozen', 50.0),
-# MAGIC     ('ACCT-004', 'good_standing', 98.2), ('ACCT-005', 'watch', 87.3);
+# MAGIC INSERT INTO account_cdc_demo VALUES ('CTA-001', 'good_standing', 95.5),
+# MAGIC     ('CTA-002', 'good_standing', 92.0), ('CTA-003', 'frozen', 50.0),
+# MAGIC     ('CTA-004', 'good_standing', 98.2), ('CTA-005', 'watch', 87.3);
 # MAGIC ```
 # COMMAND ----------
 
@@ -57,11 +83,11 @@ with connect() as conn:
         """)
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES
-            ('ACCT-001', 'good_standing', 95.5),
-            ('ACCT-002', 'good_standing', 92.0),
-            ('ACCT-003', 'frozen', 50.0),
-            ('ACCT-004', 'good_standing', 98.2),
-            ('ACCT-005', 'watch', 87.3)
+            ('CTA-001', 'good_standing', 95.5),
+            ('CTA-002', 'good_standing', 92.0),
+            ('CTA-003', 'frozen', 50.0),
+            ('CTA-004', 'good_standing', 98.2),
+            ('CTA-005', 'watch', 87.3)
         """)
         print(f'✓ Created demo table with 5 accounts')
 
@@ -94,13 +120,13 @@ with connect() as conn:
 # MAGIC ## Step 3, Make committed writes
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO account_cdc_demo VALUES ('ACCT-100', 'good_standing', 99.5);
+# MAGIC INSERT INTO account_cdc_demo VALUES ('CTA-100', 'good_standing', 99.5);
 # MAGIC COMMIT;
 # MAGIC
-# MAGIC UPDATE account_cdc_demo SET status = 'frozen' WHERE account_id = 'ACCT-001';
+# MAGIC UPDATE account_cdc_demo SET status = 'frozen' WHERE account_id = 'CTA-001';
 # MAGIC COMMIT;
 # MAGIC
-# MAGIC DELETE FROM account_cdc_demo WHERE account_id = 'ACCT-003';
+# MAGIC DELETE FROM account_cdc_demo WHERE account_id = 'CTA-003';
 # MAGIC COMMIT;
 # MAGIC ```
 # COMMAND ----------
@@ -108,13 +134,13 @@ with connect() as conn:
 with connect() as conn:
     with conn.cursor() as cur:
         # Each transaction auto-commits in this connection
-        cur.execute(f"INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES ('ACCT-100', 'good_standing', 99.5)")
+        cur.execute(f"INSERT INTO {SCHEMA}.{DEMO_TABLE} VALUES ('CTA-100', 'good_standing', 99.5)")
         print(f'✓ INSERT committed')
 
-        cur.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET status = 'frozen' WHERE account_id = 'ACCT-001'")
+        cur.execute(f"UPDATE {SCHEMA}.{DEMO_TABLE} SET status = 'frozen' WHERE account_id = 'CTA-001'")
         print(f'✓ UPDATE committed')
 
-        cur.execute(f"DELETE FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'ACCT-003'")
+        cur.execute(f"DELETE FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'CTA-003'")
         print(f'✓ DELETE committed')
         print(f'\n  Each COMMIT flushes a record to the slot')
 

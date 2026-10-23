@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Create, check, or reset YOUR personal zero-copy branch.
 
-Your branch (LB_BRANCH, e.g. u-alex) is where every journey runs. It forks the
-shared `production` branch copy-on-write, so creating it copies no data and a
-whole room can each have their own without colliding.
+Your branch (LB_BRANCH, e.g. u-alex) is where every journey runs. It forks your
+project's `production` branch copy-on-write, so creating it copies no data, and
+it starts with the bank that 00-setup/setup_databricks loaded into `production`.
 
 Usage:
     python branch.py --create        # create u-<name> off production (idempotent), wait ACTIVE
     python branch.py --status        # show your branch's endpoint state + host
-    python branch.py --reset         # drop and recreate your branch (fresh start), then reload bank
+    python branch.py --reset         # drop and recreate your branch (fresh start from production)
     python branch.py --delete        # drop your branch (leaves nothing behind)
 
 Env: LB_PROFILE, LB_PROJECT, LB_BRANCH (see 00-setup/).
@@ -22,7 +22,7 @@ import time
 from databricks.sdk.service.postgres import Branch, BranchSpec
 from databricks.sdk.common.types.fieldmask import FieldMask
 
-from lakebase import client, branch_name, branch_endpoint, wait_active, _env
+from lakebase import client, branch_name, branch_endpoint, wait_active, _env, _t
 
 PRODUCTION = "production"
 
@@ -37,7 +37,7 @@ def create(reload: bool = False) -> None:
     # idempotent: only create if absent
     try:
         w.postgres.get_branch(name=branch_name(project, branch))
-        print(f"branch {branch} already exists")
+        print(_t(f"branch {branch} already exists", f"la rama {branch} ya existe"))
     except Exception:
         t0 = time.time()
         w.postgres.create_branch(
@@ -45,10 +45,12 @@ def create(reload: bool = False) -> None:
             branch=Branch(spec=BranchSpec(
                 source_branch=branch_name(project, PRODUCTION), no_expiry=True)),
             branch_id=branch, replace_existing=False)
-        print(f"create_branch API returned in {(time.time()-t0)*1000:.0f} ms")
-    waited = wait_active(w, project, branch)
+        ms = (time.time() - t0) * 1000
+        print(_t(f"create_branch API returned in {ms:.0f} ms", f"la API create_branch respondió en {ms:.0f} ms"))
+    waited = wait_active(w, project, branch, idle_ok=True)
     host, _, state = branch_endpoint(w, project, branch)
-    print(f"branch {branch} is {state} in ~{waited:.1f}s  (host {host})")
+    print(_t(f"branch {branch} is {state} in ~{waited:.1f}s  (host {host})",
+             f"la rama {branch} está {state} en ~{waited:.1f}s  (host {host})"))
     if reload:
         _reload_bank()
 
@@ -64,7 +66,7 @@ def delete() -> None:
     w = client()
     project, branch = _project_branch()
     if branch == PRODUCTION:
-        raise SystemExit("refusing to delete the production branch")
+        raise SystemExit(_t("refusing to delete the production branch", "no se puede eliminar la rama production"))
     # unprotect (best effort) then delete
     try:
         w.postgres.update_branch(
@@ -74,7 +76,7 @@ def delete() -> None:
     except Exception:
         pass
     w.postgres.delete_branch(name=branch_name(project, branch))
-    print(f"deleted branch {branch}")
+    print(_t(f"deleted branch {branch}", f"rama {branch} eliminada"))
 
 
 def reset() -> None:
@@ -85,10 +87,13 @@ def reset() -> None:
 
 def _reload_bank() -> None:
     # import here so create/status don't require the SQL files
-    from load_bank import main as load_main
-    import sys
-    sys.argv = ["load_bank.py"]
-    load_main()
+    from load_bank import main as load_main, is_loaded
+    from lakebase import connect
+    # A fork of a loaded production already has the bank; loading again would duplicate
+    # the txn and case_note rows.
+    with connect() as conn:
+        loaded = is_loaded(conn)
+    load_main(["--check"] if loaded else [])
 
 
 def main() -> None:

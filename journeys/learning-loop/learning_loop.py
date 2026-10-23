@@ -40,11 +40,11 @@ TABLE = "bank.case_note"
 # Real-world messy analyst case notes on real accounts. Some clear, some ambiguous, so
 # the AI's confidence score varies and low-confidence ones route to a human reviewer.
 WRITEUPS = [
-    ("WU-001", "ACCT-100240", "Three card-not-present charges overnight to an overseas merchant the cardholder does not recognize, velocity spike. Froze the card and opened a reissue."),
-    ("WU-002", "ACCT-300421", "Large outbound wire to a brand-new beneficiary in a high-risk jurisdiction, just under the reporting threshold. Possible structuring, referred to AML."),
-    ("WU-003", "ACCT-200311", "Customer disputes a charge they say posted twice; merchant portal is ambiguous. Needs a closer look at the settlement records."),
-    ("WU-004", "ACCT-100235", "A few small foreign-currency charges followed by a larger one, same merchant. Could be card testing, or just travel. Hold for review."),
-    ("WU-005", "ACCT-100240", "Something looked off on the account this morning, maybe the login location? not sure, flagging it."),
+    ("WU-001", "CTA-100240", "Three card-not-present charges overnight to a foreign merchant the customer does not recognize, velocity spike. Froze the card and opened a reissue."),
+    ("WU-002", "CTA-300421", "Four outbound SPEI transfers in two days to a CLABE registered yesterday, each just under the reporting threshold. Possible structuring, referred to the PLD (AML) team."),
+    ("WU-003", "CTA-200311", "Customer disputes a CoDi payment they say was charged twice at a Monterrey store; the merchant's receipt is ambiguous. Needs a closer look at the settlement records."),
+    ("WU-004", "CTA-100235", "A few small USD charges followed by a larger one, same online merchant. Could be card testing, or the customer is traveling in the US. Hold for review."),
+    ("WU-005", "CTA-100240", "Something looked off on the account this morning, maybe a login from another city? not sure, flagging it."),
 ]
 
 
@@ -99,7 +99,8 @@ def extract():
                 "role": "system",
                 "content": (
                     "You are a fraud/AML triage assistant. From a free-text analyst case note, "
-                    "extract category (fraud, AML, dispute, or other), finding (the specific issue), "
+                    "extract category (fraud, AML, dispute, or other), finding (the specific issue, as a short "
+                    "snake_case label such as card_compromise or possible_structuring), "
                     "action (what was done), and confidence (0-1, how certain you are the extraction "
                     "is correct and unambiguous). "
                     "Respond with ONLY a JSON object: {\"category\": \"...\", \"finding\": \"...\", "
@@ -116,11 +117,11 @@ def extract():
             w = writeup.lower()
             if "card-not-present" in w or ("card" in w and "froze" in w):
                 extract_dict = {"category": "fraud", "finding": "card_compromise", "action": "froze_and_reissued", "confidence": 0.93}
-            elif "wire" in w or "structuring" in w or "aml" in w:
+            elif "spei transfers" in w or "structuring" in w or "aml" in w:
                 extract_dict = {"category": "AML", "finding": "possible_structuring", "action": "referred_to_aml", "confidence": 0.88}
             elif "dispute" in w or "posted twice" in w:
                 extract_dict = {"category": "dispute", "finding": "double_charge_claim", "action": "review_settlement", "confidence": 0.64}
-            elif "card testing" in w or "foreign-currency" in w:
+            elif "card testing" in w or "usd charges" in w:
                 extract_dict = {"category": "fraud", "finding": "possible_card_testing", "action": "hold_for_review", "confidence": 0.66}
             else:
                 extract_dict = {"category": "other", "finding": "unclear", "action": "investigate", "confidence": 0.28}

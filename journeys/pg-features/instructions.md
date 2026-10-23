@@ -38,7 +38,7 @@ CREATE TABLE account_events_for_features (
     account_id TEXT NOT NULL,
     event_ts TIMESTAMPTZ DEFAULT now(),
     event_type TEXT,      -- purchase, wire, dispute, chargeback
-    amount_usd NUMERIC(12,2),
+    amount NUMERIC(12,2),
     anomaly_score NUMERIC(6,2),
     util_pct NUMERIC(6,2)
 )
@@ -61,7 +61,7 @@ CREATE TABLE account_features_online (
     disputes_this_month INT,
     avg_anomaly_score NUMERIC(8,2),
     avg_util_pct NUMERIC(8,2),
-    total_amount_usd NUMERIC(12,2),
+    total_amount NUMERIC(12,2),
     computed_at TIMESTAMPTZ
 )
 ```

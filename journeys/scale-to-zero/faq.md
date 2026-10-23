@@ -22,9 +22,9 @@ No. Suspending releases the compute *nodes* only. The branch, the account and tr
 
 Yes. When the endpoint suspends, any open connection to it drops. A client holding a connection will see a network error. Opening a new connection after it has suspended will wake the compute and succeed. In practice, pooled clients reconnect transparently on the next query.
 
-## Why does the cold wake take about 1.7 seconds, not instant?
+## Why does the cold wake take most of a second, not instant?
 
-Waking from `IDLE` means the control plane allocates fresh compute nodes, starts the Postgres process, and binds it to the branch's storage. On a live run that measured about 1.7 seconds for a `SELECT 1` that had to bring compute back. It is not loading a cache or running recovery; it is starting stateless compute. That is fast compared to a Snowflake warehouse cold start, which is typically tens of seconds.
+Waking from `IDLE` means the control plane allocates fresh compute nodes, starts the Postgres process, and binds it to the branch's storage. On a live run, a `SELECT 1` that had to bring compute back took 865 ms, including getting a login token and connecting; the same query on an active endpoint took about 190 ms. It is not loading a cache or running recovery; it is starting stateless compute. That is fast compared to a Snowflake warehouse cold start, which is typically tens of seconds.
 
 ## What about settlement batches or backups while compute is suspended?
 

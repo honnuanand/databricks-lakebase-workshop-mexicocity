@@ -43,6 +43,7 @@ Agents, memory, and vectors on the same governed database that serves your trans
 | 7 | [The agent does the work](agentic-work/) | An agent reads live account data with a tool, writes a case back, and remembers what it did. | ⭐ | live |
 | 8 | [Human-in-the-loop](learning-loop/) | AI reads analyst case notes with a confidence score; low-confidence ones route to a human; the system learns. | ⭐ | live |
 | 9 | [Operational vectors](pg-vector/) | Rank the most similar instrument by spec-embedding similarity, in the same transaction as your data. | ⭐ | live |
+| 9b | [Lakebase Search](lakebase-search/) | Enable Lakebase Search and search analyst notes by keyword (BM25), by meaning (real embeddings, ANN index), and hybrid (RRF), filtered and joined to live accounts. Replaces 9 and 13 in the workshop path. | ⭐ | live |
 
 ## Postgres power, in Lakebase
 

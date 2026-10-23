@@ -22,11 +22,11 @@
 ## The scenario
 
 Your bank's fraud and AML teams write free-text case notes all day. Analysts write them in a
-hurry: "Cardholder reports three card-not-present charges to an overseas merchant they do not
-recognize; velocity spike overnight. Suspect card compromise, recommend freeze and reissue."
-Another one: "Something looks off on the wires out of this account, maybe layering? take a
-look." A third: "Large outbound wire to a new beneficiary in a high-risk jurisdiction, just
-under the reporting threshold. Structuring pattern? Needs AML review."
+hurry: "Customer reports three card-not-present charges to a foreign merchant they do not
+recognize, then a SPEI transfer to a new beneficiary. Suspect account takeover, recommend freeze
+and reissue." Another one: "Something looks off on the SPEI transfers out of this account, maybe
+layering? take a look." A third: "Four outbound SPEI transfers to a CLABE registered yesterday,
+each just under the reporting threshold. Structuring pattern? Needs PLD (AML) review."
 
 The investigations team wants to extract the key facts from each note: which category (fraud,
 AML, dispute), what was the finding, what action was taken or recommended. That's normally a

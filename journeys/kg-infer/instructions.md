@@ -65,10 +65,10 @@ python kg_infer.py --step distress
 The script adds a triple:
 
 ```
-(INS-AAPL, distressed, true)
+(INS-QTZL, distressed, true)
 ```
 
-INS-AAPL is held only *through* INS-SLEEVE-EQ, not directly by any fund, so a naive one-hop lookup
+INS-QTZL is held only *through* INS-SLEEVE-EQ, not directly by any fund, so a naive one-hop lookup
 would miss its exposure. That is the point.
 
 ### Step 4, query for exposed funds (without inference)
@@ -95,7 +95,7 @@ plus the rule you defined, walking `contains` transitively.
 python kg_infer.py --step entail
 ```
 
-The script prints how many new triples were derived. For INS-AAPL distressed in this holdings tree
+The script prints how many new triples were derived. For INS-QTZL distressed in this holdings tree
 you'll see 1 new triple (FUND-GROWTH-A exposed).
 
 ### Step 6, query for exposed funds (after inference)
@@ -113,7 +113,7 @@ Funds exposed:
   FUND-GROWTH-A
 ```
 
-FUND-GROWTH-A is inferred to be exposed because it holds INS-AAPL through INS-SLEEVE-EQ.
+FUND-GROWTH-A is inferred to be exposed because it holds INS-QTZL through INS-SLEEVE-EQ.
 FUND-INCOME-B holds nothing in this tree, so it stays unexposed, the correct contrast.
 
 ### Step 7, the entailment chain

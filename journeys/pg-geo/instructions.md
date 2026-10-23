@@ -56,7 +56,7 @@ SELECT custodian_id, branch_id, lat, lon,
        ST_Distance(geography(POINT(lon, lat)), 
                    geography(POINT(branch_lon, branch_lat))) / 1000.0 as distance_km
   FROM bank.custodian c, bank.branch b
- WHERE b.branch_id = 'BR-NYC'
+ WHERE b.branch_id = 'BR-CDMX'
    AND ST_DWithin(geography(POINT(c.lon, c.lat)),
                   geography(POINT(b.lon, b.lat)),
                   100000)  -- 100 km in meters
@@ -64,7 +64,7 @@ SELECT custodian_id, branch_id, lat, lon,
  LIMIT 10;
 ```
 
-The `geography(POINT(lon, lat))` constructor turns lat/lon numbers into geographic points. `ST_DWithin` returns rows within a distance (in meters). `ST_Distance` calculates the exact distance. Result: custodians near New York.
+The `geography(POINT(lon, lat))` constructor turns lat/lon numbers into geographic points. `ST_DWithin` returns rows within a distance (in meters). `ST_Distance` calculates the exact distance. Result: custodians near CDMX.
 
 ### Step 3, query "nearest N" using the <-> operator
 

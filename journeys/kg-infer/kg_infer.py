@@ -28,9 +28,9 @@ except ImportError:
 
 BANK = Namespace("http://bank.local/")
 
-# The instrument we will mark distressed. INS-AAPL sits two hops below FUND-GROWTH-A
-# (fund -> INS-SLEEVE-EQ -> INS-AAPL), so the entailment has to walk the tree to find it.
-DISTRESSED = "INS-AAPL"
+# The instrument we will mark distressed. INS-QTZL sits two hops below FUND-GROWTH-A
+# (fund -> INS-SLEEVE-EQ -> INS-QTZL), so the entailment has to walk the tree to find it.
+DISTRESSED = "INS-QTZL"
 
 
 def load_graph() -> Graph:

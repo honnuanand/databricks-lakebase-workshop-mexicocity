@@ -59,23 +59,23 @@ def setup(conn):
                 account_id TEXT,
                 branch_id TEXT,
                 region TEXT,
-                amount_usd NUMERIC,
+                amount NUMERIC,
                 health_pct NUMERIC
             )
         """)
 
         # Insert: each branch sits in exactly one region (correlated)
-        # Branch BR-NYC -> US-Northeast; Branch BR-SFO -> US-West
+        # Branch BR-CDMX -> MX-Centro; Branch BR-MTY -> MX-Noreste
         cur.execute(f"""
-            INSERT INTO {schema}.{DEMO_TABLE}(account_id, branch_id, region, amount_usd, health_pct)
+            INSERT INTO {schema}.{DEMO_TABLE}(account_id, branch_id, region, amount, health_pct)
             SELECT
-                'ACCT-' || g,
-                (ARRAY['BR-NYC', 'BR-NYC', 'BR-SFO', 'BR-SFO'])[1 + (g % 4)],
+                'CTA-' || g,
+                (ARRAY['BR-CDMX', 'BR-CDMX', 'BR-MTY', 'BR-MTY'])[1 + (g % 4)],
                 CASE (g % 4)
-                    WHEN 0 THEN 'US-Northeast'
-                    WHEN 1 THEN 'US-Northeast'
-                    WHEN 2 THEN 'US-West'
-                    ELSE 'US-West'
+                    WHEN 0 THEN 'MX-Centro'
+                    WHEN 1 THEN 'MX-Centro'
+                    WHEN 2 THEN 'MX-Noreste'
+                    ELSE 'MX-Noreste'
                 END,
                 50.0 + (g % 30),
                 80.0 + (g % 20)
@@ -92,7 +92,7 @@ def before(conn):
     schema = _env("LB_SCHEMA", "bank")
     query = (
         f"SELECT account_id FROM {schema}.{DEMO_TABLE} "
-        f"WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'"
+        f"WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'"
     )
     with conn.cursor() as cur:
         est, act = _explain(cur, query)
@@ -125,7 +125,7 @@ def after(conn):
     schema = _env("LB_SCHEMA", "bank")
     query = (
         f"SELECT account_id FROM {schema}.{DEMO_TABLE} "
-        f"WHERE branch_id = 'BR-NYC' AND region = 'US-Northeast'"
+        f"WHERE branch_id = 'BR-CDMX' AND region = 'MX-Centro'"
     )
     with conn.cursor() as cur:
         est, act = _explain(cur, query)

@@ -76,9 +76,9 @@ python pg_cdc.py --step changes
 Makes three committed writes:
 
 ```sql
-INSERT INTO account_cdc_demo VALUES ('ACCT-100', 'good_standing', 99.5)
-UPDATE account_cdc_demo SET status='frozen' WHERE account_id='ACCT-001'
-DELETE FROM account_cdc_demo WHERE account_id='ACCT-003'
+INSERT INTO account_cdc_demo VALUES ('CTA-100', 'good_standing', 99.5)
+UPDATE account_cdc_demo SET status='frozen' WHERE account_id='CTA-001'
+DELETE FROM account_cdc_demo WHERE account_id='CTA-003'
 ```
 
 Each COMMIT flushes a record to the slot. Then decodes:

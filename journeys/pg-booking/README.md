@@ -14,7 +14,7 @@
 
 ## The scenario
 
-Settlement operations at a bank: you have two requests to settle transactions on account ACCT-100240. One is from 2 p.m. to 3 p.m., the other is from 2:30 p.m. to 3:30 p.m. The time ranges overlap. Both requests hit the system at the same time. The app reads the settlement log, sees the first settlement is there, and the second request also read the log before the first one was written, so the second request also thinks the slot is available and INSERTs.
+Settlement operations at a bank: you have two requests to settle transactions on account CTA-100240. One is from 2 p.m. to 3 p.m., the other is from 2:30 p.m. to 3:30 p.m. The time ranges overlap. Both requests hit the system at the same time. The app reads the settlement log, sees the first settlement is there, and the second request also read the log before the first one was written, so the second request also thinks the slot is available and INSERTs.
 
 Now you have two overlapping settlements on the same account, which violates settlement rules. The normal answer is transaction isolation (SERIALIZABLE mode), but that's expensive. The better answer is a constraint: make it impossible for overlapping settlements to exist. The database rejects the second INSERT before it can happen.
 

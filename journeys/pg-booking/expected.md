@@ -6,12 +6,13 @@ Use this to check your run. The numbers here are from our measurements; yours wi
 
 ```text
 settlement_id  account_id   starts_at                    ends_at
-STL-1          ACCT-100240  2024-01-15 14:00:00+00       2024-01-15 16:00:00+00
-STL-2          ACCT-100241  2024-01-15 15:00:00+00       2024-01-15 16:00:00+00
-STL-3          ACCT-200310  2024-01-15 14:30:00+00       2024-01-15 16:30:00+00
+STL-1          CTA-100240  2024-01-15 14:00:00+00       2024-01-15 16:00:00+00
+STL-2          CTA-100241  2024-01-15 15:00:00+00       2024-01-15 16:00:00+00
+STL-3          CTA-200310  2024-01-15 14:30:00+00       2024-01-15 16:30:00+00
 ```
 
-Settlements are scheduled on accounts with non-overlapping time windows.
+Settlements are scheduled on accounts with non-overlapping time windows. The times are relative to
+when you loaded the bank (the seed uses `now()`), so yours will show today's date.
 
 ## Step 2, GiST exclusion constraint created
 
@@ -28,19 +29,25 @@ The constraint is created silently. All existing settlements satisfy it (they do
 
 ```text
 ERROR: conflicting key value violates exclusion constraint "no_account_overlap"
-DETAIL: Key (account_id, tstzrange(starts_at, ends_at))=(ACCT-100240, ["2024-01-15 14:30:00+00","2024-01-15 15:30:00+00"]) conflicts with existing key.
+DETAIL: Key (account_id, tstzrange(starts_at, ends_at))=(CTA-100240, ["2024-01-15 14:30:00+00","2024-01-15 15:30:00+00"]) conflicts with existing key.
 ```
 
 The INSERT is rejected. The database prevents the overlap from ever existing.
 
-## Step 4, EXPLAIN shows GiST check
+## Step 4, EXPLAIN an insert
 
 ```text
-Insert on settlement  (cost=0.31..0.37 rows=0 width=0)
-  Conflict Arbiter Indexes: no_account_overlap
+Query plan (the exclusion check runs when the row is written, so it isn't listed here):
+  Insert on settlement  (cost=0.00..0.36 rows=0 width=0)
+    ->  Subquery Scan on "*SELECT*"  (cost=0.00..0.36 rows=1 width=148)
+          ->  Limit  (cost=0.00..0.35 rows=1 width=148)
+                ->  Seq Scan on settlement settlement_1  (cost=0.00..1.05 rows=3 width=148)
 ```
 
-The plan shows the exclusion constraint is checked (Conflict Arbiter). This happens automatically; the app just tries to insert and gets an error if there's a conflict.
+The plan only shows how the new row is produced. The exclusion constraint doesn't appear because
+Postgres checks it when the row is written, using the constraint's GiST index; Step 3's rejected
+insert is the proof. The app doesn't have to do anything: it tries the insert and gets an error if
+there's a conflict.
 
 ## The numbers that matter
 

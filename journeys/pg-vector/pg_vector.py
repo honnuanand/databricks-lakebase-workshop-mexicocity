@@ -103,7 +103,7 @@ def populate_embeddings():
 def search():
     """Find the instruments most similar to a reference instrument."""
     print("Running similarity search:")
-    ref_id = "INS-AAPL"   # a real seed instrument (Apple equity)
+    ref_id = "INS-QTZL"   # a real seed instrument (Quetzal Tecnologia equity)
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT embedding FROM bank.instrument WHERE instrument_id = %s", [ref_id])

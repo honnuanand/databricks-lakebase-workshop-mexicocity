@@ -28,14 +28,14 @@ to expect is in [`expected.md`](expected.md).
 
 ## Or step through it by hand
 
-### Step 1, look at ACCT-100240 on your branch
+### Step 1, look at CTA-100240 on your branch
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT account_id, status, health_pct FROM bank.account WHERE account_id='ACCT-100240'"
+  "SELECT account_id, status, health_pct FROM bank.account WHERE account_id='CTA-100240'"
 ```
 
-ACCT-100240 is on `watch`. This is the state you're about to fork.
+CTA-100240 is on `watch`. This is the state you're about to fork.
 
 ### Step 2, fork your branch into an experiment branch
 
@@ -52,7 +52,7 @@ seconds. A full, independent copy of your bank, ready to query, in seconds.
 
 ### Step 3, diverge on the fork
 
-Set ACCT-100240 to `frozen` on the experiment branch only:
+Set CTA-100240 to `frozen` on the experiment branch only:
 
 ```bash
 python branch_the_brain.py --step diverge
@@ -61,16 +61,16 @@ python branch_the_brain.py --step diverge
 The script connects to the *fork* and runs:
 
 ```sql
-UPDATE bank.account SET status='frozen', health_pct=70.0 WHERE account_id='ACCT-100240';
+UPDATE bank.account SET status='frozen', health_pct=70.0 WHERE account_id='CTA-100240';
 ```
 
-Then reads ACCT-100240 back from the fork: it's now `frozen`.
+Then reads CTA-100240 back from the fork: it's now `frozen`.
 
 ### Step 4, prove production (your branch) is untouched
 
 ```bash
 python ../../common/scripts/lakebase.py --sql \
-  "SELECT account_id, status, health_pct FROM bank.account WHERE account_id='ACCT-100240'"
+  "SELECT account_id, status, health_pct FROM bank.account WHERE account_id='CTA-100240'"
 ```
 
 Still `watch`, `91.0`. Your branch never changed. The divergence lives only on the fork. Two

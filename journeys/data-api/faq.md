@@ -2,17 +2,26 @@
 
 ## Common errors and fixes
 
-### `Data API is NOT ENABLED on this instance`
+### `The Data API is not enabled on your branch`, `403 permission denied to set role`, or `406 Invalid schema`
 
-The Data API must be enabled on your Lakebase instance. It's a checkbox in the console:
+1. Open the **Lakebase Postgres** app, then your project and your branch.
+2. Open **Data API** and choose **Enable Data API**.
+3. Under **Exposed schemas**, add `bank` (only `public` is exposed by default).
+4. Re-run the notebook or script.
 
-1. Log into Databricks.
-2. Go to **Data Engineering** → **Lakebase** → **Instances**.
-3. Click your instance.
-4. Scroll to **Advanced** settings.
-5. Toggle **Data API** to **ON**.
-6. Wait 30 seconds.
-7. Re-run the script.
+Each caller also needs a Postgres role that the Data API can switch to. Your instructor sets this up
+once, on `production`, so attendee branches inherit it:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS databricks_auth;
+SELECT databricks_create_role('attendee@example.com', 'USER');
+GRANT "attendee@example.com" TO authenticator;
+GRANT USAGE ON SCHEMA bank TO "attendee@example.com";
+GRANT SELECT ON ALL TABLES IN SCHEMA bank TO "attendee@example.com";
+```
+
+The project owner's own account can't be used with the Data API: its role can't be granted to
+`authenticator`, and calls fail with `permission denied to set role`.
 
 Enabling is free and takes about 30 seconds.
 
@@ -53,7 +62,7 @@ The table or schema doesn't exist, or the Data API endpoint path is wrong. Check
 The Data API endpoint is not responding. Possible causes:
 
 - Data API is not enabled (see first error above).
-- The Lakebase instance is scaled to zero or shut down. Check the console.
+- Your branch's compute is suspended and still waking up. Retry the cell.
 - Network connectivity issue. Try pinging the Lakebase host.
 
 ### `Missing env var LB_PROFILE`
@@ -115,7 +124,7 @@ in a browser. Example:
 ```javascript
 const token = "ya29.a0AfH6SMB...";
 const response = await fetch(
-  "https://lb-instance.cloud.databricks.com/api/v1/bank.account",
+  "<url>/bank/account",
   {
     headers: { "Authorization": `Bearer ${token}` }
   }
@@ -171,13 +180,13 @@ This runs the same query via REST and SQL multiple times and shows average laten
 Instead of:
 
 ```
-GET /api/v1/bank.account
+GET <url>/bank/account
 ```
 
 Use:
 
 ```
-GET /api/v1/bank.account?select=account_id,status
+GET <url>/bank/account?select=account_id,status
 ```
 
 This reduces JSON payload and network overhead.
@@ -187,7 +196,7 @@ This reduces JSON payload and network overhead.
 Instead of fetching all rows and filtering in your app, filter at the API:
 
 ```
-GET /api/v1/bank.account?status=eq.good_standing
+GET <url>/bank/account?status=eq.good_standing
 ```
 
 This reduces the amount of data transferred.
@@ -197,8 +206,8 @@ This reduces the amount of data transferred.
 If a query returns thousands of rows, paginate:
 
 ```
-GET /api/v1/bank.account?limit=100&offset=0
-GET /api/v1/bank.account?limit=100&offset=100
+GET <url>/bank/account?limit=100&offset=0
+GET <url>/bank/account?limit=100&offset=100
 ...
 ```
 

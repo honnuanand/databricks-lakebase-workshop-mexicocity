@@ -31,7 +31,7 @@ You'll see Session B's PID with `wait_event_type = 'Lock'` while Session A is in
 Yes, but that's a different pattern. You could use:
 
 ```sql
-UPDATE account_isolation_demo SET available_credit = ... WHERE account_id = 'ACCT-TEST-ISOLATION' NOWAIT
+UPDATE account_isolation_demo SET available_credit = ... WHERE account_id = 'CTA-TEST-ISOLATION' NOWAIT
 ```
 
 `NOWAIT` tells the database to fail immediately if the row is locked, instead of waiting. But this

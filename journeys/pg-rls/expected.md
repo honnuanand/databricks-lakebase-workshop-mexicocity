@@ -28,20 +28,20 @@ filter automatically.
 
 ```text
   as bu_retailbank (business unit RetailBank): 6 accounts, the SAME query:
-    ('ACCT-100234', 'BR-NYC', 'good_standing')
-    ('ACCT-100235', 'BR-NYC', 'good_standing')
-    ('ACCT-100240', 'BR-NYC', 'watch')
-    ('ACCT-100241', 'BR-NYC', 'good_standing')
-    ('ACCT-200310', 'BR-SFO', 'good_standing')
-    ('ACCT-200311', 'BR-SFO', 'frozen')
+    ('CTA-100234', 'BR-CDMX', 'good_standing')
+    ('CTA-100235', 'BR-CDMX', 'good_standing')
+    ('CTA-100240', 'BR-CDMX', 'watch')
+    ('CTA-100241', 'BR-CDMX', 'good_standing')
+    ('CTA-200310', 'BR-MTY', 'good_standing')
+    ('CTA-200311', 'BR-MTY', 'frozen')
 
   as bu_globalmarkets (business unit GlobalMarkets): 2 accounts, the SAME query:
-    ('ACCT-300420', 'BR-LON', 'good_standing')
-    ('ACCT-300421', 'BR-LON', 'watch')
+    ('CTA-300420', 'BR-GDL', 'good_standing')
+    ('CTA-300421', 'BR-GDL', 'watch')
 ```
 
 Same query (`SELECT account_id, branch_id, status FROM bank.account ORDER BY account_id`), but
-different rows. The RetailBank role sees only RetailBank's branches (NYC, SFO); the GlobalMarkets
+different rows. The RetailBank role sees only RetailBank's branches (CDMX, Monterrey); the GlobalMarkets
 role sees only its branch (LON). The RLS policy is filtering automatically, driven by
 `SET app.current_bu = '<business unit>'`.
 

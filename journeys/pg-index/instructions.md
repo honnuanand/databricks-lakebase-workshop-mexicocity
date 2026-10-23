@@ -72,7 +72,7 @@ python pg_index.py --step explain
 
 Runs EXPLAIN on six queries:
 
-1. **BTREE**: `WHERE account_id = 'ACCT-100'` (exact match) → picks btree
+1. **BTREE**: `WHERE account_id = 'CTA-100'` (exact match) → picks btree
 2. **HASH**: `WHERE mcc = 5` (integer equality) → picks hash
 3. **GIN**: `WHERE spec @> '{"product": "Checking"}` (JSON containment) → picks gin
 4. **BRIN**: `WHERE opened_at > now() - interval '90 days'` (time range) → picks brin

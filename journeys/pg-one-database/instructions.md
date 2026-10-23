@@ -65,7 +65,7 @@ SELECT
     ST_Distance(location, reference_point) as km_from_ref
 FROM account_unified_demo
 WHERE
-    branch_id = 'BR-NYC'
+    branch_id = 'BR-CDMX'
     AND (spec->>'type') = 'commercial'
     AND ST_DWithin(location, reference_point, 0.1)
 ORDER BY embedding_distance, km_from_ref

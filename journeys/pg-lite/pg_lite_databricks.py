@@ -41,9 +41,9 @@
 # MAGIC
 # MAGIC ```sql
 # MAGIC INSERT INTO accounts VALUES
-# MAGIC     ('ACCT-100240', 'good_standing', 91.5),
-# MAGIC     ('ACCT-100241', 'watch', 72.0),
-# MAGIC     ('ACCT-100242', 'frozen', 45.0);
+# MAGIC     ('CTA-100240', 'good_standing', 91.5),
+# MAGIC     ('CTA-100241', 'watch', 72.0),
+# MAGIC     ('CTA-100242', 'frozen', 45.0);
 # MAGIC ```
 # COMMAND ----------
 
@@ -83,7 +83,7 @@
 # MAGIC ## Step 7 — Try upsert (ON CONFLICT)
 # MAGIC
 # MAGIC ```sql
-# MAGIC INSERT INTO accounts VALUES ('ACCT-100240', 'good_standing', 99.0)
+# MAGIC INSERT INTO accounts VALUES ('CTA-100240', 'good_standing', 99.0)
 # MAGIC ON CONFLICT (id) DO UPDATE SET health = 99.0;
 # MAGIC ```
 # COMMAND ----------

@@ -5,7 +5,33 @@
 # MAGIC
 # MAGIC A hands-on lab. Run one cell at a time. You will build a table carrying six data types, create six index access methods, and prove the planner uses each on the right query.
 # MAGIC
-# MAGIC **Before you start:** finish `00-setup/`.
+# MAGIC **Before you start:** run `00-setup/setup_databricks` once to create your branch, then run the setup cells below.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Run first: install the driver and pick your branch
+# MAGIC Run the next three cells before anything else. They install the Postgres driver, upgrade the
+# MAGIC Databricks SDK if your environment's version predates the Lakebase API, and set `LB_PROJECT`,
+# MAGIC `LB_BRANCH`, and `LB_SCHEMA` from the widgets at the top of this notebook.
+# MAGIC `LB_BRANCH` defaults to the branch `00-setup/setup_databricks` created for you. Change a widget
+# MAGIC only if you used a different project or branch name.
+
+# COMMAND ----------
+
+# MAGIC %pip install "databricks-sdk>=0.120.0" "psycopg[binary]==3.3.4"
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import os, sys
+sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
+from lakebase import notebook_env
+notebook_env(dbutils);
+
 # COMMAND ----------
 
 # MAGIC ## Setup, connect
@@ -58,7 +84,7 @@ with connect() as conn:
         cur.execute(f"""
             INSERT INTO {SCHEMA}.{DEMO_TABLE}
             SELECT
-                'ACCT-' || g,
+                'CTA-' || g,
                 (g % 10)::int,
                 jsonb_build_object('product', CASE WHEN (g % 3) = 0 THEN 'Checking' WHEN (g % 3) = 1 THEN 'Savings' ELSE 'Credit' END, 'tier', 'Premium' || (g % 5)),
                 now() - (g % 365 || ' days')::interval,
@@ -116,7 +142,7 @@ with connect() as conn:
             return "Index" in plan_text
 
         queries = [
-            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'ACCT-100'"),
+            ('BTREE', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE account_id = 'CTA-100'"),
             ('HASH', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE mcc = 5"),
             ('GIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE spec @> '{{\"product\": \"Checking\"}}'::jsonb"),
             ('BRIN', f"SELECT * FROM {SCHEMA}.{DEMO_TABLE} WHERE opened_at BETWEEN now() - interval '400 days' AND now() - interval '395 days'"),

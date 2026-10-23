@@ -21,7 +21,7 @@
 
 ## The scenario
 
-A portfolio manager holds INS-AAPL (Apple equity) and wants the instruments most *similar* to it,
+A portfolio manager holds INS-QTZL (Quetzal Tecnologia equity) and wants the instruments most *similar* to it,
 to find a substitute or a hedge if they need to reduce that position. "Similar" is not any one
 column: it is a judgement over the instrument's whole profile, asset kind, sector, risk, how it
 behaves. That is a similarity question, not an exact filter.
@@ -64,7 +64,7 @@ This journey shows pgvector. For large corpora, use Vector Search.
 
 ## The wow moment
 
-The beat worth watching: you ask for the instruments most similar to INS-AAPL. The query reads the
+The beat worth watching: you ask for the instruments most similar to INS-QTZL. The query reads the
 instrument embeddings and uses `<=>` to rank the rest by cosine similarity, in one SQL statement,
 in the same database that holds your positions and trades, with no network hop. The nearest
 comparable instruments come back ranked, ready to inform a substitution or hedge.
