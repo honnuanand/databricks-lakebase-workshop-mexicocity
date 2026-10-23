@@ -12,9 +12,8 @@
 # MAGIC %md
 # MAGIC # Comienza aquí
 # MAGIC
-# MAGIC Ejecuta una vez el notebook de configuración y después avanza por la Parte 1. En el taller hacemos
-# MAGIC la Parte 1 y la ruta de Desarrolladores de aplicaciones. La ruta de Desarrolladores de agentes es para
-# MAGIC después del taller. Cada notebook termina con un enlace al siguiente de su ruta y otro para volver a
+# MAGIC Ejecuta una vez el notebook de configuración y después avanza por la Parte 1 y la Parte 2, la ruta de
+# MAGIC Desarrolladores de aplicaciones. Cada notebook termina con un enlace al siguiente y otro para volver a
 # MAGIC esta página.
 # MAGIC
 # MAGIC *English version:* <a href="$./START_HERE">Start Here</a>
@@ -59,9 +58,9 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Parte 2. Desarrolladores de aplicaciones (en el taller)
+# MAGIC ## Parte 2. Desarrolladores de aplicaciones
 # MAGIC
-# MAGIC **Esta es la ruta que hacemos juntos durante el taller.** Unas 2 horas.
+# MAGIC **Unas 2 horas.** Llega hasta una app de Databricks sobre Lakebase que usa todo lo de esta ruta.
 # MAGIC
 # MAGIC | # | Recorrido | Tiempo | Qué vas a hacer |
 # MAGIC | - | --------- | ------ | --------------- |
@@ -69,29 +68,3 @@
 # MAGIC | 2 | <a href="$./journeys/lakebase-search/lakebase_search_databricks_es">Lakebase Search</a> | 35 min | Busca en 40 notas de fraude y PLD por palabras (BM25), por significado (embeddings reales) y de las dos formas a la vez (búsqueda híbrida), con filtros y joins sobre las cuentas. Necesita Lakebase Search activado en tu proyecto (el recorrido explica cómo) y el endpoint de embeddings `databricks-gte-large-en`. |
 # MAGIC | 3 | <a href="$./journeys/data-api/data_api_databricks_es">API de datos de Lakebase</a> | 20 min | Consulta tus tablas por HTTPS con un token OAuth y recibe JSON. Necesita el secret scope `lakebase-workshop` que prepara tu instructor. |
 # MAGIC | 4 | <a href="$./journeys/capstone-app/capstone_app_databricks_es">Crear una app de Databricks sobre Lakebase</a> | 45 min | Despliega desde un notebook un tablero en FastAPI en Databricks Apps, con Lakebase como backend. Necesita permiso para crear apps. |
-
-# COMMAND ----------
-
-# MAGIC %md-sandbox
-# MAGIC ## Después del taller: Desarrolladores de agentes (por tu cuenta)
-# MAGIC
-# MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
-# MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">No es parte de la sesión del taller</strong>
-# MAGIC   <div style="color:#333;">
-# MAGIC     Esta ruta no se hace durante el taller. Hazla por tu cuenta después, en este mismo workspace,
-# MAGIC     mientras el laboratorio siga disponible. Usa el proyecto y la rama de la configuración; si ya no
-# MAGIC     existen, vuelve a ejecutar primero <code>00-setup/setup_databricks_es</code>. Necesita un endpoint de
-# MAGIC     Foundation Model. Cerca de 1 hora y 50 minutos.
-# MAGIC   </div>
-# MAGIC </div>
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC | # | Recorrido | Tiempo | Qué vas a hacer |
-# MAGIC | - | --------- | ------ | --------------- |
-# MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks_es">Memoria compartida entre agentes</a> | 20 min | Dos agentes comparten una tabla de memoria: uno escribe una nota de fraude y el otro la lee y actúa. Necesita un endpoint de Foundation Model. |
-# MAGIC | 2 | <a href="$./journeys/agentic-work/agentic_work_databricks_es">Agentes que usan herramientas</a> | 20 min | Un agente lee transacciones en vivo con una herramienta, retiene una cuenta marcada y lo recuerda para no retenerla dos veces. Necesita un endpoint de Foundation Model. |
-# MAGIC | 3 | <a href="$./journeys/learning-loop/learning_loop_databricks_es">Revisión humana de los resultados de la IA</a> | 25 min | La IA extrae hallazgos de notas de casos con un nivel de confianza; los de baja confianza pasan a un analista. Necesita un endpoint de Foundation Model; reemplaza las notas de caso de tu rama. |
-# MAGIC | 4 | <a href="$./journeys/lakebase-search/lakebase_search_databricks_es">Lakebase Search</a> | 35 min | Busca en 40 notas de fraude y PLD por palabras (BM25), por significado (embeddings reales) y de las dos formas a la vez (búsqueda híbrida), con filtros y joins sobre las cuentas. Necesita Lakebase Search activado en tu proyecto (el recorrido explica cómo) y el endpoint de embeddings `databricks-gte-large-en`. |
-# MAGIC | 5 | <a href="$./journeys/pg-features/pg_features_databricks_es">Servir features en línea</a> | 10 min | Sirve desde Lakebase las variables de riesgo de fraude de una cuenta con una búsqueda rápida por llave. |

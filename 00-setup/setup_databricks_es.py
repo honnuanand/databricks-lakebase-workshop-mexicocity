@@ -160,6 +160,6 @@ for row in run_sql("SELECT branch_id, count(*) FROM bank.account GROUP BY branch
 # MAGIC ---
 # MAGIC Todo listo. **Siguiente en la Parte 1:** <a href="$../journeys/branch-the-brain/branch_the_brain_databricks_es">Ramas de base de datos →</a>
 # MAGIC
-# MAGIC O abre el <a href="$../START_HERE_es">índice</a> para ver la Parte 1 y las dos rutas de la Parte 2.
+# MAGIC O abre el <a href="$../START_HERE_es">índice</a> para ver la Parte 1 y la Parte 2.
 # MAGIC Todos los notebooks de los recorridos empiezan con las mismas celdas de instalación y widgets, y los
 # MAGIC widgets toman por defecto el proyecto y la rama que acabas de crear.

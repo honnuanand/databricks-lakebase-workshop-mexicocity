@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Taller de Lakebase</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones: Recorrido 2 de 4 · Desarrolladores de agentes: Recorrido 4 de 5 · Lakebase Search</span>
+# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones · Recorrido 2 de 4 · Lakebase Search</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # Lakebase Search
 # MAGIC #### Duración: 35 minutos
 # MAGIC
-# MAGIC *Recorrido 2 de 4 para Desarrolladores de aplicaciones y 4 de 5 para Desarrolladores de agentes. JSONB buscó valores exactos; este recorrido encuentra filas por sus palabras y por su significado.*
+# MAGIC *Recorrido 2 de 4 de la ruta de Desarrolladores de aplicaciones. JSONB buscó valores exactos; este recorrido encuentra filas por sus palabras y por su significado.*
 # MAGIC
 # MAGIC ## Resumen
 # MAGIC
@@ -828,9 +828,6 @@ for account_id, sim in matches:
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Siguiente**, según tu ruta:
-# MAGIC
-# MAGIC - Desarrolladores de aplicaciones: <a href="$../data-api/data_api_databricks_es">API de datos de Lakebase →</a>
-# MAGIC - Desarrolladores de agentes: <a href="$../pg-features/pg_features_databricks_es">Servir features en línea →</a>
+# MAGIC **Siguiente en la ruta de Desarrolladores de aplicaciones:** <a href="$../data-api/data_api_databricks_es">API de datos de Lakebase →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE_es">← Volver al índice</a>

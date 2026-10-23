@@ -13,24 +13,30 @@
 # MAGIC # Building a Databricks App on Lakebase
 # MAGIC #### Duration: 45 minutes
 # MAGIC
-# MAGIC *Journey 4 of 4 in the App developers track. The earlier journeys used Lakebase from a notebook. This one puts a real web app in front of your branch.*
+# MAGIC *Journey 4 of 4 in the App developers track. The earlier journeys used Lakebase from a notebook. This one puts everything you built behind a real web app.*
 # MAGIC
 # MAGIC ## Overview
 # MAGIC
-# MAGIC The fraud team wants a small dashboard: accounts and their status, an account's recent
-# MAGIC transactions, a fund's look-through holdings, and a search over case notes. It has to read live data
-# MAGIC from Lakebase and run inside Databricks, with no separate server to manage.
+# MAGIC The fraud team wants one console for its analysts, reading live data from Lakebase and running inside
+# MAGIC Databricks, with no separate server to manage. The workshop already includes it: a **fraud analyst
+# MAGIC console** (a FastAPI backend and a single-page UI, in Spanish) in this journey's `app/` folder. Each of
+# MAGIC its four tabs summarizes one part of the workshop, on your own branch, and shows the SQL or REST call it
+# MAGIC just ran:
 # MAGIC
-# MAGIC The workshop already includes that app: a FastAPI backend and a single-page UI in this journey's
-# MAGIC `app/` folder. In this lab you deploy it to **Databricks Apps** from this notebook, give the app its
-# MAGIC own access to your branch, and open it to see it read the bank. You don't write any app code.
+# MAGIC 1. **Tu base de datos** (Part 1): your project, your branch, its compute endpoint and its state, and who the app is.
+# MAGIC 2. **Búsqueda** (Lakebase Search): the same 40 notes searched by keyword (BM25), by meaning (vectors), hybrid (RRF), or all three side by side.
+# MAGIC 3. **Cuenta** (Lakebase Data API): an account read over the Data API, and its transactions over SQL.
+# MAGIC 4. **Instrumentos** (JSON Data with JSONB): instruments filtered by their JSONB spec sheet with `@>`.
+# MAGIC
+# MAGIC In this lab you deploy it to **Databricks Apps** from this notebook, give the app its own access to your
+# MAGIC branch and to the embedding model, and open it. You don't write any app code.
 # MAGIC
 # MAGIC ## Learning objectives
 # MAGIC
 # MAGIC By the end of this lab, you will be able to:
 # MAGIC
 # MAGIC 1. **Create a Databricks App** and find the service principal it runs as.
-# MAGIC 2. **Give the app access to Lakebase:** project permission plus a Postgres role on your branch.
+# MAGIC 2. **Give the app access to Lakebase and to a model:** project permission, a Postgres role on your branch that the Data API can use, and the embedding endpoint as an app resource.
 # MAGIC 3. **Deploy the app from a workspace folder**, passing it which project and branch to serve.
 # MAGIC 4. **Explain how an app authenticates to Lakebase** with short-lived credentials, without a password.
 
@@ -41,7 +47,8 @@
 # MAGIC
 # MAGIC - **Databricks App:** a web app (here FastAPI) that Databricks hosts and runs for you, with its own URL. Only signed-in workspace users can open it.
 # MAGIC - **Service principal:** a non-human identity. Each app gets one when it's created, and the app runs as it, so it needs its own permissions, separate from yours.
-# MAGIC - **Two layers of access:** a workspace permission on the Lakebase project (`CAN_USE`, so the app can find your branch and get credentials) and a Postgres role on the branch (so the database lets it read the `bank` tables).
+# MAGIC - **Three kinds of access:** a workspace permission on the Lakebase project (`CAN_USE`, so the app can find your branch and get credentials), a Postgres role on the branch (so the database lets it read the `bank` tables, and the Data API can act as it), and the embedding endpoint (`CAN_QUERY`, so it can turn a search into a vector).
+# MAGIC - **App resource:** something the app uses, declared on the app, such as a model serving endpoint. Databricks grants the app's service principal the permission you name.
 # MAGIC - **Deployment:** a snapshot of the app's source folder, started on Databricks compute. Redeploying picks up changes.
 # MAGIC
 # MAGIC More terms are defined in `docs/glossary.md` in the workshop folder.
@@ -54,10 +61,11 @@
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">Before you start</strong>
 # MAGIC   <div style="color:#333;">
-# MAGIC     Run <code>00-setup/setup_databricks</code> once to create your branch and load the bank.
+# MAGIC     Run <code>00-setup/setup_databricks</code> once, and do the earlier journeys of this track first:
+# MAGIC     the app's search tab uses the notes, embeddings, and indexes from <em>Lakebase Search</em> (A3 checks).
 # MAGIC     Attach this notebook to <strong>serverless</strong> compute.
-# MAGIC     You need permission to create Databricks Apps in this workspace, and <code>CAN_MANAGE</code> on the
-# MAGIC     Lakebase project (the class setup gives you both). Creating the app and its first deployment take a few minutes.
+# MAGIC     You need permission to create Databricks Apps in this workspace. You own your Lakebase project, so you
+# MAGIC     can grant the app access to it. Creating the app and its first deployment take a few minutes.
 # MAGIC   </div>
 # MAGIC </div>
 
@@ -94,7 +102,7 @@ notebook_env(dbutils);
 # MAGIC
 # MAGIC ```
 # MAGIC signed in as alex.kim@example.com
-# MAGIC   LB_PROJECT = bank
+# MAGIC   LB_PROJECT = bank-alex-kim
 # MAGIC   LB_BRANCH = u-alex-kim
 # MAGIC   LB_SCHEMA = bank
 # MAGIC ```
@@ -124,13 +132,16 @@ notebook_env(dbutils);
 import os, sys, re, time
 sys.path.insert(0, os.path.join(os.getcwd(), "..", "..", "common", "scripts"))
 from lakebase import client, branch_name, branch_endpoint
-from databricks.sdk.service.apps import App, AppDeployment, EnvVar
+from databricks.sdk.service.apps import (App, AppDeployment, AppResource, AppResourceServingEndpoint,
+                                        AppResourceServingEndpointServingEndpointPermission, EnvVar)
 from databricks.sdk.service.iam import AccessControlRequest, PermissionLevel
+from databricks.sdk.errors import NotFound
 import psycopg
 
 PROJECT = os.environ["LB_PROJECT"]
 MINE    = os.environ["LB_BRANCH"]
 SCHEMA  = os.environ.get("LB_SCHEMA", "bank")
+EMBED_ENDPOINT = "databricks-gte-large-en"   # the model Lakebase Search used for the notes
 w = client()
 
 # App names: lowercase letters, digits and hyphens, up to 30 characters.
@@ -150,7 +161,7 @@ print("source path:", SOURCE)
 # MAGIC
 # MAGIC ```
 # MAGIC app name:    bank-dash-alex-kim
-# MAGIC serves:      project bank, branch u-alex-kim, schema bank
+# MAGIC serves:      project bank-alex-kim, branch u-alex-kim, schema bank
 # MAGIC source path: /Workspace/Users/alex.kim@example.com/<folder>/journeys/capstone-app/app
 # MAGIC ```
 # MAGIC
@@ -166,6 +177,63 @@ print("source path:", SOURCE)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### A3. Check that the track's data is ready
+# MAGIC
+# MAGIC The app reads what the earlier journeys left on your branch. This cell checks the three things it needs:
+# MAGIC the notes from *Lakebase Search* with their embeddings and both search indexes, and the Data API, which
+# MAGIC setup turned on. The SQL:
+# MAGIC
+# MAGIC ```sql
+# MAGIC SELECT count(*), count(embedding) FROM bank.search_note;
+# MAGIC SELECT to_regclass('bank.search_note_bm25'), to_regclass('bank.search_note_ann');
+# MAGIC ```
+
+# COMMAND ----------
+
+from lakebase import run_sql
+
+try:
+    notes, embedded = run_sql(f"SELECT count(*), count(embedding) FROM {SCHEMA}.search_note")[0]
+    bm25, ann = run_sql(f"SELECT to_regclass('{SCHEMA}.search_note_bm25'), to_regclass('{SCHEMA}.search_note_ann')")[0]
+except Exception:
+    notes = embedded = 0
+    bm25 = ann = None
+if not (notes and embedded and bm25 and ann):
+    raise SystemExit("The search notes, their embeddings, or their indexes are missing on your branch. "
+                     "Run the Lakebase Search journey first, then rerun this cell.")
+try:
+    data_api = w.postgres.get_data_api(
+        name=f"{branch_name(PROJECT, MINE)}/databases/databricks-postgres/data-api").status.url
+except Exception:
+    raise SystemExit("The Data API isn't on for your branch. Rerun 00-setup/setup_databricks (step 5), "
+                     "then rerun this cell.") from None
+
+print(f"search notes: {notes} ({embedded} with an embedding), indexes: {bm25}, {ann}")
+print(f"Data API:     {data_api}")
+
+# COMMAND ----------
+
+# MAGIC %md-sandbox
+# MAGIC **Expected result:**
+# MAGIC
+# MAGIC ```
+# MAGIC search notes: 40 (40 with an embedding), indexes: search_note_bm25, search_note_ann
+# MAGIC Data API:     https://ep-....database.us-west-2.cloud.databricks.com/api/2.0/workspace/<workspace id>/rest/databricks_postgres
+# MAGIC ```
+# MAGIC
+# MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
+# MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
+# MAGIC   <div style="color:#333;">
+# MAGIC     <ul style="margin:0; padding-left:20px;">
+# MAGIC       <li><code>The search notes ... are missing</code>: run <em>Lakebase Search</em> on this branch, then this cell. If you reset your branch since, run it again: a reset starts from <code>production</code>, which doesn't have the notes.</li>
+# MAGIC       <li><code>The Data API isn't on for your branch</code>: rerun setup, which turns it on for <code>production</code> and your branch.</li>
+# MAGIC     </ul>
+# MAGIC   </div>
+# MAGIC </div>
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## B. Create the app
 
 # COMMAND ----------
@@ -174,29 +242,39 @@ print("source path:", SOURCE)
 # MAGIC ### B1. Create the app
 # MAGIC
 # MAGIC Creating an app reserves its name and URL, starts its compute, and creates the **service principal**
-# MAGIC the app will run as. If your app already exists from an earlier run, the cell reuses it.
+# MAGIC the app will run as. The cell also declares the embedding endpoint as an **app resource** with
+# MAGIC `CAN_QUERY`, so the app can turn a search into a vector with the same model the notes used. If your app
+# MAGIC already exists from an earlier run, the cell reuses it and adds the resource if it's missing.
 
 # COMMAND ----------
 
+model = AppResource(name="embedding-model", serving_endpoint=AppResourceServingEndpoint(
+    name=EMBED_ENDPOINT, permission=AppResourceServingEndpointServingEndpointPermission.CAN_QUERY))
 try:
     app = w.apps.get(APP_NAME)
     print(f"app {APP_NAME} already exists, reusing it")
-except Exception:
+    if not any(r.serving_endpoint and r.serving_endpoint.name == EMBED_ENDPOINT for r in app.resources or []):
+        app = w.apps.update(name=APP_NAME, app=App(name=APP_NAME, resources=(app.resources or []) + [model]))
+except NotFound:
     t0 = time.time()
-    app = w.apps.create_and_wait(App(name=APP_NAME, description="Lakebase workshop: bank dashboard"))
+    app = w.apps.create_and_wait(App(name=APP_NAME, description="Lakebase workshop: fraud analyst console",
+                                     resources=[model]))
     print(f"created app {APP_NAME} in {time.time() - t0:.0f}s")
 
 SP = app.service_principal_client_id
 print("service principal:", SP)
 print("app URL:          ", app.url)
+print("resources:        ", [f"{r.serving_endpoint.name} ({r.serving_endpoint.permission.value})"
+                             for r in app.resources or [] if r.serving_endpoint])
 
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `created app bank-dash-alex-kim in 135s` on a test run (about two minutes), then the app's service
-# MAGIC principal id (a UUID) and its URL, like `https://bank-dash-alex-kim-<workspace id>.aws.databricksapps.com`.
+# MAGIC **Expected result:** `created app bank-dash-alex-kim in ...s` (about two minutes; `already exists, reusing it` on a rerun), then
+# MAGIC the app's service principal id (a UUID), its URL, like `https://bank-dash-alex-kim-<workspace id>.aws.databricksapps.com`,
+# MAGIC and `resources: ['databricks-gte-large-en (CAN_QUERY)']`.
 # MAGIC
-# MAGIC **What this proves:** the app exists and has its own identity. Nothing can read your data yet: the service principal has no permissions.
+# MAGIC **What this proves:** the app exists and has its own identity, which can call the embedding model. It can't read your data yet: the service principal has no access to your project.
 # MAGIC
 # MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
@@ -230,7 +308,7 @@ print(f"granted CAN_USE on project {PROJECT} to the app's service principal")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Expected result:** `granted CAN_USE on project bank to the app's service principal`
+# MAGIC **Expected result:** `granted CAN_USE on project bank-alex-kim to the app's service principal`
 
 # COMMAND ----------
 
@@ -239,13 +317,15 @@ print(f"granted CAN_USE on project {PROJECT} to the app's service principal")
 # MAGIC
 # MAGIC The database also has to know the app. `databricks_create_role()` creates a Postgres role linked to
 # MAGIC the service principal, so it can log in with Databricks credentials; then it gets read access to
-# MAGIC the `bank` tables. The SQL that runs on your branch:
+# MAGIC the `bank` tables. Granting the role to `authenticator` lets the Data API act as the app, which it
+# MAGIC refuses to do for you, the project owner. The SQL that runs on your branch:
 # MAGIC
 # MAGIC ```sql
 # MAGIC CREATE EXTENSION IF NOT EXISTS databricks_auth;
 # MAGIC SELECT databricks_create_role('<service principal id>', 'SERVICE_PRINCIPAL');
 # MAGIC GRANT USAGE ON SCHEMA bank TO "<service principal id>";
 # MAGIC GRANT SELECT ON ALL TABLES IN SCHEMA bank TO "<service principal id>";
+# MAGIC GRANT "<service principal id>" TO authenticator;   -- for the Data API
 # MAGIC ```
 
 # COMMAND ----------
@@ -264,16 +344,21 @@ with psycopg.connect(host=host, port=5432, dbname="databricks_postgres", user=w.
     cur.execute(f'GRANT USAGE ON SCHEMA {SCHEMA} TO "{SP}"')
     cur.execute(f'GRANT SELECT ON ALL TABLES IN SCHEMA {SCHEMA} TO "{SP}"')
     print(f"granted read access to schema {SCHEMA}")
+    cur.execute(f'GRANT "{SP}" TO authenticator')
+    print("granted the app's role to authenticator, so the Data API can act as the app")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Expected result:** ```
+# MAGIC **Expected result:** `Postgres role for the app already exists` on a rerun, then:
+# MAGIC
+# MAGIC ```
 # MAGIC created Postgres role for the app
 # MAGIC granted read access to schema bank
+# MAGIC granted the app's role to authenticator, so the Data API can act as the app
 # MAGIC ```
 # MAGIC
-# MAGIC **What this proves:** access is granted in two places, the workspace and the database, and both are scoped: the app can read your branch's `bank` tables, and nothing else.
+# MAGIC **What this proves:** access is granted in three places, the model, the workspace, and the database, and each is scoped: the app can query one model and read your branch's `bank` tables, and nothing else.
 
 # COMMAND ----------
 
@@ -285,8 +370,8 @@ with psycopg.connect(host=host, port=5432, dbname="databricks_postgres", user=w.
 # MAGIC %md
 # MAGIC ### D1. Deploy
 # MAGIC
-# MAGIC Deploying takes a snapshot of the `app/` folder and starts it. The cell passes the project, branch and
-# MAGIC schema as environment variables, so the app serves **your** branch.
+# MAGIC Deploying takes a snapshot of the `app/` folder and starts it. The cell passes the project, branch,
+# MAGIC schema, and embedding endpoint as environment variables, so the app serves **your** branch.
 
 # COMMAND ----------
 
@@ -295,14 +380,15 @@ dep = w.apps.deploy_and_wait(APP_NAME, AppDeployment(
     source_code_path=SOURCE,
     env_vars=[EnvVar(name="LAKEBASE_PROJECT", value=PROJECT),
               EnvVar(name="LAKEBASE_BRANCH", value=MINE),
-              EnvVar(name="LAKEBASE_SCHEMA", value=SCHEMA)]))
+              EnvVar(name="LAKEBASE_SCHEMA", value=SCHEMA),
+              EnvVar(name="EMBED_ENDPOINT", value=EMBED_ENDPOINT)]))
 print(f"deployment {dep.deployment_id}: {dep.status.state.value} in {time.time() - t0:.0f}s")
 print(dep.status.message)
 
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `deployment ...: SUCCEEDED in 16s` on a test run, then `App started successfully`.
+# MAGIC **Expected result:** `deployment ...: SUCCEEDED in 13s` on a test run, then `App started successfully`.
 # MAGIC
 # MAGIC <div style="border-left:4px solid #1B5162; background:#EEF4F6; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#1B5162; margin-bottom:6px;">See it in the UI (optional)</strong>
@@ -331,8 +417,8 @@ print(dep.status.message)
 # MAGIC ### E1. Open the app
 # MAGIC
 # MAGIC Databricks Apps only accept a signed-in user's browser session (or an OAuth token), so you open the
-# MAGIC app in a new browser tab rather than from this notebook. The cell prints the links. The app also has
-# MAGIC a small JSON API next to its UI, which is handy for seeing exactly what it reads.
+# MAGIC app in a new browser tab rather than from this notebook. The cell prints the link to the console and
+# MAGIC to the small JSON API behind each tab, which is handy for seeing exactly what it returns.
 
 # COMMAND ----------
 
@@ -341,33 +427,34 @@ print("app status:", app.app_status.state.value if app.app_status else "?",
       "| compute:", app.compute_status.state.value if app.compute_status else "?")
 print()
 print("Open in a new browser tab:")
-for path, what in [("/", "the dashboard UI"),
-                   ("/api/health", "who the app is and which branch it serves"),
-                   ("/api/accounts", "every account, read from your branch"),
-                   ("/api/accounts/CTA-100240", "one account and its recent transactions"),
-                   ("/api/holdings/FUND-GROWTH-A", "a fund's look-through holdings (recursive SQL)"),
-                   ("/api/casenotes?q=SPEI", "full-text search over case notes")]:
+for path, what in [("/", "the console (in Spanish), with its four tabs"),
+                   ("/api/health", "tab 1: your project, branch, endpoint, and the app's identity"),
+                   ("/api/search?mode=compare&q=customer%20lost%20control%20of%20their%20account",
+                    "tab 2: the same question by keyword, by meaning, and hybrid"),
+                   ("/api/accounts/CTA-100240", "tab 3: the account over the Data API, its transactions over SQL"),
+                   ("/api/instruments?filter=%7B%22sector%22%3A%20%22tech%22%7D", "tab 4: instruments whose JSONB spec has sector tech")]:
     print(f"  {app.url}{path}")
     print(f"      {what}")
 
 # COMMAND ----------
 
 # MAGIC %md-sandbox
-# MAGIC **Expected result:** `app status: RUNNING | compute: ACTIVE`, then six links. Opened in the browser, a test run returned:
+# MAGIC **Expected result:** `app status: RUNNING | compute: ACTIVE`, then five links. In the console, a test run showed:
 # MAGIC
-# MAGIC - `/api/health`: `{"ok":true,"identity":"<the app's service principal id>","project":"bank","branch":"u-yourname","schema":"bank"}`
-# MAGIC - `/api/accounts`: the 8 accounts, starting `{"account_id":"CTA-100234","branch_id":"BR-CDMX","line":"Checking",...}`
-# MAGIC - `/api/accounts/CTA-100240`: the account with its CLABE (`999180000001002407`) and its recent transactions, including the MXN 38,500 SPEI transfer
-# MAGIC - `/api/holdings/FUND-GROWTH-A`: the fund's cash, equity sleeve and Zafiro Software at depth 1, and the sleeve's holdings at depth 2
-# MAGIC - `/api/casenotes?q=SPEI`: the two case notes that mention SPEI
+# MAGIC - **Tu base de datos:** your project and branch (forked from `production`), the endpoint `primary` as `ACTIVE` or `IDLE` (1 CU, suspends after 5 minutes), and the app's identity: its service principal, not you.
+# MAGIC - **Búsqueda:** for "customer lost control of their account", the hybrid search returns notes 2, 1, and 7 first. Compare "CLABE" (only keyword search finds it) with "money sent to strangers" (only search by meaning does).
+# MAGIC - **Cuenta:** `CTA-100240`, en observación, with its CLABE `999180000001002407`, read over the Data API, and its transactions over SQL, including the MXN 38,500 SPEI transfer.
+# MAGIC - **Instrumentos:** `{"sector": "tech"}` returns Quetzal Tecnologia and Zafiro Software with their JSONB spec sheets.
 # MAGIC
-# MAGIC **What this proves:** the app reads your branch as its own identity: `/api/health` shows the service principal, not you, and the data is your bank.
+# MAGIC **What this proves:** the app reads your branch as its own identity, and each tab uses what one journey built: the same branch, the same search indexes, the same Data API, and the same JSONB column.
 # MAGIC
 # MAGIC <div style="border-left:4px solid #FF9800; background:#FFF3E0; padding:12px 16px; border-radius:4px; margin:12px 0; font-family:sans-serif;">
 # MAGIC   <strong style="display:block; color:#E65100; margin-bottom:6px;">Troubleshooting</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     <ul style="margin:0; padding-left:20px;">
 # MAGIC       <li><strong>An error mentioning <code>permission denied</code> or <code>password authentication failed</code>:</strong> rerun C1 and C2, then reload the page.</li>
+# MAGIC       <li><strong>Búsqueda says the embedding endpoint isn't reachable:</strong> rerun B1, which adds the model as an app resource, then D1. Keyword search works without it.</li>
+# MAGIC       <li><strong>Cuenta shows <code>Data API answered 403</code>:</strong> rerun C2, which grants the app's role to <code>authenticator</code>.</li>
 # MAGIC       <li><strong><code>503</code> with "has no host yet":</strong> your branch isn't ready. Check it in setup, then reload.</li>
 # MAGIC     </ul>
 # MAGIC   </div>
@@ -408,9 +495,9 @@ for path, what in [("/", "the dashboard UI"),
 # MAGIC </details>
 # MAGIC
 # MAGIC <details>
-# MAGIC <summary><strong>2. Which two permissions does the app need?</strong></summary>
+# MAGIC <summary><strong>2. Which permissions does the app need?</strong></summary>
 # MAGIC
-# MAGIC `CAN_USE` on the Lakebase project, and a Postgres role on the branch with read access to `bank`.
+# MAGIC `CAN_QUERY` on the embedding endpoint (as an app resource), `CAN_USE` on the Lakebase project, and a Postgres role on the branch with read access to `bank`, granted to `authenticator` for the Data API.
 # MAGIC
 # MAGIC </details>
 # MAGIC
@@ -426,11 +513,11 @@ for path, what in [("/", "the dashboard UI"),
 # MAGIC %md
 # MAGIC ## G. Conclusion
 # MAGIC
-# MAGIC In this lab you created a Databricks App, gave it access to your branch, deployed it, and opened it.
-# MAGIC Key takeaways:
+# MAGIC In this lab you created a Databricks App, gave it access to your branch and to a model, deployed it,
+# MAGIC and opened a console that brings the whole track together. Key takeaways:
 # MAGIC
 # MAGIC 1. **An app runs as its own service principal,** so it gets exactly the access you grant it.
-# MAGIC 2. **Access has two layers:** `CAN_USE` on the Lakebase project and a Postgres role on the branch.
+# MAGIC 2. **Access is scoped in three places:** the model as an app resource, `CAN_USE` on the Lakebase project, and a Postgres role on the branch.
 # MAGIC 3. **No passwords:** the app asks Lakebase for a short-lived credential each time it connects.
 # MAGIC 4. **Deploying is one call** from a workspace folder; the same app can serve any branch you point it at.
 # MAGIC

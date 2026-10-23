@@ -160,6 +160,6 @@ for row in run_sql("SELECT branch_id, count(*) FROM bank.account GROUP BY branch
 # MAGIC ---
 # MAGIC You're set. **Next in Part 1:** <a href="$../journeys/branch-the-brain/branch_the_brain_databricks">Database Branching →</a>
 # MAGIC
-# MAGIC Or open the <a href="$../START_HERE">table of contents</a> to see Part 1 and both Part 2 tracks.
+# MAGIC Or open the <a href="$../START_HERE">table of contents</a> to see Part 1 and Part 2.
 # MAGIC Every journey notebook begins with the same install and widget cells, and the widgets default to
 # MAGIC the project and branch you just created.

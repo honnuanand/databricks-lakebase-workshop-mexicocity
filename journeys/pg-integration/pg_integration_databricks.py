@@ -439,16 +439,12 @@ for row in rows:
 # MAGIC    over SSL.
 # MAGIC 4. **Login tokens are short-lived,** so long-running tools refresh them in their connection pool.
 # MAGIC
-# MAGIC That's the end of Part 1. Part 2 builds on the same bank: in the workshop we continue with the App
-# MAGIC developers track.
+# MAGIC That's the end of Part 1. Part 2, the App developers track, builds on the same bank.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **You've finished Part 1.**
-# MAGIC
-# MAGIC - **Next in the workshop,** App developers: <a href="$../pg-json/pg_json_databricks">JSON Data with JSONB →</a>
-# MAGIC - **After the workshop,** on your own, Agent developers: <a href="$../agent-memory/agent_memory_databricks">Shared Agent Memory →</a>
+# MAGIC **You've finished Part 1. Next in Part 2, App developers:** <a href="$../pg-json/pg_json_databricks">JSON Data with JSONB →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

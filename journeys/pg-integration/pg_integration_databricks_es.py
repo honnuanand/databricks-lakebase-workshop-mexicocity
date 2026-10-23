@@ -442,16 +442,12 @@ for row in rows:
 # MAGIC 4. **Los tokens de inicio de sesión duran poco,** así que las herramientas que se quedan conectadas los
 # MAGIC    renuevan en su pool de conexiones.
 # MAGIC
-# MAGIC Aquí termina la Parte 1. La Parte 2 sigue con el mismo banco: en el taller continuamos con la ruta de
-# MAGIC Desarrolladores de aplicaciones.
+# MAGIC Aquí termina la Parte 1. La Parte 2, la ruta de Desarrolladores de aplicaciones, sigue con el mismo banco.
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Terminaste la Parte 1.**
-# MAGIC
-# MAGIC - **Siguiente en el taller,** Desarrolladores de aplicaciones: <a href="$../pg-json/pg_json_databricks_es">Datos JSON con JSONB →</a>
-# MAGIC - **Después del taller,** por tu cuenta, Desarrolladores de agentes: <a href="$../agent-memory/agent_memory_databricks_es">Memoria compartida entre agentes →</a>
+# MAGIC **Terminaste la Parte 1. Siguiente en la Parte 2, Desarrolladores de aplicaciones:** <a href="$../pg-json/pg_json_databricks_es">Datos JSON con JSONB →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE_es">← Volver al índice</a>

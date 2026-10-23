@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers: Journey 2 of 4 · Agent developers: Journey 4 of 5 · Lakebase Search</span>
+# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 2 of 4 · Lakebase Search</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # Lakebase Search
 # MAGIC #### Duration: 35 minutes
 # MAGIC
-# MAGIC *Journey 2 of 4 for App developers and 4 of 5 for Agent developers. JSONB matched exact values; this journey finds rows by their words and by their meaning.*
+# MAGIC *Journey 2 of 4 in the App developers track. JSONB matched exact values; this journey finds rows by their words and by their meaning.*
 # MAGIC
 # MAGIC ## Overview
 # MAGIC
@@ -817,9 +817,6 @@ for account_id, sim in matches:
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Next**, depending on your track:
-# MAGIC
-# MAGIC - App developers: <a href="$../data-api/data_api_databricks">Lakebase Data API →</a>
-# MAGIC - Agent developers: <a href="$../pg-features/pg_features_databricks">Online Feature Serving →</a>
+# MAGIC **Next in the App developers track:** <a href="$../data-api/data_api_databricks">Lakebase Data API →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>
