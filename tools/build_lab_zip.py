@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Build the lab ZIP that Vocareum extracts into each attendee's workspace folder.
 
-Packs only what the workshop path needs (START_HERE, setup, the 15 journeys in
-English and Spanish, the shared scripts, the capstone app, and the glossaries)
+Packs only what the workshop path needs (START_HERE, setup, the 9 journeys of
+Part 1 and the App developers track in English and Spanish, the shared scripts,
+the Lakebase Search notes, the capstone app, and the glossaries)
 under one top-level folder, keeping the repo's layout: the notebooks find
 common/scripts and each other through relative paths. Files come from git, so
 nothing untracked ends up in the ZIP. Then it checks the ZIP: every notebook
@@ -34,9 +35,7 @@ JOURNEYS = [
     # Part 1
     "branch-the-brain", "break-and-rewind", "write-to-analytics", "scale-to-zero", "pg-integration",
     # Part 2, App developers
-    "pg-json", "pg-vector", "pg-search", "pg-booking", "data-api", "capstone-app",
-    # Part 2, Agent developers (pg-vector is in both tracks)
-    "agent-memory", "agentic-work", "learning-loop", "pg-features",
+    "pg-json", "lakebase-search", "data-api", "capstone-app",
 ]
 FILES = [
     "START_HERE.py", "START_HERE_es.py",
@@ -44,6 +43,7 @@ FILES = [
     "common/scripts/lakebase.py", "common/scripts/branch.py", "common/scripts/project.py",
     "common/scripts/load_bank.py", "common/scripts/finance_schema.sql", "common/scripts/finance_seed.sql",
     "docs/glossary.md", "docs/glosario-es.md",
+    "journeys/lakebase-search/search_notes.sql",   # the 40 notes Lakebase Search loads
 ]
 # The capstone deploys this folder as the app's source code; the shell scripts are laptop-only.
 APP_DIR = "journeys/capstone-app/app/"
