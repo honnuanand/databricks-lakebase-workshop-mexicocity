@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Taller de Lakebase</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones · Recorrido 1 de 6 · Datos JSON con JSONB</span>
+# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones · Recorrido 1 de 4 · Datos JSON con JSONB</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # Datos JSON con JSONB
 # MAGIC #### Duración: 20 minutos
 # MAGIC
-# MAGIC *Recorrido 1 de 6 de la ruta de Desarrolladores de aplicaciones. La Parte 1 usó columnas fijas; este recorrido guarda datos cuya forma cambia de una fila a otra.*
+# MAGIC *Recorrido 1 de 4 de la ruta de Desarrolladores de aplicaciones. La Parte 1 usó columnas fijas; este recorrido guarda datos cuya forma cambia de una fila a otra.*
 # MAGIC
 # MAGIC ## Resumen
 # MAGIC
@@ -417,6 +417,6 @@ for row in rows:
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Siguiente en la ruta de Desarrolladores de aplicaciones:** <a href="$../pg-vector/pg_vector_databricks_es">Búsqueda por similitud de vectores →</a>
+# MAGIC **Siguiente en la ruta de Desarrolladores de aplicaciones:** <a href="$../lakebase-search/lakebase_search_databricks_es">Lakebase Search →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE_es">← Volver al índice</a>

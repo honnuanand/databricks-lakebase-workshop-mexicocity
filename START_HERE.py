@@ -59,16 +59,14 @@
 # MAGIC %md
 # MAGIC ## Part 2. App developers (in the workshop)
 # MAGIC
-# MAGIC **This is the track we do together during the workshop.** About 2.5 hours.
+# MAGIC **This is the track we do together during the workshop.** About 2 hours.
 # MAGIC
 # MAGIC | # | Journey | Time | What you'll do |
 # MAGIC | - | ------- | ---- | -------------- |
 # MAGIC | 1 | <a href="$./journeys/pg-json/pg_json_databricks">JSON Data with JSONB</a> | 20 min | Store varying instrument and fund spec sheets as JSONB, query them in SQL, and index them with GIN. |
-# MAGIC | 2 | <a href="$./journeys/pg-vector/pg_vector_databricks">Vector Similarity Search</a> | 20 min | Find the instruments most similar to a holding by embedding similarity, next to your transactional data. |
-# MAGIC | 3 | <a href="$./journeys/pg-search/pg_search_databricks">Full-Text and Fuzzy Search</a> | 30 min | Keyword and typo-tolerant search over fraud and AML case notes, and how hybrid search with vectors would work. |
-# MAGIC | 4 | <a href="$./journeys/pg-booking/pg_booking_databricks">Preventing Overlapping Schedules</a> | 20 min | The database refuses two overlapping settlement windows on the same account. |
-# MAGIC | 5 | <a href="$./journeys/data-api/data_api_databricks">Lakebase Data API</a> | 20 min | Query your tables over HTTPS with an OAuth token and get JSON back. Needs the Data API enabled on your branch. |
-# MAGIC | 6 | <a href="$./journeys/capstone-app/capstone_app_databricks">Building a Databricks App on Lakebase</a> | 45 min | Deploy a FastAPI dashboard on Databricks Apps from a notebook, with Lakebase as its backend. Needs permission to create apps. |
+# MAGIC | 2 | <a href="$./journeys/lakebase-search/lakebase_search_databricks">Lakebase Search</a> | 35 min | Search 40 fraud and AML notes by keyword (BM25), by meaning (real embeddings), and both at once (hybrid), filtered and joined to live accounts. Needs Lakebase Search enabled on your project (the journey shows how) and the `databricks-gte-large-en` embedding endpoint. |
+# MAGIC | 3 | <a href="$./journeys/data-api/data_api_databricks">Lakebase Data API</a> | 20 min | Query your tables over HTTPS with an OAuth token and get JSON back. Needs the Data API enabled on your branch. |
+# MAGIC | 4 | <a href="$./journeys/capstone-app/capstone_app_databricks">Building a Databricks App on Lakebase</a> | 45 min | Deploy a FastAPI dashboard on Databricks Apps from a notebook, with Lakebase as its backend. Needs permission to create apps. |
 
 # COMMAND ----------
 
@@ -81,7 +79,7 @@
 # MAGIC     We don't do this track during the workshop. Work through it on your own afterward, in this same
 # MAGIC     workspace, while the lab is still available. It uses the project and branch from setup; if they're
 # MAGIC     gone, run <code>00-setup/setup_databricks</code> again first. It needs a Foundation Model endpoint.
-# MAGIC     About 1.5 hours.
+# MAGIC     About 1 hour 50 minutes.
 # MAGIC   </div>
 # MAGIC </div>
 
@@ -93,5 +91,5 @@
 # MAGIC | 1 | <a href="$./journeys/agent-memory/agent_memory_databricks">Shared Agent Memory</a> | 20 min | Two agents share one memory table: one writes a fraud note, the other reads it and acts on it. Needs a Foundation Model endpoint. |
 # MAGIC | 2 | <a href="$./journeys/agentic-work/agentic_work_databricks">Tool-Calling Agents</a> | 20 min | An agent reads live transactions with a tool, places a hold on a flagged account, and remembers it so it won't hold twice. Needs a Foundation Model endpoint. |
 # MAGIC | 3 | <a href="$./journeys/learning-loop/learning_loop_databricks">Human Review of AI Output</a> | 25 min | AI extracts findings from case notes with a confidence score; low-confidence ones go to a human analyst. Needs a Foundation Model endpoint; replaces your branch's case notes. |
-# MAGIC | 4 | <a href="$./journeys/pg-vector/pg_vector_databricks">Vector Similarity Search</a> | 20 min | Find the instruments most similar to a holding by embedding similarity, next to your transactional data. |
+# MAGIC | 4 | <a href="$./journeys/lakebase-search/lakebase_search_databricks">Lakebase Search</a> | 35 min | Search 40 fraud and AML notes by keyword (BM25), by meaning (real embeddings), and both at once (hybrid), filtered and joined to live accounts. Needs Lakebase Search enabled on your project (the journey shows how) and the `databricks-gte-large-en` embedding endpoint. |
 # MAGIC | 5 | <a href="$./journeys/pg-features/pg_features_databricks">Online Feature Serving</a> | 10 min | Serve an account's fraud-risk features from Lakebase with a fast key lookup. |

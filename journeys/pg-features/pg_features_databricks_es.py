@@ -13,7 +13,7 @@
 # MAGIC # Servir features en línea
 # MAGIC #### Duración: unos 10 minutos
 # MAGIC
-# MAGIC *Recorrido 5 de 5. Búsqueda por similitud de vectores encontró elementos relacionados por su significado. Este último recorrido sirve los números que necesita un modelo de fraude, en el momento en que los necesita.*
+# MAGIC *Recorrido 5 de 5. Lakebase Search encontró notas relacionadas por sus palabras y su significado. Este último recorrido sirve los números que necesita un modelo de fraude, en el momento en que los necesita.*
 # MAGIC
 # MAGIC ## Descripción general
 # MAGIC

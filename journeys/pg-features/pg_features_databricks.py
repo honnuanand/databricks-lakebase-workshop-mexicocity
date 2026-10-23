@@ -13,7 +13,7 @@
 # MAGIC # Online Feature Serving
 # MAGIC #### Duration: about 10 minutes
 # MAGIC
-# MAGIC *Journey 5 of 5. Vector Similarity Search found related items by meaning. This last journey serves the numbers a fraud model needs, the moment it needs them.*
+# MAGIC *Journey 5 of 5. Lakebase Search found related notes by their words and their meaning. This last journey serves the numbers a fraud model needs, the moment it needs them.*
 # MAGIC
 # MAGIC ## Overview
 # MAGIC

@@ -224,9 +224,9 @@ print(f"Endpoint de FM: {FM_ENDPOINT}")
 # MAGIC   <strong style="display:block; color:#C4200F; margin-bottom:6px;">Esto borra todas las notas de caso de tu rama</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     Se eliminan las cuatro notas de caso de la configuración y cualquier nota de retención de Agentes
-# MAGIC     que usan herramientas. Solo se afecta tu rama. Búsqueda de texto completo y aproximada y Crear una app de Databricks
-# MAGIC     sobre Lakebase (ruta de Desarrolladores de aplicaciones) buscan en esas notas: si las vas a hacer
-# MAGIC     después, reconstruye tu rama al terminar con <code>branch.reset()</code>, como en la sección E2 de
+# MAGIC     que usan herramientas. Solo se afecta tu rama. Crear una app de Databricks sobre Lakebase (ruta de
+# MAGIC     Desarrolladores de aplicaciones) lee esas notas: si la vas a hacer después, reconstruye tu rama al
+# MAGIC     terminar con <code>branch.reset()</code>, como en la sección E2 de
 # MAGIC     Restauración a un punto en el tiempo.
 # MAGIC   </div>
 # MAGIC </div>
@@ -597,6 +597,6 @@ if avg_review is not None:
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Siguiente en la ruta de Desarrolladores de agentes:** <a href="$../pg-vector/pg_vector_databricks_es">Búsqueda por similitud de vectores →</a>
+# MAGIC **Siguiente en la ruta de Desarrolladores de agentes:** <a href="$../lakebase-search/lakebase_search_databricks_es">Lakebase Search →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE_es">← Volver al índice</a>

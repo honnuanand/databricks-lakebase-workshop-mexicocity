@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Taller de Lakebase</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones · Recorrido 6 de 6 · Crear una app de Databricks sobre Lakebase</span>
+# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones · Recorrido 4 de 4 · Crear una app de Databricks sobre Lakebase</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # Crear una app de Databricks sobre Lakebase
 # MAGIC #### Duración: 45 minutos
 # MAGIC
-# MAGIC *Recorrido 6 de 6 de la ruta de Desarrolladores de aplicaciones. Los recorridos anteriores usaron Lakebase desde un notebook; este pone una app web real frente a tu rama.*
+# MAGIC *Recorrido 4 de 4 de la ruta de Desarrolladores de aplicaciones. Los recorridos anteriores usaron Lakebase desde un notebook; este pone una app web real frente a tu rama.*
 # MAGIC
 # MAGIC ## Resumen
 # MAGIC

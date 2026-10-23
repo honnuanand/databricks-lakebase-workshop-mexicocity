@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 6 of 6 · Building a Databricks App on Lakebase</span>
+# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 4 of 4 · Building a Databricks App on Lakebase</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # Building a Databricks App on Lakebase
 # MAGIC #### Duration: 45 minutes
 # MAGIC
-# MAGIC *Journey 6 of 6 in the App developers track. The earlier journeys used Lakebase from a notebook. This one puts a real web app in front of your branch.*
+# MAGIC *Journey 4 of 4 in the App developers track. The earlier journeys used Lakebase from a notebook. This one puts a real web app in front of your branch.*
 # MAGIC
 # MAGIC ## Overview
 # MAGIC

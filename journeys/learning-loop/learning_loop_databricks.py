@@ -223,8 +223,8 @@ print(f"FM endpoint: {FM_ENDPOINT}")
 # MAGIC   <strong style="display:block; color:#C4200F; margin-bottom:6px;">This deletes every case note on your branch</strong>
 # MAGIC   <div style="color:#333;">
 # MAGIC     The four case notes from setup, and any hold note from Tool-Calling Agents, are removed. Only your
-# MAGIC     branch is affected. Full-Text and Fuzzy Search and the capstone app (App developers track) search
-# MAGIC     those notes: if you'll run them later, rebuild your branch afterwards with <code>branch.reset()</code>,
+# MAGIC     branch is affected. The capstone app (App developers track) reads those notes: if you'll run it
+# MAGIC     later, rebuild your branch afterwards with <code>branch.reset()</code>,
 # MAGIC     as in section E2 of Point-in-Time Restore.
 # MAGIC   </div>
 # MAGIC </div>
@@ -591,6 +591,6 @@ if avg_review is not None:
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Next in the Agent developers track:** <a href="$../pg-vector/pg_vector_databricks">Vector Similarity Search →</a>
+# MAGIC **Next in the Agent developers track:** <a href="$../lakebase-search/lakebase_search_databricks">Lakebase Search →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 1 of 6 · JSON Data with JSONB</span>
+# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 1 of 4 · JSON Data with JSONB</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # JSON Data with JSONB
 # MAGIC #### Duration: 20 minutes
 # MAGIC
-# MAGIC *Journey 1 of 6 in the App developers track. Part 1 used fixed columns; this journey stores data whose shape varies from row to row.*
+# MAGIC *Journey 1 of 4 in the App developers track. Part 1 used fixed columns; this journey stores data whose shape varies from row to row.*
 # MAGIC
 # MAGIC ## Overview
 # MAGIC
@@ -415,6 +415,6 @@ for row in rows:
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC **Next in the App developers track:** <a href="$../pg-vector/pg_vector_databricks">Vector Similarity Search →</a>
+# MAGIC **Next in the App developers track:** <a href="$../lakebase-search/lakebase_search_databricks">Lakebase Search →</a>
 # MAGIC
 # MAGIC <a href="$../../START_HERE">← Back to the table of contents</a>

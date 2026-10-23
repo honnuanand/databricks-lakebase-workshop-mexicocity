@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Lakebase workshop</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 5 of 6 · Lakebase Data API</span>
+# MAGIC   <span style="color:#5A6F77;">Part 2 · App developers · Journey 3 of 4 · Lakebase Data API</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # Lakebase Data API
 # MAGIC #### Duration: 20 minutes
 # MAGIC
-# MAGIC *Journey 5 of 6 in the App developers track. So far every query went through a Postgres connection; this journey reads the same tables over HTTPS.*
+# MAGIC *Journey 3 of 4 in the App developers track. So far every query went through a Postgres connection; this journey reads the same tables over HTTPS.*
 # MAGIC
 # MAGIC ## Overview
 # MAGIC

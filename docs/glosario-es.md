@@ -47,6 +47,12 @@ como `ACTIVE` e `IDLE`) se quedan en inglés.
 | ORM, BI tool | **ORM**, **herramienta de BI** | |
 | query | **consulta** | |
 | row, column, table | **fila**, **columna**, **tabla** | |
+| Lakebase Search | **Lakebase Search** | Una configuración del proyecto (se activa en la interfaz y no se puede desactivar) que agrega `lakebase_text`, `lakebase_vector` y `lakebase_tokenizer`. |
+| keyword search | **búsqueda por palabras** | Con BM25, en `lakebase_text`. |
+| BM25 | **BM25** | El puntaje de relevancia estándar de la búsqueda por palabras. |
+| approximate nearest neighbor (ANN) | **ANN** (vecinos más cercanos aproximados) | El índice `lakebase_ann` de `lakebase_vector`. |
+| hybrid search | **búsqueda híbrida** | Combina los resultados por palabras y por vectores en una sola lista. |
+| Reciprocal Rank Fusion (RRF) | **Reciprocal Rank Fusion (RRF)** (fusión por posición recíproca) | Cada fila suma `1 / (60 + posición)` por cada lista en la que aparece. |
 
 ## Banca
 

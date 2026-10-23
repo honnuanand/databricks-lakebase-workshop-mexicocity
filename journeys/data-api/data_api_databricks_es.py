@@ -4,7 +4,7 @@
 # MAGIC   <span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:#FF3621;"></span>
 # MAGIC   <span style="font-weight:bold; color:#0b2026;">Taller de Lakebase</span>
 # MAGIC   <span style="color:#999;">|</span>
-# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones · Recorrido 5 de 6 · API de datos de Lakebase</span>
+# MAGIC   <span style="color:#5A6F77;">Parte 2 · Desarrolladores de aplicaciones · Recorrido 3 de 4 · API de datos de Lakebase</span>
 # MAGIC </div>
 
 # COMMAND ----------
@@ -13,7 +13,7 @@
 # MAGIC # API de datos de Lakebase
 # MAGIC #### Duración: 20 minutos
 # MAGIC
-# MAGIC *Recorrido 5 de 6 de la ruta de Desarrolladores de aplicaciones. Hasta ahora cada consulta pasó por una conexión de Postgres; este recorrido lee las mismas tablas por HTTPS.*
+# MAGIC *Recorrido 3 de 4 de la ruta de Desarrolladores de aplicaciones. Hasta ahora cada consulta pasó por una conexión de Postgres; este recorrido lee las mismas tablas por HTTPS.*
 # MAGIC
 # MAGIC ## Resumen
 # MAGIC
